@@ -58,7 +58,8 @@ This project has exactly **one API**, built as Next.js API routes under `/api/v1
 - Categories list + Add/Edit Category (name, image)
 - Variant Options (Colors, Sizes, Weights, Units — each with Add/Edit/Delete)
 - Products list (search by name/SKU/category) + Add/Edit Product (name, category, unit, color, size, weight, expiry date, cost price, sale price, image)
-- Stocks list + Add Stock (product select, purchase unit cost, quantity, date)
+- Suppliers list + Add/Edit Supplier (name, phone, address)
+- Stocks list + Add Stock (product select, supplier select, purchase unit cost, quantity, date)
 - Low Stock list (search + threshold-based filter)
 - Near-Expiry list (products approaching `expiry_date`)
 - Wastage list + Add Wastage entry
@@ -79,12 +80,14 @@ This project has exactly **one API**, built as Next.js API routes under `/api/v1
 
 - Expense Categories list + Add/Edit
 - Expenses list + Add Expense (title, category, amount, date, note)
+- Supplier Payments list + Add Payment (supplier select, amount, date, note)
 
 **Reports** (each with a date-range picker + Download/Share as PDF and Excel)
 
 - Sales Report (total sales, total orders, daily trend chart)
 - Profit & Loss Report (total sales incl. VAT, COGS, gross profit, total expense, net profit, wastage loss shown separately, trend chart)
-- Due Report (total due, customer count, highest-due-first list)
+- Due Report (total due from customers, customer count, highest-due-first list)
+- Payable Report (total owed to suppliers, supplier count, highest-payable-first list)
 - Stock Report (low stock count, value at cost, lowest-stock-first list, stock movement export)
 - Expense Report (total expense, by-category breakdown, recent expenses)
 
@@ -113,11 +116,11 @@ The screenshots of an existing app called "StockBin" were reviewed as a feature 
 
 1. Self-service signup + email verification for new shop owners
 2. Subscription plans with trial period, plan limits (e.g., max products, max staff), Stripe billing webhook handling
-3. **Inventory module**: Categories (with image), Products (name, category, unit, color, size, weight, **expiry_date**, sale price, cost price, image), Variant Options master lists (pre-defined Colors/Sizes/Weights/Units per tenant, selected via dropdown when creating a product), Stock (add stock with purchase unit cost/quantity/date), Low Stock alerts (tenant-configurable threshold), Wastage (damaged/expired stock write-off), Returns
+3. **Inventory module**: Categories (with image), Products (name, category, unit, color, size, weight, **expiry_date**, sale price, cost price, image), Variant Options master lists (pre-defined Colors/Sizes/Weights/Units per tenant, selected via dropdown when creating a product), **Suppliers** (name, phone, address — the wholesaler/vendor a shop buys stock from), Stock (add stock with product, supplier, purchase unit cost/quantity/date), Low Stock alerts (tenant-configurable threshold), Wastage (damaged/expired stock write-off), Returns
 4. **People module**: Customers (name, phone unique per tenant), Users (staff/manager accounts with role + store assignment)
 5. **Sales module**: Create Invoice (customer select, product cart, per-invoice discount, VAT %, grand total, Complete Sale or Save as Draft), Invoices list, Draft Invoices
-6. **Finance module**: Expense Categories, Expenses (title, category, amount, date, note)
-7. **Reports module**: Sales Report, Profit & Loss Report (sales, COGS, gross profit, total expense, net profit, wastage loss shown separately/not counted in net), Due Report (outstanding customer balances), Stock Report (on-hand snapshot, value at cost, low-stock list, movement log), Expense Report (by category) — every report needs a date-range filter and PDF/Excel export + share
+6. **Finance module**: Expense Categories, Expenses (title, category, amount, date, note), Supplier Payments (track what's paid vs still owed to each supplier)
+7. **Reports module**: Sales Report, Profit & Loss Report (sales, COGS, gross profit, total expense, net profit, wastage loss shown separately/not counted in net), Due Report (outstanding customer balances — money owed _to_ the shop), Payable Report (outstanding supplier balances — money the shop owes _to_ suppliers), Stock Report (on-hand snapshot, value at cost, low-stock list, movement log), Expense Report (by category) — every report needs a date-range filter and PDF/Excel export + share
 8. **Business Settings** (tenant-level config): logo, business name/email/phone/address, VAT percentage, low stock threshold, currency symbol, invoice type
 9. **Profile**: name, email, PIN login (4-digit device unlock) toggle, change password toggle
 10. Soft-delete for products (never hard-delete if linked to sales history)
@@ -142,6 +145,27 @@ Products need to support far more than shoes (groceries, cosmetics, electronics,
 - Rate-limit auth endpoints.
 - All inputs validated (Zod) and queries parameterized (no raw string SQL concatenation).
 - Foreign keys use `ON DELETE RESTRICT` by default on financial/transactional tables — prevent accidental data loss.
+
+### Referential Integrity / Deletion Rules (apply across every "master data" table, not just products)
+
+Any record that is referenced by other records must not be deletable while that reference exists — the delete should be blocked with a clear error telling the user what to unlink first, not silently cascade or silently fail. This applies wherever one table is "picked" by another, not only the Products↔Sales case discussed earlier:
+
+| If you try to delete...                       | ...and it's still referenced by                                             | Required behavior                                                                                                                                                                     |
+| --------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a **Category**                                | one or more `products.category_id`                                          | Block delete. UI message: "Move or remove the N products in this category first." Either allow reassigning products to another category in bulk, or require the category to be empty. |
+| a **Variant Option** (Color/Size/Weight/Unit) | one or more `products.color_id` / `size_id` / `weight_id` / `unit_id`       | Block delete for the same reason — a product still points to it.                                                                                                                      |
+| a **Supplier**                                | `stock_movements.supplier_id` or `supplier_payments.supplier_id`            | Block delete (purchase/payment history must stay intact). Offer "mark inactive" instead of deleting.                                                                                  |
+| a **Customer**                                | `sales.customer_id`                                                         | Block delete (invoice history must stay intact). Offer "mark inactive" instead of deleting.                                                                                           |
+| a **Product**                                 | `sale_items.product_id`, `stock_movements.product_id`, `wastage.product_id` | Block hard delete — use the existing `is_deleted` soft-delete flag instead (already specified above).                                                                                 |
+| an **Expense Category**                       | `expenses.category_id`                                                      | Block delete while expenses reference it.                                                                                                                                             |
+| a **User** (staff/manager)                    | `sales.sold_by`, `stock_movements.created_by`, `audit_logs.user_id`, etc.   | Never hard-delete a user who has activity history — deactivate (`is_active = false`) instead, so historical records keep a valid, meaningful `created_by`/`sold_by` reference.        |
+
+**General rules to give the AI agent:**
+
+- Default every foreign key from a transactional/history table (sales, sale_items, stock_movements, wastage, returns, supplier_payments, expenses, audit_logs) back to its "master data" table (products, categories, variant options, suppliers, customers, users, expense_categories) to **`ON DELETE RESTRICT`** at the database level — this is the real enforcement, not just an application-level check.
+- Every delete endpoint for a master-data table must first check for dependent rows (or just rely on the DB constraint and catch the FK-violation error) and return a clear, specific error — e.g. "Cannot delete: 12 products still use this category" — not a generic 500 error.
+- Prefer offering **"deactivate/archive" instead of delete** for master-data entities that commonly accumulate history (Suppliers, Customers, Users, Categories once products exist) — many real POS/inventory apps never truly delete these, only hide them from active lists.
+- Only allow hard delete on a master-data row when it has zero dependents — and even then, confirm with the user before deleting.
 
 ---
 
@@ -238,14 +262,35 @@ is_deleted    boolean default false     -- soft delete
 created_at    timestamptz default now()
 updated_at    timestamptz default now()
 
+suppliers                              -- wholesalers/vendors the shop buys stock from
+------------------------------------------------
+id            uuid PK
+tenant_id     uuid FK -> tenants.id
+name          text
+phone         text null
+address       text null
+created_at    timestamptz default now()
+
 stock_movements                      -- stock in/out/adjustment/return/wastage log
 ------------------------------------------------
 id            uuid PK
 tenant_id     uuid FK -> tenants.id
 product_id    uuid FK -> products.id
+supplier_id   uuid FK -> suppliers.id null   -- which supplier this stock-in came from ('in' entries)
 type          text        -- 'in' | 'out' | 'adjustment' | 'return' | 'wastage'
 quantity      int
 unit_cost     numeric(10,2) null        -- purchase unit cost, for 'in' entries
+note          text null
+created_by    uuid FK -> users.id
+created_at    timestamptz default now()
+
+supplier_payments                     -- what the shop has paid a supplier over time
+------------------------------------------------
+id            uuid PK
+tenant_id     uuid FK -> tenants.id
+supplier_id   uuid FK -> suppliers.id
+amount        numeric(10,2)
+payment_date  date
 note          text null
 created_by    uuid FK -> users.id
 created_at    timestamptz default now()
@@ -355,6 +400,7 @@ created_at   timestamptz default now()
 - Unique constraint on `customers (tenant_id, phone)` — phone unique per tenant, not globally
 - Unique constraint on `users (email)` globally (one email = one login across the whole platform)
 - Index on `products (tenant_id, expiry_date)` to power a "near-expiry" alert list alongside low-stock
+- Index on `stock_movements (tenant_id, supplier_id)` to power supplier purchase history and the Payable Report
 - GIN index on `products (attributes)` only if you actually query into the JSONB later — skip otherwise
 
 ---
@@ -367,11 +413,11 @@ created_at   timestamptz default now()
 4. Row-Level Security policies in PostgreSQL for every tenant-scoped table (`products`, `sales`, `sale_items`, `stock_movements`, `customers`, `expenses`, etc.)
 5. Business Settings screen (logo, name, contact, VAT %, low stock threshold, currency, invoice type) — read/write scoped to the tenant
 6. Variant master lists (Colors, Sizes, Weights, Units) CRUD, then Categories CRUD
-7. Products CRUD (with soft delete, variant selects, expiry_date, image upload) + Stock (add stock / stock movements) + Low Stock and Near-Expiry alert views + Wastage entry
+7. Products CRUD (with soft delete, variant selects, expiry_date, image upload) + Suppliers CRUD + Stock (add stock with product/supplier/cost/quantity) + Low Stock and Near-Expiry alert views + Wastage entry
 8. Customers CRUD
 9. Sales flow: Create Invoice (cart, discount, VAT calc, draft/complete), Invoices list, Draft Invoices, Returns
-10. Finance: Expense Categories + Expenses CRUD
-11. Reports: Sales, Profit & Loss (COGS, gross/net profit, wastage shown separately), Due, Stock (on-hand + movement), Expense — each with date-range filter and PDF/Excel export
+10. Finance: Expense Categories + Expenses CRUD, Supplier Payments CRUD
+11. Reports: Sales, Profit & Loss (COGS, gross/net profit, wastage shown separately), Due (customer), Payable (supplier), Stock (on-hand + movement), Expense — each with date-range filter and PDF/Excel export
 12. Stripe subscription integration (checkout, webhook to update `tenants.subscription_status`)
 13. Super Admin panel (list tenants, MRR, suspend/reactivate)
 14. Dashboard UI: fetch "current tenant info" via authenticated endpoint using TanStack Query (`useQuery(['currentTenant'])`), show shop name/logo in header
@@ -383,5 +429,6 @@ created_at   timestamptz default now()
 
 - Never accept `tenant_id` from request body/query params — always derive from verified session/JWT.
 - Never hard-delete `products` if referenced in `sale_items` — use `is_deleted` flag.
+- **Before implementing any delete endpoint** (categories, variant options, suppliers, customers, expense categories, users), check the "Referential Integrity / Deletion Rules" table above — block the delete with a specific error if dependent rows exist, and prefer "deactivate" over "delete" for these master-data tables.
 - Every new table/query must include `tenant_id` filtering — treat missing tenant filter as a bug.
 - API routes must live under `/api/v1/...` from the start.

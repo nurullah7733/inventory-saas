@@ -1,4 +1,556 @@
+// ---------------------------------------------------------------------------
+// Multi-tenant shop inventory & accounting SaaS — data contract (Prisma 8).
+//
+// Conventions used throughout:
+//   * Models are PascalCase, tables/columns are snake_case via @@map / @map.
+//   * Primary keys are `Uuid @id @default(uuid())`.
+//   * EVERY tenant-scoped table carries a non-null `tenantId` FK to Tenant.
+//   * Foreign keys default to `onDelete: Restrict` so history can never be
+//     silently destroyed. Master data that accumulates history is deactivated
+//     (`isActive = false`) or soft-deleted (`isDeleted = true`), never dropped.
+//   * Money is `Numeric(10, 2)`; percentages are `Numeric(5, 2)`.
+//   * Timestamps are `TimestamptzString`, dates are `DateString`.
+//   * `updatedAt` uses the `temporal.updatedAtString()` field preset, which
+//     stamps the column on create AND on every update.
+//
+// NOTE — timestamps use the *String codecs, not `DateTime` / `Date`. The plain
+// spellings map to Temporal-backed codecs that need a global `Temporal`, which
+// Node only exposes behind `--harmony-temporal` — unusable for `next dev`,
+// `next build`, or Vercel. The *String codecs produce the identical Postgres
+// column types (`timestamptz` / `date`), so ordering and date-range report
+// filters still run in SQL; only the JS representation changes, to an ISO
+// string. That also suits the one-API-for-web-mobile-iOS requirement: every
+// client parses the same ISO strings with no serialisation surprises.
+//
+// NOTE — `@updatedAt` was removed from PSL in Prisma 8; the replacement is the
+// `temporal.updatedAtString()` field preset used below (the plain
+// `temporal.updatedAt()` maps to the Temporal codec and would crash, per the
+// note above). The preset owns the value, so it cannot be combined with
+// `@default(...)`, and it is applied by the Prisma RUNTIME rather than by a
+// database DEFAULT — these columns are NOT NULL with no column default, so a
+// raw-SQL INSERT must supply `updated_at` itself. Every write through
+// `db.orm.*` is handled automatically.
+//
+// NOTE — no `@default` on any Numeric column. On @prisma/orm-postgres 8.0.0-rc.8
+// a numeric default does not round-trip: the contract requires it as a decimal
+// STRING (`@default(0)` fails at `migration plan` with "must be a decimal
+// string"), but a string renders `DEFAULT '0'::numeric(10,2)`, which Postgres
+// reprints as a cast expression while `db verify` expects a bare literal — so
+// `db init` / `db migrate` fail schema verification. These columns stay NOT
+// NULL and the API layer supplies the value (Zod `.default(0)`), which also
+// turns a forgotten money field into a loud error instead of a silent 0.
+// Re-add `@default` here once the round-trip is fixed upstream.
+// ---------------------------------------------------------------------------
+
+// --- Enumerations -----------------------------------------------------------
+// Stored as `text` plus a generated CHECK constraint, so bad values are
+// rejected by the database and not only by application code.
+
+enum user_role {
+  super_admin = "super_admin"
+  shop_owner  = "shop_owner"
+  manager     = "manager"
+  staff       = "staff"
+
+  @@type("pg/text@1")
+}
+
+enum subscription_plan {
+  trial = "trial"
+  basic = "basic"
+  pro   = "pro"
+
+  @@type("pg/text@1")
+}
+
+enum subscription_status {
+  trial     = "trial"
+  active    = "active"
+  past_due  = "past_due"
+  cancelled = "cancelled"
+
+  @@type("pg/text@1")
+}
+
+enum stock_movement_type {
+  stock_in   = "in"
+  stock_out  = "out"
+  adjustment = "adjustment"
+  returned   = "return"
+  wastage    = "wastage"
+
+  @@type("pg/text@1")
+}
+
+enum sale_status {
+  draft     = "draft"
+  completed = "completed"
+
+  @@type("pg/text@1")
+}
+
+// --- Platform / tenancy -----------------------------------------------------
+
+/// One row per shop/business. The root of every tenant-scoped query.
+model Tenant {
+  id          Uuid    @id @default(uuid())
+  name        String
+  description String?
+  logoUrl     String? @map("logo_url")
+  email       String
+  phone       String?
+  address     String?
+
+  // Business settings (tenant-level configuration screen).
+  vatPercentage     Numeric(5, 2) @map("vat_percentage")
+  lowStockThreshold Int    @default(10) @map("low_stock_threshold")
+  currencySymbol    String @default("BDT") @map("currency_symbol")
+  invoiceType       String @default("standard") @map("invoice_type")
+
+  // Subscription state, denormalised here so every request can gate on it
+  // without a join. `subscriptions` below keeps the billing history.
+  subscriptionPlan   subscription_plan   @default(trial) @map("subscription_plan")
+  subscriptionStatus subscription_status @default(trial) @map("subscription_status")
+  trialEndsAt        TimestamptzString?  @map("trial_ends_at")
+  subscriptionEndsAt TimestamptzString?  @map("subscription_ends_at")
+  maxProducts        Int                 @default(100) @map("max_products")
+  maxStaff           Int                 @default(5) @map("max_staff")
+
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@index([createdAt])
+  @@map("tenants")
+}
+
+/// Platform + tenant users. `tenantId` is null only for super_admin.
 model User {
-  id    String @id @default(uuid())
-  email String @unique
+  id           Uuid    @id @default(uuid())
+  tenantId     Uuid?   @map("tenant_id")
+  tenant       Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name         String
+  email        String  @unique
+  passwordHash String  @map("password_hash")
+
+  pinHash           String?            @map("pin_hash")
+  pinFailedAttempts Int                @default(0) @map("pin_failed_attempts")
+  pinLockedUntil    TimestamptzString? @map("pin_locked_until")
+
+  role        user_role
+  isActive    Boolean            @default(true) @map("is_active")
+  lastLoginAt TimestamptzString? @map("last_login_at")
+  createdAt   TimestamptzString  @default(now()) @map("created_at")
+  updatedAt    temporal          .updatedAtString() @map("updated_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, role])
+  @@map("users")
+}
+
+/// One row per logged-in device/client, keyed by a HASHED refresh token.
+///
+/// Access tokens are stateless JWTs (short-lived, never stored). Refresh
+/// tokens are opaque random strings that ARE stored — hashed with SHA-256, the
+/// same way a password reset token is — so that logout, "sign out everywhere",
+/// staff deactivation, and tenant suspension can actually revoke a live
+/// session instead of waiting out a JWT expiry.
+///
+/// Storing only the hash means a database leak does not hand out usable
+/// sessions. Rotation is enforced on every refresh: the presented row is
+/// revoked and a fresh one issued, so a stolen-and-replayed token shows up as
+/// a reuse of an already-revoked row.
+model RefreshSession {
+  id       Uuid    @id @default(uuid())
+  userId   Uuid    @map("user_id")
+  user     User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// Denormalised from the user so revoking every session of a suspended
+  /// tenant is a single indexed delete, with no join.
+  tenantId Uuid?   @map("tenant_id")
+  tenant   Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  /// SHA-256 of the opaque refresh token. Unique so a presented token maps to
+  /// at most one session in one indexed lookup.
+  tokenHash String  @unique @map("token_hash")
+  /// Client-supplied device identifier, used to label sessions in the UI and
+  /// to bind PIN unlock to the device that performed the password login.
+  deviceId  String? @map("device_id")
+  userAgent String? @map("user_agent")
+  ipAddress String? @map("ip_address")
+
+  expiresAt  TimestamptzString  @map("expires_at")
+  revokedAt  TimestamptzString? @map("revoked_at")
+  lastUsedAt TimestamptzString? @map("last_used_at")
+  createdAt  TimestamptzString  @default(now()) @map("created_at")
+
+  @@index([userId, expiresAt])
+  @@index([tenantId, createdAt])
+  @@map("refresh_sessions")
+}
+
+/// Billing history / Stripe log. One row per subscription period.
+model Subscription {
+  id                   Uuid                @id @default(uuid())
+  tenantId             Uuid                @map("tenant_id")
+  tenant               Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  stripeCustomerId     String?             @map("stripe_customer_id")
+  stripeSubscriptionId String?             @map("stripe_subscription_id")
+  plan                 subscription_plan
+  status               subscription_status
+  amount               Numeric(10, 2)
+  startedAt            TimestamptzString   @map("started_at")
+  endsAt               TimestamptzString?  @map("ends_at")
+  createdAt            TimestamptzString   @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([stripeSubscriptionId])
+  @@map("subscriptions")
+}
+
+// --- Inventory master data --------------------------------------------------
+
+model Category {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  imageUrl  String?           @map("image_url")
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("categories")
+}
+
+model VariantColor {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("variant_colors")
+}
+
+model VariantSize {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("variant_sizes")
+}
+
+model VariantWeight {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("variant_weights")
+}
+
+/// Units of measure — pcs, kg, liter, box, ...
+model VariantUnit {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("variant_units")
+}
+
+/// Wholesalers/vendors the shop buys stock from. Deactivate, never delete —
+/// purchase and payment history must stay intact.
+model Supplier {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  phone     String?
+  address   String?
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("suppliers")
+}
+
+/// Fixed common columns cover most retail verticals; `attributes` (jsonb)
+/// catches vertical-specific extras (warranty_months, batch_no, imei, ...).
+/// Never hard-deleted while sales history references it — use `isDeleted`.
+model Product {
+  id         Uuid              @id @default(uuid())
+  tenantId   Uuid              @map("tenant_id")
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  categoryId Uuid?             @map("category_id")
+  category   Category?         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name       String
+  sku        String
+  unitId     Uuid?             @map("unit_id")
+  unit       VariantUnit?      @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  colorId    Uuid?             @map("color_id")
+  color      VariantColor?     @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  sizeId     Uuid?             @map("size_id")
+  size       VariantSize?      @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  weightId   Uuid?             @map("weight_id")
+  weight     VariantWeight?    @relation(fields: [weightId], references: [id], onDelete: Restrict)
+  expiryDate DateString?       @map("expiry_date")
+  brand      String?
+  costPrice  Numeric(10, 2)    @map("cost_price")
+  sellPrice  Numeric(10, 2)    @map("sell_price")
+  stockQty   Int               @default(0) @map("stock_qty")
+  attributes Jsonb?
+  imageUrl   String?           @map("image_url")
+  isDeleted  Boolean           @default(false) @map("is_deleted")
+  createdAt  TimestamptzString @default(now()) @map("created_at")
+  updatedAt  temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, sku])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, expiryDate])
+  @@index([tenantId, stockQty])
+  @@map("products")
+}
+
+// --- Inventory movement -----------------------------------------------------
+
+/// Append-only ledger of every stock change: in / out / adjustment / return /
+/// wastage. Never updated in place — it is the audit trail behind `stockQty`.
+model StockMovement {
+  id            Uuid                @id @default(uuid())
+  tenantId      Uuid                @map("tenant_id")
+  tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  productId     Uuid                @map("product_id")
+  product       Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  supplierId    Uuid?               @map("supplier_id")
+  supplier      Supplier?           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  type          stock_movement_type
+  quantity      Int
+  unitCost      Numeric(10, 2)?     @map("unit_cost")
+  note          String?
+  createdBy     Uuid                @map("created_by")
+  createdByUser User                @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString   @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, productId, createdAt])
+  @@map("stock_movements")
+}
+
+/// Damaged / expired stock write-off. Reported separately from net profit.
+model Wastage {
+  id            Uuid              @id @default(uuid())
+  tenantId      Uuid              @map("tenant_id")
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  productId     Uuid              @map("product_id")
+  product       Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity      Int
+  reason        String?
+  lossAmount    Numeric(10, 2)    @map("loss_amount")
+  createdBy     Uuid              @map("created_by")
+  createdByUser User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("wastage")
+}
+
+/// Money the shop has paid a supplier. Payable = purchases minus these.
+model SupplierPayment {
+  id            Uuid              @id @default(uuid())
+  tenantId      Uuid              @map("tenant_id")
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  supplierId    Uuid              @map("supplier_id")
+  supplier      Supplier          @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  amount        Numeric(10, 2)
+  paymentDate   DateString        @map("payment_date")
+  note          String?
+  createdBy     Uuid              @map("created_by")
+  createdByUser User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  // Explicit short name: the derived prefix would exceed the 54-byte cap.
+  @@index([tenantId, supplierId, paymentDate], name: "sup_pay_tenant_supplier_date_idx")
+  @@map("supplier_payments")
+}
+
+// --- People -----------------------------------------------------------------
+
+/// Deactivate, never delete — invoice history must keep a valid reference.
+model Customer {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  phone     String?
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, phone])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("customers")
+}
+
+// --- Sales ------------------------------------------------------------------
+
+/// Invoices. `totalAmount - paidAmount` is the customer due amount.
+model Sale {
+  id            Uuid              @id @default(uuid())
+  tenantId      Uuid              @map("tenant_id")
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  customerId    Uuid?             @map("customer_id")
+  customer      Customer?         @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  invoiceNo     String            @map("invoice_no")
+  status        sale_status       @default(completed)
+  subtotal      Numeric(10, 2)
+  discount      Numeric(10, 2)
+  vatAmount     Numeric(10, 2)    @map("vat_amount")
+  totalAmount   Numeric(10, 2)    @map("total_amount")
+  paidAmount    Numeric(10, 2)    @map("paid_amount")
+  paymentMethod String?           @map("payment_method")
+  soldBy        Uuid              @map("sold_by")
+  soldByUser    User              @relation(fields: [soldBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString @default(now()) @map("created_at")
+  updatedAt     temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, invoiceNo])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status, createdAt])
+  @@index([tenantId, customerId])
+  @@map("sales")
+}
+
+/// `unitCost` snapshots the product cost price at sale time so the P&L report
+/// computes COGS from history instead of from today's cost price.
+model SaleItem {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  saleId    Uuid              @map("sale_id")
+  sale      Sale              @relation(fields: [saleId], references: [id], onDelete: Restrict)
+  productId Uuid              @map("product_id")
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity  Int
+  unitPrice Numeric(10, 2)    @map("unit_price")
+  unitCost  Numeric(10, 2)    @map("unit_cost")
+  subtotal  Numeric(10, 2)
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, saleId])
+  @@index([tenantId, productId])
+  @@map("sale_items")
+}
+
+/// Customer returns against a sold line item.
+model SaleReturn {
+  id            Uuid              @id @default(uuid())
+  tenantId      Uuid              @map("tenant_id")
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  saleItemId    Uuid              @map("sale_item_id")
+  saleItem      SaleItem          @relation(fields: [saleItemId], references: [id], onDelete: Restrict)
+  quantity      Int
+  reason        String?
+  refundAmount  Numeric(10, 2)    @map("refund_amount")
+  createdBy     Uuid              @map("created_by")
+  createdByUser User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, saleItemId])
+  @@map("returns")
+}
+
+// --- Finance ----------------------------------------------------------------
+
+model ExpenseCategory {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("expense_categories")
+}
+
+model Expense {
+  id            Uuid              @id @default(uuid())
+  tenantId      Uuid              @map("tenant_id")
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  categoryId    Uuid?             @map("category_id")
+  category      ExpenseCategory?  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  title         String
+  amount        Numeric(10, 2)
+  expenseDate   DateString        @map("expense_date")
+  note          String?
+  createdBy     Uuid              @map("created_by")
+  createdByUser User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, expenseDate])
+  @@index([tenantId, categoryId, expenseDate])
+  @@map("expenses")
+}
+
+// --- Audit ------------------------------------------------------------------
+
+/// Who created/edited/deleted what and when. `tenantId` is null for
+/// platform-level (super_admin) actions.
+model AuditLog {
+  id         Uuid              @id @default(uuid())
+  tenantId   Uuid?             @map("tenant_id")
+  tenant     Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userId     Uuid              @map("user_id")
+  user       User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  action     String
+  entityType String            @map("entity_type")
+  entityId   Uuid?             @map("entity_id")
+  metadata   Jsonb?
+  createdAt  TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entityType, entityId])
+  @@map("audit_logs")
 }

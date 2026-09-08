@@ -1,0 +1,488 @@
+[
+  {
+    "id": "table.refresh_sessions",
+    "label": "Create table \"refresh_sessions\"",
+    "summary": "Creates table \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"refresh_sessions\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"refresh_sessions\"",
+        "sql": "CREATE TABLE \"public\".\"refresh_sessions\" (\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"device_id\" text,\n  \"expires_at\" timestamptz NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"ip_address\" text,\n  \"last_used_at\" timestamptz,\n  \"revoked_at\" timestamptz,\n  \"tenant_id\" uuid,\n  \"token_hash\" text NOT NULL,\n  \"user_agent\" text,\n  \"user_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"refresh_sessions\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.last_login_at",
+    "label": "Add column \"last_login_at\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "last_login_at",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"last_login_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "last_login_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"last_login_at\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"last_login_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"last_login_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "last_login_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.pin_failed_attempts",
+    "label": "Add column \"pin_failed_attempts\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pin_failed_attempts",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pin_failed_attempts\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "pin_failed_attempts"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pin_failed_attempts\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"pin_failed_attempts\" int4 DEFAULT 0 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pin_failed_attempts\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "pin_failed_attempts"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.pin_locked_until",
+    "label": "Add column \"pin_locked_until\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pin_locked_until",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pin_locked_until\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "pin_locked_until"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pin_locked_until\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"pin_locked_until\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pin_locked_until\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "pin_locked_until"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.refresh_sessions.refresh_sessions_token_hash_key",
+    "label": "Add unique constraint on \"refresh_sessions\" (token_hash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "refresh_sessions_token_hash_key",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"refresh_sessions_token_hash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "refresh_sessions_token_hash_key",
+          "public",
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"refresh_sessions_token_hash_key\"",
+        "sql": "ALTER TABLE \"public\".\"refresh_sessions\" ADD CONSTRAINT \"refresh_sessions_token_hash_key\" UNIQUE (\"token_hash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"refresh_sessions_token_hash_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "refresh_sessions_token_hash_key",
+          "public",
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.refresh_sessions.refresh_sessions_tenant_id_created_at_idx_282da036",
+    "label": "Create index \"refresh_sessions_tenant_id_created_at_idx_282da036\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "refresh_sessions_tenant_id_created_at_idx_282da036",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"refresh_sessions_tenant_id_created_at_idx_282da036\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_tenant_id_created_at_idx_282da036\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"refresh_sessions_tenant_id_created_at_idx_282da036\"",
+        "sql": "CREATE INDEX \"refresh_sessions_tenant_id_created_at_idx_282da036\" ON \"public\".\"refresh_sessions\" (\"tenant_id\", \"created_at\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"refresh_sessions_tenant_id_created_at_idx_282da036\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_tenant_id_created_at_idx_282da036\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.refresh_sessions.refresh_sessions_tenant_id_idx_41c0d441",
+    "label": "Create index \"refresh_sessions_tenant_id_idx_41c0d441\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "refresh_sessions_tenant_id_idx_41c0d441",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"refresh_sessions_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"refresh_sessions_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"refresh_sessions_tenant_id_idx_41c0d441\" ON \"public\".\"refresh_sessions\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"refresh_sessions_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.refresh_sessions.refresh_sessions_user_id_expires_at_idx_d5534b1f",
+    "label": "Create index \"refresh_sessions_user_id_expires_at_idx_d5534b1f\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "refresh_sessions_user_id_expires_at_idx_d5534b1f",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"refresh_sessions_user_id_expires_at_idx_d5534b1f\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_user_id_expires_at_idx_d5534b1f\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"refresh_sessions_user_id_expires_at_idx_d5534b1f\"",
+        "sql": "CREATE INDEX \"refresh_sessions_user_id_expires_at_idx_d5534b1f\" ON \"public\".\"refresh_sessions\" (\"user_id\", \"expires_at\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"refresh_sessions_user_id_expires_at_idx_d5534b1f\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_user_id_expires_at_idx_d5534b1f\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.refresh_sessions.refresh_sessions_user_id_idx_6c952402",
+    "label": "Create index \"refresh_sessions_user_id_idx_6c952402\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "refresh_sessions_user_id_idx_6c952402",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"refresh_sessions_user_id_idx_6c952402\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_user_id_idx_6c952402\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"refresh_sessions_user_id_idx_6c952402\"",
+        "sql": "CREATE INDEX \"refresh_sessions_user_id_idx_6c952402\" ON \"public\".\"refresh_sessions\" (\"user_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"refresh_sessions_user_id_idx_6c952402\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"refresh_sessions_user_id_idx_6c952402\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.users.users_tenant_id_role_idx_03d3eda3",
+    "label": "Create index \"users_tenant_id_role_idx_03d3eda3\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "users_tenant_id_role_idx_03d3eda3",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"users_tenant_id_role_idx_03d3eda3\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_role_idx_03d3eda3\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"users_tenant_id_role_idx_03d3eda3\"",
+        "sql": "CREATE INDEX \"users_tenant_id_role_idx_03d3eda3\" ON \"public\".\"users\" (\"tenant_id\", \"role\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"users_tenant_id_role_idx_03d3eda3\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"users_tenant_id_role_idx_03d3eda3\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.refresh_sessions.refresh_sessions_user_id_fkey",
+    "label": "Add foreign key \"refresh_sessions_user_id_fkey\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "refresh_sessions_user_id_fkey",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"refresh_sessions_user_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "refresh_sessions_user_id_fkey",
+          "public",
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"refresh_sessions_user_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"refresh_sessions\"\nADD CONSTRAINT \"refresh_sessions_user_id_fkey\"\nFOREIGN KEY (\"user_id\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"refresh_sessions_user_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "refresh_sessions_user_id_fkey",
+          "public",
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.refresh_sessions.refresh_sessions_tenant_id_fkey",
+    "label": "Add foreign key \"refresh_sessions_tenant_id_fkey\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "refresh_sessions_tenant_id_fkey",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"refresh_sessions_tenant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "refresh_sessions_tenant_id_fkey",
+          "public",
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"refresh_sessions_tenant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"refresh_sessions\"\nADD CONSTRAINT \"refresh_sessions_tenant_id_fkey\"\nFOREIGN KEY (\"tenant_id\")\nREFERENCES \"public\".\"tenants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"refresh_sessions_tenant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "refresh_sessions_tenant_id_fkey",
+          "public",
+          "\"public\".\"refresh_sessions\""
+        ]
+      }
+    ]
+  }
+]

@@ -12,6 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Emitted by `prisma contract emit` — never hand-edited, so not linted.
+    "prisma/contract.d.ts",
+    // Framework-rendered migration packages.
+    "migrations/**",
+    // Vendored agent-skill copies — tooling, not application code.
+    ".agents/**",
+    ".claude/**",
+    ".cursor/**",
+    ".devin/**",
   ]),
 ]);
 
