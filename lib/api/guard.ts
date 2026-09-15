@@ -7,6 +7,8 @@ import {
   type TenantAuthContext,
 } from "../auth/context.ts";
 import type { UserRole } from "../auth/roles.ts";
+import { enforceEnvelopeHasNoTenantInput } from "../tenant/request.ts";
+import { tenantScope, type TenantScope } from "../tenant/scope.ts";
 import { apiError, type ApiFailure } from "./response.ts";
 
 function failureResponse(failure: AuthFailure): NextResponse<ApiFailure> {
@@ -58,9 +60,13 @@ export type AuthedHandler<Ctx> = (
   context: Ctx,
 ) => Promise<NextResponse> | NextResponse;
 
+export interface TenantRequestContext extends TenantAuthContext {
+  scope: TenantScope;
+}
+
 export type TenantHandler<Ctx> = (
   request: Request,
-  auth: TenantAuthContext,
+  auth: TenantRequestContext,
   context: Ctx,
 ) => Promise<NextResponse> | NextResponse;
 
@@ -78,6 +84,13 @@ export function withAuth<Ctx = unknown>(
   options: GuardOptions = {},
 ): (request: Request, context: Ctx) => Promise<NextResponse> {
   return async (request, context) => {
+    // Applied here too, not just on tenant-scoped routes: a super_admin route
+    // that addresses one tenant does so through a path segment
+    // (`/admin/tenants/[tenantId]`), which is routed and audited. A tenant
+    // arriving as a query parameter or a header is not that, on any route.
+    const spoofed = enforceEnvelopeHasNoTenantInput(request);
+    if (spoofed) return spoofed;
+
     const result = await authenticate(request, {
       verifySession: options.verifySession,
     });
@@ -100,6 +113,9 @@ export function withTenantAuth<Ctx = unknown>(
   options: GuardOptions = {},
 ): (request: Request, context: Ctx) => Promise<NextResponse> {
   return async (request, context) => {
+    const spoofed = enforceEnvelopeHasNoTenantInput(request);
+    if (spoofed) return spoofed;
+
     const result = await authenticate(request, {
       verifySession: options.verifySession,
     });
@@ -127,7 +143,12 @@ export function withTenantAuth<Ctx = unknown>(
       );
     }
 
-    return handleWithErrors(() => handler(request, scoped.context, context));
+    const tenantContext: TenantRequestContext = {
+      ...scoped.context,
+      scope: tenantScope(scoped.context.tenantId),
+    };
+
+    return handleWithErrors(() => handler(request, tenantContext, context));
   };
 }
 

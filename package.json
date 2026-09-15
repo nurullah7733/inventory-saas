@@ -15,7 +15,8 @@
     "db:update": "prisma db update",
     "db:verify": "prisma db verify",
     "db:smoke": "node --experimental-strip-types scripts/db-smoke-test.ts",
-    "auth:smoke": "node --experimental-strip-types scripts/auth-smoke-test.ts"
+    "auth:smoke": "node --experimental-strip-types scripts/auth-smoke-test.ts",
+    "tenant:smoke": "node --experimental-strip-types scripts/tenant-smoke-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",
