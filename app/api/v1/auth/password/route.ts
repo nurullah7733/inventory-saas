@@ -1,4 +1,4 @@
-import { db } from "@/prisma/db.ts";
+import { rlsDb } from "@/lib/db/rls.ts";
 import { AUTH_RATE_LIMITS, consume } from "@/lib/api/rate-limit.ts";
 import { withAuth } from "@/lib/api/guard.ts";
 import {
@@ -36,7 +36,7 @@ export const PUT = withAuth(
     const parsed = changePasswordSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
 
-    const user = await db.orm.public.User.select(
+    const user = await rlsDb().orm.public.User.select(
       "id",
       "tenantId",
       "name",
@@ -61,7 +61,7 @@ export const PUT = withAuth(
     }
 
     const passwordHash = await hashPassword(parsed.data.newPassword);
-    await db.orm.public.User.where({ id: user.id }).update({ passwordHash });
+    await rlsDb().orm.public.User.where({ id: user.id }).update({ passwordHash });
 
     if (!parsed.data.revokeOtherSessions) {
       return apiSuccess({
@@ -82,7 +82,7 @@ export const PUT = withAuth(
     });
 
     const tenant = user.tenantId
-      ? await db.orm.public.Tenant.select(
+      ? await rlsDb().orm.public.Tenant.select(
           "id",
           "name",
           "currencySymbol",

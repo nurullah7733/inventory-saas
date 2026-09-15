@@ -7,6 +7,11 @@ import {
   type TenantAuthContext,
 } from "../auth/context.ts";
 import type { UserRole } from "../auth/roles.ts";
+import {
+  withRequestRls,
+  withRlsBypass,
+  type RlsSession,
+} from "../db/rls.ts";
 import { enforceEnvelopeHasNoTenantInput } from "../tenant/request.ts";
 import { tenantScope, type TenantScope } from "../tenant/scope.ts";
 import { apiError, type ApiFailure } from "./response.ts";
@@ -62,6 +67,13 @@ export type AuthedHandler<Ctx> = (
 
 export interface TenantRequestContext extends TenantAuthContext {
   scope: TenantScope;
+  /**
+   * The request's Row-Level Security session. Reach for it when the scope's
+   * per-model collections are not enough (a join, an aggregate, raw SQL) —
+   * Postgres still admits only this tenant's rows. Equivalent to calling
+   * `rlsDb()` from anywhere inside the handler.
+   */
+  db: RlsSession;
 }
 
 export type TenantHandler<Ctx> = (
@@ -91,20 +103,35 @@ export function withAuth<Ctx = unknown>(
     const spoofed = enforceEnvelopeHasNoTenantInput(request);
     if (spoofed) return spoofed;
 
-    const result = await authenticate(request, {
-      verifySession: options.verifySession,
-    });
-    if (!result.ok) return failureResponse(result.failure);
+    // The RLS session wraps authentication as well as the handler: resolving a
+    // token to its user row is itself a database read, and every table is
+    // RLS-enabled. `handleWithErrors` stays OUTSIDE the transaction so a
+    // handler that throws rolls its writes back instead of committing halfway.
+    return handleWithErrors(() =>
+      withRequestRls(async (rls) => {
+        const result = await authenticate(request, {
+          verifySession: options.verifySession,
+        });
+        if (!result.ok) return failureResponse(result.failure);
 
-    if (!roleAllowed(result.context.user.role, options.roles)) {
-      return apiError(
-        "FORBIDDEN",
-        "You do not have permission to do this.",
-        403,
-      );
-    }
+        if (!roleAllowed(result.context.user.role, options.roles)) {
+          return apiError(
+            "FORBIDDEN",
+            "You do not have permission to do this.",
+            403,
+          );
+        }
 
-    return handleWithErrors(() => handler(request, result.context, context));
+        // Even on this tenant-agnostic guard, a user who HAS a tenant runs
+        // pinned to it — a bug in a profile or settings route then cannot read
+        // across shops either. Only a super_admin (no tenant row) keeps the
+        // bypass, which is the whole point of the platform role.
+        const { tenantId } = result.context.user;
+        if (tenantId) await rls.pinToTenant(tenantId);
+
+        return handler(request, result.context, context);
+      }),
+    );
   };
 }
 
@@ -116,39 +143,49 @@ export function withTenantAuth<Ctx = unknown>(
     const spoofed = enforceEnvelopeHasNoTenantInput(request);
     if (spoofed) return spoofed;
 
-    const result = await authenticate(request, {
-      verifySession: options.verifySession,
-    });
-    if (!result.ok) return failureResponse(result.failure);
+    return handleWithErrors(() =>
+      withRequestRls(async (rls) => {
+        const result = await authenticate(request, {
+          verifySession: options.verifySession,
+        });
+        if (!result.ok) return failureResponse(result.failure);
 
-    if (!roleAllowed(result.context.user.role, options.roles)) {
-      return apiError(
-        "FORBIDDEN",
-        "You do not have permission to do this.",
-        403,
-      );
-    }
+        if (!roleAllowed(result.context.user.role, options.roles)) {
+          return apiError(
+            "FORBIDDEN",
+            "You do not have permission to do this.",
+            403,
+          );
+        }
 
-    const scoped = requireTenantContext(result.context);
-    if (!scoped.ok) return failureResponse(scoped.failure);
+        const scoped = requireTenantContext(result.context);
+        if (!scoped.ok) return failureResponse(scoped.failure);
 
-    if (
-      options.requireActiveSubscription &&
-      BILLING_BLOCKED.has(scoped.context.tenant.subscriptionStatus)
-    ) {
-      return apiError(
-        "SUBSCRIPTION_INACTIVE",
-        "Your subscription is not active. Update billing to continue.",
-        402,
-      );
-    }
+        if (
+          options.requireActiveSubscription &&
+          BILLING_BLOCKED.has(scoped.context.tenant.subscriptionStatus)
+        ) {
+          return apiError(
+            "SUBSCRIPTION_INACTIVE",
+            "Your subscription is not active. Update billing to continue.",
+            402,
+          );
+        }
 
-    const tenantContext: TenantRequestContext = {
-      ...scoped.context,
-      scope: tenantScope(scoped.context.tenantId),
-    };
+        // From here on Postgres itself refuses every row belonging to another
+        // tenant: `scope` filters by `tenant_id` and the policies enforce the
+        // same thing one layer down, on the id the token resolved to.
+        await rls.pinToTenant(scoped.context.tenantId);
 
-    return handleWithErrors(() => handler(request, tenantContext, context));
+        const tenantContext: TenantRequestContext = {
+          ...scoped.context,
+          scope: tenantScope(scoped.context.tenantId),
+          db: rls.session,
+        };
+
+        return handler(request, tenantContext, context);
+      }),
+    );
   };
 }
 
@@ -175,6 +212,19 @@ export async function handleWithErrors(
   }
 }
 
+/**
+ * Guard an unauthenticated route (login, signup, token refresh, PIN unlock).
+ *
+ * These run with RLS bypassed, because that is the honest description of them:
+ * nobody has proved which tenant they are yet, and the lookups they do —
+ * "is there a user with this email?", "does this refresh token exist?" — are
+ * keyed by credentials rather than by tenant. They stay safe because each one
+ * verifies a secret before returning anything about the row it found.
+ *
+ * A future public route that serves ONE tenant (a storefront page, say) should
+ * not use this: it should resolve the tenant first and open the session with
+ * `withRequestRls`, pinning as soon as it knows who it is serving.
+ */
 export function withPublicRoute<Ctx = unknown>(
   handler: (
     request: Request,
@@ -182,5 +232,7 @@ export function withPublicRoute<Ctx = unknown>(
   ) => Promise<NextResponse> | NextResponse,
 ): (request: Request, context: Ctx) => Promise<NextResponse> {
   return (request, context) =>
-    handleWithErrors(() => handler(request, context));
+    handleWithErrors(() =>
+      withRlsBypass(async () => handler(request, context)),
+    );
 }

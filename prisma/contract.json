@@ -3101,6 +3101,367 @@
     "namespaces": {
       "public": {
         "entries": {
+          "policy": {
+            "tenant_isolation_audit_logs": {
+              "kind": "policy",
+              "name": "tenant_isolation_audit_logs_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_audit_logs",
+              "roles": [],
+              "tableName": "audit_logs",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_categories": {
+              "kind": "policy",
+              "name": "tenant_isolation_categories_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_categories",
+              "roles": [],
+              "tableName": "categories",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_customers": {
+              "kind": "policy",
+              "name": "tenant_isolation_customers_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_customers",
+              "roles": [],
+              "tableName": "customers",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_expense_categories": {
+              "kind": "policy",
+              "name": "tenant_isolation_expense_categories_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_expense_categories",
+              "roles": [],
+              "tableName": "expense_categories",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_expenses": {
+              "kind": "policy",
+              "name": "tenant_isolation_expenses_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_expenses",
+              "roles": [],
+              "tableName": "expenses",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_products": {
+              "kind": "policy",
+              "name": "tenant_isolation_products_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_products",
+              "roles": [],
+              "tableName": "products",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_refresh_sessions": {
+              "kind": "policy",
+              "name": "tenant_isolation_refresh_sessions_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_refresh_sessions",
+              "roles": [],
+              "tableName": "refresh_sessions",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_returns": {
+              "kind": "policy",
+              "name": "tenant_isolation_returns_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_returns",
+              "roles": [],
+              "tableName": "returns",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_sale_items": {
+              "kind": "policy",
+              "name": "tenant_isolation_sale_items_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_sale_items",
+              "roles": [],
+              "tableName": "sale_items",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_sales": {
+              "kind": "policy",
+              "name": "tenant_isolation_sales_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_sales",
+              "roles": [],
+              "tableName": "sales",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_stock_movements": {
+              "kind": "policy",
+              "name": "tenant_isolation_stock_movements_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_stock_movements",
+              "roles": [],
+              "tableName": "stock_movements",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_subscriptions": {
+              "kind": "policy",
+              "name": "tenant_isolation_subscriptions_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_subscriptions",
+              "roles": [],
+              "tableName": "subscriptions",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_supplier_payments": {
+              "kind": "policy",
+              "name": "tenant_isolation_supplier_payments_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_supplier_payments",
+              "roles": [],
+              "tableName": "supplier_payments",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_suppliers": {
+              "kind": "policy",
+              "name": "tenant_isolation_suppliers_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_suppliers",
+              "roles": [],
+              "tableName": "suppliers",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_tenants": {
+              "kind": "policy",
+              "name": "tenant_isolation_tenants_18ee00e3",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_tenants",
+              "roles": [],
+              "tableName": "tenants",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_users": {
+              "kind": "policy",
+              "name": "tenant_isolation_users_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_users",
+              "roles": [],
+              "tableName": "users",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_variant_colors": {
+              "kind": "policy",
+              "name": "tenant_isolation_variant_colors_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_variant_colors",
+              "roles": [],
+              "tableName": "variant_colors",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_variant_sizes": {
+              "kind": "policy",
+              "name": "tenant_isolation_variant_sizes_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_variant_sizes",
+              "roles": [],
+              "tableName": "variant_sizes",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_variant_units": {
+              "kind": "policy",
+              "name": "tenant_isolation_variant_units_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_variant_units",
+              "roles": [],
+              "tableName": "variant_units",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_variant_weights": {
+              "kind": "policy",
+              "name": "tenant_isolation_variant_weights_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_variant_weights",
+              "roles": [],
+              "tableName": "variant_weights",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_wastage": {
+              "kind": "policy",
+              "name": "tenant_isolation_wastage_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_wastage",
+              "roles": [],
+              "tableName": "wastage",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            }
+          },
+          "rls": {
+            "audit_logs": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "audit_logs"
+            },
+            "categories": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "categories"
+            },
+            "customers": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "customers"
+            },
+            "expense_categories": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "expense_categories"
+            },
+            "expenses": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "expenses"
+            },
+            "products": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "products"
+            },
+            "refresh_sessions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "refresh_sessions"
+            },
+            "returns": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "returns"
+            },
+            "sale_items": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "sale_items"
+            },
+            "sales": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "sales"
+            },
+            "stock_movements": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "stock_movements"
+            },
+            "subscriptions": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "subscriptions"
+            },
+            "supplier_payments": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "supplier_payments"
+            },
+            "suppliers": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "suppliers"
+            },
+            "tenants": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "tenants"
+            },
+            "users": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "users"
+            },
+            "variant_colors": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "variant_colors"
+            },
+            "variant_sizes": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "variant_sizes"
+            },
+            "variant_units": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "variant_units"
+            },
+            "variant_weights": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "variant_weights"
+            },
+            "wastage": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "wastage"
+            }
+          },
           "table": {
             "audit_logs": {
               "columns": {
@@ -6340,7 +6701,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "710b960edd125395c4714fb204b4f839475808ea94df0f24b42d7a5379ac0ba2"
+    "storageHash": "145e2becdc3aa1c9f836640eec5e15e9d53bcee46013f88b7abb92eb6cbc1909"
   },
   "execution": {
     "executionHash": "e3e50dea5cb86e50bff6ea408baa6b9bd84f9c200164b3dee03d14f952da61f7",

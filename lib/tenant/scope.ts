@@ -1,4 +1,4 @@
-import { db } from "../../prisma/db.ts";
+import { currentRlsTenantId, rlsDb } from "../db/rls.ts";
 
 export interface TenantScope {
   /** The verified tenant this scope is pinned to. */
@@ -38,35 +38,70 @@ export interface TenantScope {
   readonly AuditLog: ReturnType<typeof auditLogFor>;
 }
 
-const orm = db.orm.public;
+/**
+ * The ORM bound to the caller's Row-Level Security session (`lib/db/rls.ts`),
+ * resolved per access rather than once at module load: which transaction — and
+ * therefore which tenant Postgres will admit rows for — is a property of the
+ * request, not of this module.
+ *
+ * The scope's `tenantId` is checked against the session's on every access. The
+ * two are set from the same verified token in `withTenantAuth`, so a mismatch
+ * means a scope leaked across requests; that is a bug worth crashing on, not
+ * one worth serving a silently empty list for. (A bypass session is allowed:
+ * platform code may build a tenant scope deliberately.)
+ */
+function orm() {
+  return rlsDb().orm.public;
+}
 
-const categoryFor = (tenantId: string) => orm.Category.where({ tenantId });
+function ormFor(tenantId: string) {
+  const sessionTenantId = currentRlsTenantId();
+  if (sessionTenantId !== null && sessionTenantId !== tenantId) {
+    throw new Error(
+      `Tenant scope mismatch: scope is for ${tenantId} but the RLS session is pinned to ${sessionTenantId}.`,
+    );
+  }
+  return orm();
+}
+
+const categoryFor = (tenantId: string) =>
+  ormFor(tenantId).Category.where({ tenantId });
 const variantColorFor = (tenantId: string) =>
-  orm.VariantColor.where({ tenantId });
+  ormFor(tenantId).VariantColor.where({ tenantId });
 const variantSizeFor = (tenantId: string) =>
-  orm.VariantSize.where({ tenantId });
+  ormFor(tenantId).VariantSize.where({ tenantId });
 const variantWeightFor = (tenantId: string) =>
-  orm.VariantWeight.where({ tenantId });
+  ormFor(tenantId).VariantWeight.where({ tenantId });
 const variantUnitFor = (tenantId: string) =>
-  orm.VariantUnit.where({ tenantId });
-const supplierFor = (tenantId: string) => orm.Supplier.where({ tenantId });
-const productFor = (tenantId: string) => orm.Product.where({ tenantId });
+  ormFor(tenantId).VariantUnit.where({ tenantId });
+const supplierFor = (tenantId: string) =>
+  ormFor(tenantId).Supplier.where({ tenantId });
+const productFor = (tenantId: string) =>
+  ormFor(tenantId).Product.where({ tenantId });
 const stockMovementFor = (tenantId: string) =>
-  orm.StockMovement.where({ tenantId });
-const wastageFor = (tenantId: string) => orm.Wastage.where({ tenantId });
-const customerFor = (tenantId: string) => orm.Customer.where({ tenantId });
-const userFor = (tenantId: string) => orm.User.where({ tenantId });
-const saleFor = (tenantId: string) => orm.Sale.where({ tenantId });
-const saleItemFor = (tenantId: string) => orm.SaleItem.where({ tenantId });
-const saleReturnFor = (tenantId: string) => orm.SaleReturn.where({ tenantId });
+  ormFor(tenantId).StockMovement.where({ tenantId });
+const wastageFor = (tenantId: string) =>
+  ormFor(tenantId).Wastage.where({ tenantId });
+const customerFor = (tenantId: string) =>
+  ormFor(tenantId).Customer.where({ tenantId });
+const userFor = (tenantId: string) =>
+  ormFor(tenantId).User.where({ tenantId });
+const saleFor = (tenantId: string) =>
+  ormFor(tenantId).Sale.where({ tenantId });
+const saleItemFor = (tenantId: string) =>
+  ormFor(tenantId).SaleItem.where({ tenantId });
+const saleReturnFor = (tenantId: string) =>
+  ormFor(tenantId).SaleReturn.where({ tenantId });
 const expenseCategoryFor = (tenantId: string) =>
-  orm.ExpenseCategory.where({ tenantId });
-const expenseFor = (tenantId: string) => orm.Expense.where({ tenantId });
+  ormFor(tenantId).ExpenseCategory.where({ tenantId });
+const expenseFor = (tenantId: string) =>
+  ormFor(tenantId).Expense.where({ tenantId });
 const supplierPaymentFor = (tenantId: string) =>
-  orm.SupplierPayment.where({ tenantId });
+  ormFor(tenantId).SupplierPayment.where({ tenantId });
 const subscriptionFor = (tenantId: string) =>
-  orm.Subscription.where({ tenantId });
-const auditLogFor = (tenantId: string) => orm.AuditLog.where({ tenantId });
+  ormFor(tenantId).Subscription.where({ tenantId });
+const auditLogFor = (tenantId: string) =>
+  ormFor(tenantId).AuditLog.where({ tenantId });
 
 export function tenantScope(tenantId: string): TenantScope {
   return {

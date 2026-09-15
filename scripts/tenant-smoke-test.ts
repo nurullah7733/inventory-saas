@@ -17,6 +17,7 @@
  */
 import "dotenv/config";
 import { db } from "../prisma/db.ts";
+import { rawSql, withRlsBypass, withTenantRls } from "../lib/db/rls.ts";
 import { signAccessToken } from "../lib/auth/jwt.ts";
 import { issueSession } from "../lib/auth/session.ts";
 import { hashPassword } from "../lib/auth/password.ts";
@@ -90,7 +91,7 @@ async function createTenant(
 ): Promise<Fixture> {
   const passwordHash = await hashPassword("correct-horse-battery");
 
-  const { tenant, user } = await db.transaction(async (tx) => {
+  const { tenant, user } = await withRlsBypass(async (tx) => {
     const tenant = await tx.orm.public.Tenant.select("id").create({
       name: `Smoke Tenant ${label} ${stamp}`,
       email: `tenant-${label}-${stamp}@example.com`,
@@ -118,11 +119,13 @@ async function createTenant(
     return { tenant, user };
   });
 
-  const session = await issueSession({
-    userId: user.id,
-    tenantId: tenant.id,
-    deviceId: `smoke-${label}`,
-  });
+  const session = await withRlsBypass(() =>
+    issueSession({
+      userId: user.id,
+      tenantId: tenant.id,
+      deviceId: `smoke-${label}`,
+    }),
+  );
   const { token } = await signAccessToken({
     userId: user.id,
     tenantId: tenant.id,
@@ -143,17 +146,22 @@ async function main(): Promise<void> {
   console.log(`  ok   tenant A (3 products) and tenant B (7 products) created`);
 
   // A platform user has no tenant of their own.
-  const superAdmin = await db.orm.public.User.select("id").create({
-    tenantId: null,
-    name: "Smoke Super Admin",
-    email: `super-${stamp}@example.com`,
-    passwordHash: await hashPassword("correct-horse-battery"),
-    role: "super_admin",
-  });
-  const superSession = await issueSession({
-    userId: superAdmin.id,
-    tenantId: null,
-  });
+  const superPasswordHash = await hashPassword("correct-horse-battery");
+  const superAdmin = await withRlsBypass((tx) =>
+    tx.orm.public.User.select("id").create({
+      tenantId: null,
+      name: "Smoke Super Admin",
+      email: `super-${stamp}@example.com`,
+      passwordHash: superPasswordHash,
+      role: "super_admin",
+    }),
+  );
+  const superSession = await withRlsBypass(() =>
+    issueSession({
+      userId: superAdmin.id,
+      tenantId: null,
+    }),
+  );
   const superToken = (
     await signAccessToken({
       userId: superAdmin.id,
@@ -205,18 +213,88 @@ async function main(): Promise<void> {
     "the staff count is scoped too — A sees 1 user, not 3",
   );
 
-  const scopedA = await tenantScope(a.tenantId).Product.aggregate((agg) => ({
-    total: agg.count(),
-  }));
-  const scopedB = await tenantScope(b.tenantId).Product.aggregate((agg) => ({
-    total: agg.count(),
-  }));
-  const total = await db.orm.public.Product.aggregate((agg) => ({
-    total: agg.count(),
-  }));
+  const scopedA = await withTenantRls(a.tenantId, () =>
+    tenantScope(a.tenantId).Product.aggregate((agg) => ({
+      total: agg.count(),
+    })),
+  );
+  const scopedB = await withTenantRls(b.tenantId, () =>
+    tenantScope(b.tenantId).Product.aggregate((agg) => ({
+      total: agg.count(),
+    })),
+  );
+  const total = await withRlsBypass((tx) =>
+    tx.orm.public.Product.aggregate((agg) => ({ total: agg.count() })),
+  );
   check(
     scopedA.total === 3 && scopedB.total === 7 && total.total >= 10,
     "tenantScope filters at the query level, not in the handler",
+  );
+
+  // --- the database enforces the same thing on its own ----------------------
+  // Row-Level Security, tested where it counts: the query below carries NO
+  // tenant filter at all. Under tenant A's session Postgres still hands back
+  // only A's rows, so a handler that forgets `.where({ tenantId })` leaks
+  // nothing.
+  console.log("\nrow-level security");
+
+  // The load-bearing one. This query runs on the pooled client with no session
+  // settings — exactly what a stray `db.orm` import in a handler would do. It
+  // must come back empty. It also proves the app is connected as a role that
+  // is actually subject to the policies: if APP_DATABASE_URL is missing and the
+  // fallback owner role (BYPASSRLS on Neon) is in use, every row comes back and
+  // this is the check that says so.
+  const noSession = await db.orm.public.Product.where({ tenantId: a.tenantId })
+    .select("id")
+    .all();
+  check(
+    noSession.length === 0,
+    "a query outside any RLS session sees nothing (the runtime role is subject to the policies)",
+  );
+
+  const unfilteredAsA = await withTenantRls(a.tenantId, (tx) =>
+    tx.orm.public.Product.aggregate((agg) => ({ total: agg.count() })),
+  );
+  check(
+    unfilteredAsA.total === 3,
+    "an unfiltered product count inside tenant A's session returns only A's 3 rows",
+  );
+
+  const crossTenantRead = await withTenantRls(a.tenantId, (tx) =>
+    tx.orm.public.Product.where({ tenantId: b.tenantId }).select("id").all(),
+  );
+  check(
+    crossTenantRead.length === 0,
+    "asking for tenant B's products from inside tenant A's session returns nothing",
+  );
+
+  const tenantRowRead = await withTenantRls(a.tenantId, (tx) =>
+    tx.orm.public.Tenant.select("id").all(),
+  );
+  check(
+    tenantRowRead.length === 1 && tenantRowRead[0].id === a.tenantId,
+    "the tenants table shows tenant A only its own row",
+  );
+
+  // WITH CHECK: writing another tenant's id must be refused outright, not
+  // silently accepted and then hidden.
+  let writeBlocked = false;
+  try {
+    await withTenantRls(a.tenantId, (tx) =>
+      tx.orm.public.Product.create({
+        tenantId: b.tenantId,
+        name: "cross-tenant write",
+        sku: `cross-${stamp}`,
+        costPrice: numeric("1.00"),
+        sellPrice: numeric("2.00"),
+      }),
+    );
+  } catch {
+    writeBlocked = true;
+  }
+  check(
+    writeBlocked,
+    "inserting a row stamped with another tenant's id is rejected by the policy",
   );
 
   // --- a client may not name its tenant -------------------------------------
@@ -360,28 +438,28 @@ async function main(): Promise<void> {
   // predicate removes a single row on this Prisma version, which would leave
   // orphans and trip the ON DELETE RESTRICT foreign keys below.
   for (const tenantId of [a.tenantId, b.tenantId]) {
-    await db.transaction(async (tx) => {
+    await withRlsBypass(async (tx) => {
       await tx.execute(
-        db.raw.sql`DELETE FROM "public"."products" WHERE "tenant_id" = ${tenantId}::uuid`
+        rawSql`DELETE FROM "public"."products" WHERE "tenant_id" = ${tenantId}::uuid`
           .affectedCount()
           .build(),
       );
       await tx.execute(
-        db.raw.sql`DELETE FROM "public"."refresh_sessions" WHERE "tenant_id" = ${tenantId}::uuid`
+        rawSql`DELETE FROM "public"."refresh_sessions" WHERE "tenant_id" = ${tenantId}::uuid`
           .affectedCount()
           .build(),
       );
       await tx.execute(
-        db.raw.sql`DELETE FROM "public"."users" WHERE "tenant_id" = ${tenantId}::uuid`
+        rawSql`DELETE FROM "public"."users" WHERE "tenant_id" = ${tenantId}::uuid`
           .affectedCount()
           .build(),
       );
       await tx.orm.public.Tenant.where({ id: tenantId }).delete();
     });
   }
-  await db.transaction(async (tx) => {
+  await withRlsBypass(async (tx) => {
     await tx.execute(
-      db.raw.sql`DELETE FROM "public"."refresh_sessions" WHERE "user_id" = ${superAdmin.id}::uuid`
+      rawSql`DELETE FROM "public"."refresh_sessions" WHERE "user_id" = ${superAdmin.id}::uuid`
         .affectedCount()
         .build(),
     );

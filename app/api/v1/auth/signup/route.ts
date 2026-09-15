@@ -1,4 +1,4 @@
-import { db } from "@/prisma/db.ts";
+import { rlsDb } from "@/lib/db/rls.ts";
 import { numeric } from "@/lib/numeric.ts";
 import { AUTH_RATE_LIMITS, clientIp, consume } from "@/lib/api/rate-limit.ts";
 import {
@@ -45,7 +45,7 @@ export const POST = withPublicRoute(async (request: Request) => {
 
   const { businessName, name, email, password, phone, deviceId } = parsed.data;
 
-  const existing = await db.orm.public.User.select("id")
+  const existing = await rlsDb().orm.public.User.select("id")
     .where({ email })
     .first();
   if (existing) {
@@ -62,52 +62,55 @@ export const POST = withPublicRoute(async (request: Request) => {
     now + TRIAL_DAYS * 24 * 60 * 60 * 1000,
   ).toISOString();
 
+  // `withPublicRoute` already opened one transaction for this request (the
+  // RLS session), and tenant + owner + subscription ride it: the three rows
+  // commit as a unit, so a failure cannot leave a half-built shop behind.
+  const tx = rlsDb();
+
   let created;
   try {
-    created = await db.transaction(async (tx) => {
-      const tenant = await tx.orm.public.Tenant.select(
-        "id",
-        "name",
-        "currencySymbol",
-        "subscriptionPlan",
-        "subscriptionStatus",
-        "trialEndsAt",
-      ).create({
-        name: businessName,
-        email,
-        phone: phone ?? null,
-        // Numeric columns carry no database default in this contract (see the
-        // note at the top of contract.prisma), so the API supplies them.
-        vatPercentage: numeric("0.00"),
-        trialEndsAt,
-      });
-
-      const user = await tx.orm.public.User.select(
-        "id",
-        "name",
-        "email",
-        "role",
-        "tenantId",
-      ).create({
-        tenantId: tenant.id,
-        name,
-        email,
-        passwordHash,
-
-        role: "shop_owner",
-      });
-
-      await tx.orm.public.Subscription.create({
-        tenantId: tenant.id,
-        plan: "trial",
-        status: "trial",
-        amount: numeric("0.00"),
-        startedAt: new Date(now).toISOString(),
-        endsAt: trialEndsAt,
-      });
-
-      return { tenant, user };
+    const tenant = await tx.orm.public.Tenant.select(
+      "id",
+      "name",
+      "currencySymbol",
+      "subscriptionPlan",
+      "subscriptionStatus",
+      "trialEndsAt",
+    ).create({
+      name: businessName,
+      email,
+      phone: phone ?? null,
+      // Numeric columns carry no database default in this contract (see the
+      // note at the top of contract.prisma), so the API supplies them.
+      vatPercentage: numeric("0.00"),
+      trialEndsAt,
     });
+
+    const user = await tx.orm.public.User.select(
+      "id",
+      "name",
+      "email",
+      "role",
+      "tenantId",
+    ).create({
+      tenantId: tenant.id,
+      name,
+      email,
+      passwordHash,
+
+      role: "shop_owner",
+    });
+
+    await tx.orm.public.Subscription.create({
+      tenantId: tenant.id,
+      plan: "trial",
+      status: "trial",
+      amount: numeric("0.00"),
+      startedAt: new Date(now).toISOString(),
+      endsAt: trialEndsAt,
+    });
+
+    created = { tenant, user };
   } catch (error) {
     if (isUniqueViolation(error)) {
       return apiError(

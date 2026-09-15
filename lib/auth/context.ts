@@ -1,4 +1,4 @@
-import { db } from "../../prisma/db.ts";
+import { rlsDb } from "../db/rls.ts";
 import {
   InvalidTokenError,
   readBearerToken,
@@ -71,7 +71,7 @@ export async function authenticate(
     throw error;
   }
 
-  const row = await db.orm.public.User.select(
+  const row = await rlsDb().orm.public.User.select(
     "id",
     "tenantId",
     "name",
@@ -109,7 +109,7 @@ export async function authenticate(
   }
 
   if (options.verifySession) {
-    const session = await db.orm.public.RefreshSession.select(
+    const session = await rlsDb().orm.public.RefreshSession.select(
       "id",
       "revokedAt",
       "expiresAt",

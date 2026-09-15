@@ -1,4 +1,4 @@
-import { db } from "../../prisma/db.ts";
+import { rawSql, rlsDb } from "../db/rls.ts";
 import { refreshTokenTtlSeconds } from "../env.ts";
 import { generateRefreshToken, hashRefreshToken } from "./tokens.ts";
 import type { UserRole } from "./roles.ts";
@@ -27,7 +27,7 @@ export async function issueSession(
   const refreshToken = generateRefreshToken();
   const expiresAt = expiryFromNow(refreshTokenTtlSeconds());
 
-  const session = await db.orm.public.RefreshSession.select("id").create({
+  const session = await rlsDb().orm.public.RefreshSession.select("id").create({
     userId: input.userId,
     tenantId: input.tenantId,
     tokenHash: hashRefreshToken(refreshToken),
@@ -56,7 +56,7 @@ export type SessionLookup =
 export async function findActiveSession(
   refreshToken: string,
 ): Promise<SessionLookup> {
-  const row = await db.orm.public.RefreshSession.select(
+  const row = await rlsDb().orm.public.RefreshSession.select(
     "id",
     "userId",
     "tenantId",
@@ -91,21 +91,25 @@ export async function rotateSession(
   const expiresAt = expiryFromNow(refreshTokenTtlSeconds());
   const now = new Date().toISOString();
 
-  const created = await db.transaction(async (tx) => {
-    await tx.orm.public.RefreshSession.where({ id: session.id }).update({
-      revokedAt: now,
-      lastUsedAt: now,
-    });
+  // Revoke-then-issue is already atomic: the caller's RLS session IS a
+  // transaction, so both statements commit together or neither does. Opening a
+  // second one here would take a second pooled connection — one without the
+  // `app.*` settings this session set, which the policies would then reject.
+  const tx = rlsDb();
 
-    return tx.orm.public.RefreshSession.select("id").create({
-      userId: session.userId,
-      tenantId: session.tenantId,
-      tokenHash: hashRefreshToken(refreshToken),
-      deviceId: session.deviceId,
-      userAgent: context.userAgent ?? null,
-      ipAddress: context.ipAddress ?? null,
-      expiresAt,
-    });
+  await tx.orm.public.RefreshSession.where({ id: session.id }).update({
+    revokedAt: now,
+    lastUsedAt: now,
+  });
+
+  const created = await tx.orm.public.RefreshSession.select("id").create({
+    userId: session.userId,
+    tenantId: session.tenantId,
+    tokenHash: hashRefreshToken(refreshToken),
+    deviceId: session.deviceId,
+    userAgent: context.userAgent ?? null,
+    ipAddress: context.ipAddress ?? null,
+    expiresAt,
   });
 
   return { sessionId: created.id, refreshToken, expiresAt };
@@ -113,7 +117,7 @@ export async function rotateSession(
 
 export async function revokeSession(sessionId: string): Promise<void> {
   const now = new Date().toISOString();
-  await db.orm.public.RefreshSession.where({ id: sessionId }).update({
+  await rlsDb().orm.public.RefreshSession.where({ id: sessionId }).update({
     revokedAt: now,
     lastUsedAt: now,
   });
@@ -121,7 +125,7 @@ export async function revokeSession(sessionId: string): Promise<void> {
 
 export async function revokeAllUserSessions(userId: string): Promise<number> {
   const now = new Date().toISOString();
-  const plan = db.raw.sql`
+  const plan = rawSql`
     UPDATE "public"."refresh_sessions"
     SET "revoked_at" = ${now}::timestamptz
     WHERE "user_id" = ${userId}::uuid AND "revoked_at" IS NULL
@@ -129,13 +133,13 @@ export async function revokeAllUserSessions(userId: string): Promise<number> {
     .affectedCount()
     .build();
 
-  const result = await db.runtime().execute(plan);
+  const result = await rlsDb().execute(plan);
   return result.affectedRows;
 }
 
 export async function touchSession(sessionId: string): Promise<void> {
   try {
-    await db.orm.public.RefreshSession.where({ id: sessionId }).update({
+    await rlsDb().orm.public.RefreshSession.where({ id: sessionId }).update({
       lastUsedAt: new Date().toISOString(),
     });
   } catch {
@@ -156,7 +160,7 @@ export interface SessionSummary {
 export async function listActiveSessions(
   userId: string,
 ): Promise<SessionSummary[]> {
-  const rows = await db.orm.public.RefreshSession.select(
+  const rows = await rlsDb().orm.public.RefreshSession.select(
     "id",
     "deviceId",
     "userAgent",

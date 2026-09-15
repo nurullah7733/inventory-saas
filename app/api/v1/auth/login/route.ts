@@ -1,4 +1,4 @@
-import { db } from "@/prisma/db.ts";
+import { rlsDb } from "@/lib/db/rls.ts";
 import {
   AUTH_RATE_LIMITS,
   clientIp,
@@ -47,7 +47,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     );
   }
 
-  const user = await db.orm.public.User.select(
+  const user = await rlsDb().orm.public.User.select(
     "id",
     "tenantId",
     "name",
@@ -129,7 +129,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     ...client,
   });
 
-  await db.orm.public.User.where({ id: user.id }).update({
+  await rlsDb().orm.public.User.where({ id: user.id }).update({
     lastLoginAt: new Date().toISOString(),
   });
 

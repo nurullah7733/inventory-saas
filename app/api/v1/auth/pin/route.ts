@@ -1,4 +1,4 @@
-import { db } from "@/prisma/db.ts";
+import { rlsDb } from "@/lib/db/rls.ts";
 import { withAuth } from "@/lib/api/guard.ts";
 import {
   apiError,
@@ -18,7 +18,7 @@ export const PUT = withAuth(
     const parsed = enablePinSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
 
-    const user = await db.orm.public.User.select("id", "passwordHash")
+    const user = await rlsDb().orm.public.User.select("id", "passwordHash")
       .where({ id: auth.user.id })
       .first();
     if (!user)
@@ -32,7 +32,7 @@ export const PUT = withAuth(
       );
     }
 
-    await db.orm.public.User.where({ id: auth.user.id }).update({
+    await rlsDb().orm.public.User.where({ id: auth.user.id }).update({
       pinHash: await hashPin(parsed.data.pin),
       pinFailedAttempts: 0,
       pinLockedUntil: null,
@@ -51,7 +51,7 @@ export const DELETE = withAuth(
     const parsed = disablePinSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
 
-    const user = await db.orm.public.User.select("id", "passwordHash")
+    const user = await rlsDb().orm.public.User.select("id", "passwordHash")
       .where({ id: auth.user.id })
       .first();
     if (!user)
@@ -65,7 +65,7 @@ export const DELETE = withAuth(
       );
     }
 
-    await db.orm.public.User.where({ id: auth.user.id }).update({
+    await rlsDb().orm.public.User.where({ id: auth.user.id }).update({
       pinHash: null,
       pinFailedAttempts: 0,
       pinLockedUntil: null,

@@ -1,0 +1,2186 @@
+[
+  {
+    "id": "rowLevelSecurity.force.public.audit_logs",
+    "label": "Force row-level security on \"audit_logs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.audit_logs",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "audit_logs",
+        "table": "audit_logs"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"audit_logs\"",
+        "sql": "ALTER TABLE \"public\".\"audit_logs\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.categories",
+    "label": "Force row-level security on \"categories\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.categories",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "categories",
+        "table": "categories"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"categories\"",
+        "sql": "ALTER TABLE \"public\".\"categories\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.customers",
+    "label": "Force row-level security on \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.customers",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "customers",
+        "table": "customers"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"customers\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.expense_categories",
+    "label": "Force row-level security on \"expense_categories\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.expense_categories",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "expense_categories",
+        "table": "expense_categories"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"expense_categories\"",
+        "sql": "ALTER TABLE \"public\".\"expense_categories\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.expenses",
+    "label": "Force row-level security on \"expenses\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.expenses",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "expenses",
+        "table": "expenses"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"expenses\"",
+        "sql": "ALTER TABLE \"public\".\"expenses\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.products",
+    "label": "Force row-level security on \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.products",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "products",
+        "table": "products"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"products\"",
+        "sql": "ALTER TABLE \"public\".\"products\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.refresh_sessions",
+    "label": "Force row-level security on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.refresh_sessions",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "refresh_sessions",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"refresh_sessions\"",
+        "sql": "ALTER TABLE \"public\".\"refresh_sessions\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.returns",
+    "label": "Force row-level security on \"returns\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.returns",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "returns",
+        "table": "returns"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"returns\"",
+        "sql": "ALTER TABLE \"public\".\"returns\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.sale_items",
+    "label": "Force row-level security on \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.sale_items",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "sale_items",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"sale_items\"",
+        "sql": "ALTER TABLE \"public\".\"sale_items\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.sales",
+    "label": "Force row-level security on \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.sales",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "sales",
+        "table": "sales"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"sales\"",
+        "sql": "ALTER TABLE \"public\".\"sales\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.stock_movements",
+    "label": "Force row-level security on \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.stock_movements",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "stock_movements",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"stock_movements\"",
+        "sql": "ALTER TABLE \"public\".\"stock_movements\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.subscriptions",
+    "label": "Force row-level security on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.subscriptions",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "subscriptions",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"subscriptions\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.supplier_payments",
+    "label": "Force row-level security on \"supplier_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.supplier_payments",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "supplier_payments",
+        "table": "supplier_payments"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"supplier_payments\"",
+        "sql": "ALTER TABLE \"public\".\"supplier_payments\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.suppliers",
+    "label": "Force row-level security on \"suppliers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.suppliers",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "suppliers",
+        "table": "suppliers"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"suppliers\"",
+        "sql": "ALTER TABLE \"public\".\"suppliers\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.tenants",
+    "label": "Force row-level security on \"tenants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.tenants",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "tenants",
+        "table": "tenants"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"tenants\"",
+        "sql": "ALTER TABLE \"public\".\"tenants\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.users",
+    "label": "Force row-level security on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.users",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "users",
+        "table": "users"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"users\"",
+        "sql": "ALTER TABLE \"public\".\"users\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.variant_colors",
+    "label": "Force row-level security on \"variant_colors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.variant_colors",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_colors",
+        "table": "variant_colors"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"variant_colors\"",
+        "sql": "ALTER TABLE \"public\".\"variant_colors\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.variant_sizes",
+    "label": "Force row-level security on \"variant_sizes\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.variant_sizes",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_sizes",
+        "table": "variant_sizes"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"variant_sizes\"",
+        "sql": "ALTER TABLE \"public\".\"variant_sizes\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.variant_units",
+    "label": "Force row-level security on \"variant_units\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.variant_units",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_units",
+        "table": "variant_units"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"variant_units\"",
+        "sql": "ALTER TABLE \"public\".\"variant_units\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.variant_weights",
+    "label": "Force row-level security on \"variant_weights\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.variant_weights",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_weights",
+        "table": "variant_weights"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"variant_weights\"",
+        "sql": "ALTER TABLE \"public\".\"variant_weights\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.force.public.wastage",
+    "label": "Force row-level security on \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.wastage",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "wastage",
+        "table": "wastage"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"wastage\"",
+        "sql": "ALTER TABLE \"public\".\"wastage\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rowLevelSecurity.public.audit_logs",
+    "label": "Enable row-level security on \"audit_logs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "audit_logs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"audit_logs\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "audit_logs"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"audit_logs\"",
+        "sql": "ALTER TABLE \"public\".\"audit_logs\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"audit_logs\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "audit_logs"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.categories",
+    "label": "Enable row-level security on \"categories\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "categories"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"categories\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "categories"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"categories\"",
+        "sql": "ALTER TABLE \"public\".\"categories\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"categories\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "categories"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.customers",
+    "label": "Enable row-level security on \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"customers\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "customers"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"customers\"",
+        "sql": "ALTER TABLE \"public\".\"customers\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"customers\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "customers"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.expense_categories",
+    "label": "Enable row-level security on \"expense_categories\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "expense_categories"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"expense_categories\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "expense_categories"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"expense_categories\"",
+        "sql": "ALTER TABLE \"public\".\"expense_categories\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"expense_categories\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "expense_categories"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.expenses",
+    "label": "Enable row-level security on \"expenses\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "expenses"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"expenses\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "expenses"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"expenses\"",
+        "sql": "ALTER TABLE \"public\".\"expenses\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"expenses\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "expenses"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.products",
+    "label": "Enable row-level security on \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"products\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "products"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"products\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"products\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "products"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.refresh_sessions",
+    "label": "Enable row-level security on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"refresh_sessions\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "refresh_sessions"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"refresh_sessions\"",
+        "sql": "ALTER TABLE \"public\".\"refresh_sessions\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"refresh_sessions\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "refresh_sessions"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.returns",
+    "label": "Enable row-level security on \"returns\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "returns"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"returns\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "returns"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"returns\"",
+        "sql": "ALTER TABLE \"public\".\"returns\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"returns\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "returns"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.sale_items",
+    "label": "Enable row-level security on \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"sale_items\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"sale_items\"",
+        "sql": "ALTER TABLE \"public\".\"sale_items\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"sale_items\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.sales",
+    "label": "Enable row-level security on \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"sales\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "sales"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"sales\"",
+        "sql": "ALTER TABLE \"public\".\"sales\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"sales\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "sales"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.stock_movements",
+    "label": "Enable row-level security on \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"stock_movements\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"stock_movements\"",
+        "sql": "ALTER TABLE \"public\".\"stock_movements\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"stock_movements\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.subscriptions",
+    "label": "Enable row-level security on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"subscriptions\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"subscriptions\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"subscriptions\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.supplier_payments",
+    "label": "Enable row-level security on \"supplier_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "supplier_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"supplier_payments\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "supplier_payments"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"supplier_payments\"",
+        "sql": "ALTER TABLE \"public\".\"supplier_payments\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"supplier_payments\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "supplier_payments"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.suppliers",
+    "label": "Enable row-level security on \"suppliers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "suppliers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"suppliers\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "suppliers"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"suppliers\"",
+        "sql": "ALTER TABLE \"public\".\"suppliers\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"suppliers\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "suppliers"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.tenants",
+    "label": "Enable row-level security on \"tenants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "tenants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"tenants\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "tenants"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"tenants\"",
+        "sql": "ALTER TABLE \"public\".\"tenants\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"tenants\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "tenants"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.users",
+    "label": "Enable row-level security on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"users\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "users"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"users\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"users\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "users"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.variant_colors",
+    "label": "Enable row-level security on \"variant_colors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_colors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"variant_colors\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "variant_colors"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"variant_colors\"",
+        "sql": "ALTER TABLE \"public\".\"variant_colors\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"variant_colors\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "variant_colors"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.variant_sizes",
+    "label": "Enable row-level security on \"variant_sizes\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_sizes"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"variant_sizes\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "variant_sizes"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"variant_sizes\"",
+        "sql": "ALTER TABLE \"public\".\"variant_sizes\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"variant_sizes\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "variant_sizes"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.variant_units",
+    "label": "Enable row-level security on \"variant_units\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_units"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"variant_units\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "variant_units"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"variant_units\"",
+        "sql": "ALTER TABLE \"public\".\"variant_units\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"variant_units\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "variant_units"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.variant_weights",
+    "label": "Enable row-level security on \"variant_weights\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "variant_weights"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"variant_weights\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "variant_weights"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"variant_weights\"",
+        "sql": "ALTER TABLE \"public\".\"variant_weights\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"variant_weights\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "variant_weights"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.wastage",
+    "label": "Enable row-level security on \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"wastage\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "wastage"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"wastage\"",
+        "sql": "ALTER TABLE \"public\".\"wastage\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"wastage\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "wastage"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.audit_logs.tenant_isolation_audit_logs_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_audit_logs_ffe271ab\" on \"audit_logs\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_audit_logs_ffe271ab",
+        "table": "audit_logs"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_audit_logs_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "audit_logs",
+          "tenant_isolation_audit_logs_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_audit_logs_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_audit_logs_ffe271ab\" ON \"public\".\"audit_logs\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_audit_logs_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "audit_logs",
+          "tenant_isolation_audit_logs_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.categories.tenant_isolation_categories_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_categories_ffe271ab\" on \"categories\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_categories_ffe271ab",
+        "table": "categories"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_categories_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "categories",
+          "tenant_isolation_categories_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_categories_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_categories_ffe271ab\" ON \"public\".\"categories\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_categories_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "categories",
+          "tenant_isolation_categories_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.customers.tenant_isolation_customers_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_customers_ffe271ab\" on \"customers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_customers_ffe271ab",
+        "table": "customers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_customers_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "tenant_isolation_customers_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_customers_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_customers_ffe271ab\" ON \"public\".\"customers\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_customers_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "customers",
+          "tenant_isolation_customers_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.expense_categories.tenant_isolation_expense_categories_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_expense_categories_ffe271ab\" on \"expense_categories\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_expense_categories_ffe271ab",
+        "table": "expense_categories"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_expense_categories_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "expense_categories",
+          "tenant_isolation_expense_categories_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_expense_categories_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_expense_categories_ffe271ab\" ON \"public\".\"expense_categories\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_expense_categories_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "expense_categories",
+          "tenant_isolation_expense_categories_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.expenses.tenant_isolation_expenses_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_expenses_ffe271ab\" on \"expenses\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_expenses_ffe271ab",
+        "table": "expenses"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_expenses_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "expenses",
+          "tenant_isolation_expenses_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_expenses_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_expenses_ffe271ab\" ON \"public\".\"expenses\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_expenses_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "expenses",
+          "tenant_isolation_expenses_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.products.tenant_isolation_products_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_products_ffe271ab\" on \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_products_ffe271ab",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_products_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "tenant_isolation_products_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_products_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_products_ffe271ab\" ON \"public\".\"products\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_products_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "tenant_isolation_products_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.refresh_sessions.tenant_isolation_refresh_sessions_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_refresh_sessions_ffe271ab\" on \"refresh_sessions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_refresh_sessions_ffe271ab",
+        "table": "refresh_sessions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_refresh_sessions_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "refresh_sessions",
+          "tenant_isolation_refresh_sessions_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_refresh_sessions_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_refresh_sessions_ffe271ab\" ON \"public\".\"refresh_sessions\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_refresh_sessions_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "refresh_sessions",
+          "tenant_isolation_refresh_sessions_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.returns.tenant_isolation_returns_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_returns_ffe271ab\" on \"returns\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_returns_ffe271ab",
+        "table": "returns"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_returns_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "returns",
+          "tenant_isolation_returns_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_returns_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_returns_ffe271ab\" ON \"public\".\"returns\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_returns_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "returns",
+          "tenant_isolation_returns_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.sale_items.tenant_isolation_sale_items_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_sale_items_ffe271ab\" on \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_sale_items_ffe271ab",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_sale_items_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "tenant_isolation_sale_items_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_sale_items_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_sale_items_ffe271ab\" ON \"public\".\"sale_items\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_sale_items_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "tenant_isolation_sale_items_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.sales.tenant_isolation_sales_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_sales_ffe271ab\" on \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_sales_ffe271ab",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_sales_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "tenant_isolation_sales_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_sales_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_sales_ffe271ab\" ON \"public\".\"sales\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_sales_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "tenant_isolation_sales_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.stock_movements.tenant_isolation_stock_movements_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_stock_movements_ffe271ab\" on \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_stock_movements_ffe271ab",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_stock_movements_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "tenant_isolation_stock_movements_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_stock_movements_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_stock_movements_ffe271ab\" ON \"public\".\"stock_movements\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_stock_movements_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "tenant_isolation_stock_movements_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.subscriptions.tenant_isolation_subscriptions_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_subscriptions_ffe271ab\" on \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_subscriptions_ffe271ab",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_subscriptions_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "tenant_isolation_subscriptions_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_subscriptions_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_subscriptions_ffe271ab\" ON \"public\".\"subscriptions\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_subscriptions_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "tenant_isolation_subscriptions_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.supplier_payments.tenant_isolation_supplier_payments_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_supplier_payments_ffe271ab\" on \"supplier_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_supplier_payments_ffe271ab",
+        "table": "supplier_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_supplier_payments_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "supplier_payments",
+          "tenant_isolation_supplier_payments_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_supplier_payments_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_supplier_payments_ffe271ab\" ON \"public\".\"supplier_payments\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_supplier_payments_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "supplier_payments",
+          "tenant_isolation_supplier_payments_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.suppliers.tenant_isolation_suppliers_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_suppliers_ffe271ab\" on \"suppliers\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_suppliers_ffe271ab",
+        "table": "suppliers"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_suppliers_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "suppliers",
+          "tenant_isolation_suppliers_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_suppliers_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_suppliers_ffe271ab\" ON \"public\".\"suppliers\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_suppliers_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "suppliers",
+          "tenant_isolation_suppliers_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.tenants.tenant_isolation_tenants_18ee00e3",
+    "label": "Create RLS policy \"tenant_isolation_tenants_18ee00e3\" on \"tenants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_tenants_18ee00e3",
+        "table": "tenants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_tenants_18ee00e3\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tenants",
+          "tenant_isolation_tenants_18ee00e3"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_tenants_18ee00e3\"",
+        "sql": "CREATE POLICY \"tenant_isolation_tenants_18ee00e3\" ON \"public\".\"tenants\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_tenants_18ee00e3\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tenants",
+          "tenant_isolation_tenants_18ee00e3"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.users.tenant_isolation_users_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_users_ffe271ab\" on \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_users_ffe271ab",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_users_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "tenant_isolation_users_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_users_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_users_ffe271ab\" ON \"public\".\"users\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_users_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "tenant_isolation_users_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.variant_colors.tenant_isolation_variant_colors_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_variant_colors_ffe271ab\" on \"variant_colors\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_variant_colors_ffe271ab",
+        "table": "variant_colors"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_variant_colors_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_colors",
+          "tenant_isolation_variant_colors_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_variant_colors_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_variant_colors_ffe271ab\" ON \"public\".\"variant_colors\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_variant_colors_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_colors",
+          "tenant_isolation_variant_colors_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.variant_sizes.tenant_isolation_variant_sizes_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_variant_sizes_ffe271ab\" on \"variant_sizes\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_variant_sizes_ffe271ab",
+        "table": "variant_sizes"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_variant_sizes_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_sizes",
+          "tenant_isolation_variant_sizes_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_variant_sizes_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_variant_sizes_ffe271ab\" ON \"public\".\"variant_sizes\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_variant_sizes_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_sizes",
+          "tenant_isolation_variant_sizes_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.variant_units.tenant_isolation_variant_units_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_variant_units_ffe271ab\" on \"variant_units\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_variant_units_ffe271ab",
+        "table": "variant_units"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_variant_units_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_units",
+          "tenant_isolation_variant_units_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_variant_units_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_variant_units_ffe271ab\" ON \"public\".\"variant_units\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_variant_units_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_units",
+          "tenant_isolation_variant_units_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.variant_weights.tenant_isolation_variant_weights_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_variant_weights_ffe271ab\" on \"variant_weights\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_variant_weights_ffe271ab",
+        "table": "variant_weights"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_variant_weights_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_weights",
+          "tenant_isolation_variant_weights_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_variant_weights_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_variant_weights_ffe271ab\" ON \"public\".\"variant_weights\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_variant_weights_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_weights",
+          "tenant_isolation_variant_weights_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.wastage.tenant_isolation_wastage_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_wastage_ffe271ab\" on \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_wastage_ffe271ab",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_wastage_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "tenant_isolation_wastage_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_wastage_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_wastage_ffe271ab\" ON \"public\".\"wastage\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_wastage_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "tenant_isolation_wastage_ffe271ab"
+        ]
+      }
+    ]
+  }
+]

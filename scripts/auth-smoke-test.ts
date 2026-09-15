@@ -12,6 +12,7 @@
  */
 import "dotenv/config";
 import { db } from "../prisma/db.ts";
+import { rawSql, withRlsBypass } from "../lib/db/rls.ts";
 import { hashPassword } from "../lib/auth/password.ts";
 
 const BASE_URL = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
@@ -281,13 +282,16 @@ async function main(): Promise<void> {
   console.log("\nroles");
   const staffEmail = `smoke-staff-${stamp}@example.com`;
   const staffPassword = "staff-password-123";
-  const staff = await db.orm.public.User.select("id").create({
-    tenantId,
-    name: "Smoke Staff",
-    email: staffEmail,
-    passwordHash: await hashPassword(staffPassword),
-    role: "staff",
-  });
+  const staffPasswordHash = await hashPassword(staffPassword);
+  const staff = await withRlsBypass((tx) =>
+    tx.orm.public.User.select("id").create({
+      tenantId,
+      name: "Smoke Staff",
+      email: staffEmail,
+      passwordHash: staffPasswordHash,
+      role: "staff",
+    }),
+  );
 
   const staffLogin = await call("/login", {
     body: { email: staffEmail, password: staffPassword },
@@ -303,7 +307,9 @@ async function main(): Promise<void> {
   );
 
   // Deactivation must bite on the very next request, not at token expiry.
-  await db.orm.public.User.where({ id: staff.id }).update({ isActive: false });
+  await withRlsBypass((tx) =>
+    tx.orm.public.User.where({ id: staff.id }).update({ isActive: false }),
+  );
   const deactivated = await call("/me", { method: "GET", token: staffTokens.accessToken });
   check(deactivated.status === 403, "a deactivated user is locked out immediately");
   check(
@@ -312,7 +318,9 @@ async function main(): Promise<void> {
   );
 
   // Suspending the tenant locks out its whole staff, owner included.
-  await db.orm.public.Tenant.where({ id: tenantId }).update({ isActive: false });
+  await withRlsBypass((tx) =>
+    tx.orm.public.Tenant.where({ id: tenantId }).update({ isActive: false }),
+  );
   const ownerLogin = await call("/login", { body: { email, password } });
   check(ownerLogin.status === 403, "a suspended tenant blocks login");
   check(ownerLogin.body.error?.code === "TENANT_SUSPENDED", "suspension reports TENANT_SUSPENDED");
@@ -323,14 +331,14 @@ async function main(): Promise<void> {
   // multi-row predicate removes only one row on this Prisma version (the same
   // limitation documented in lib/auth/session.ts), which would leave orphans
   // behind and trip the ON DELETE RESTRICT foreign keys below.
-  await db.transaction(async (tx) => {
+  await withRlsBypass(async (tx) => {
     await tx.execute(
-      db.raw.sql`DELETE FROM "public"."refresh_sessions" WHERE "tenant_id" = ${tenantId}::uuid`
+      rawSql`DELETE FROM "public"."refresh_sessions" WHERE "tenant_id" = ${tenantId}::uuid`
         .affectedCount()
         .build(),
     );
     await tx.execute(
-      db.raw.sql`DELETE FROM "public"."subscriptions" WHERE "tenant_id" = ${tenantId}::uuid`
+      rawSql`DELETE FROM "public"."subscriptions" WHERE "tenant_id" = ${tenantId}::uuid`
         .affectedCount()
         .build(),
     );

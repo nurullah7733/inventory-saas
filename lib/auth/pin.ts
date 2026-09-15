@@ -1,4 +1,4 @@
-import { db } from "../../prisma/db.ts";
+import { rlsDb } from "../db/rls.ts";
 
 const MAX_ATTEMPTS_BEFORE_LOCK = 5;
 
@@ -54,7 +54,7 @@ export async function recordPinFailure(
       ? new Date(Date.now() + lockedForSeconds * 1000).toISOString()
       : null;
 
-  await db.orm.public.User.where({ id: userId }).update({
+  await rlsDb().orm.public.User.where({ id: userId }).update({
     pinFailedAttempts: attempts,
     pinLockedUntil: lockedUntil,
   });
@@ -65,7 +65,7 @@ export async function recordPinFailure(
 /** Clear the counter after a correct PIN, so an unlucky run of typos does not
  *  accumulate against a legitimate user forever. */
 export async function clearPinFailures(userId: string): Promise<void> {
-  await db.orm.public.User.where({ id: userId }).update({
+  await rlsDb().orm.public.User.where({ id: userId }).update({
     pinFailedAttempts: 0,
     pinLockedUntil: null,
   });

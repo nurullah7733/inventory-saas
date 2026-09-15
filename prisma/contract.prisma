@@ -122,6 +122,7 @@ model Tenant {
 
   @@index([createdAt])
   @@map("tenants")
+  @@rls
 }
 
 /// Platform + tenant users. `tenantId` is null only for super_admin.
@@ -147,6 +148,7 @@ model User {
   @@index([tenantId, createdAt])
   @@index([tenantId, role])
   @@map("users")
+  @@rls
 }
 
 /// One row per logged-in device/client, keyed by a HASHED refresh token.
@@ -187,6 +189,7 @@ model RefreshSession {
   @@index([userId, expiresAt])
   @@index([tenantId, createdAt])
   @@map("refresh_sessions")
+  @@rls
 }
 
 /// Billing history / Stripe log. One row per subscription period.
@@ -207,6 +210,7 @@ model Subscription {
   @@index([tenantId, createdAt])
   @@index([stripeSubscriptionId])
   @@map("subscriptions")
+  @@rls
 }
 
 // --- Inventory master data --------------------------------------------------
@@ -225,6 +229,7 @@ model Category {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("categories")
+  @@rls
 }
 
 model VariantColor {
@@ -238,6 +243,7 @@ model VariantColor {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("variant_colors")
+  @@rls
 }
 
 model VariantSize {
@@ -251,6 +257,7 @@ model VariantSize {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("variant_sizes")
+  @@rls
 }
 
 model VariantWeight {
@@ -264,6 +271,7 @@ model VariantWeight {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("variant_weights")
+  @@rls
 }
 
 /// Units of measure — pcs, kg, liter, box, ...
@@ -278,6 +286,7 @@ model VariantUnit {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("variant_units")
+  @@rls
 }
 
 /// Wholesalers/vendors the shop buys stock from. Deactivate, never delete —
@@ -296,6 +305,7 @@ model Supplier {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("suppliers")
+  @@rls
 }
 
 /// Fixed common columns cover most retail verticals; `attributes` (jsonb)
@@ -334,6 +344,7 @@ model Product {
   @@index([tenantId, expiryDate])
   @@index([tenantId, stockQty])
   @@map("products")
+  @@rls
 }
 
 // --- Inventory movement -----------------------------------------------------
@@ -361,6 +372,7 @@ model StockMovement {
   @@index([tenantId, supplierId])
   @@index([tenantId, productId, createdAt])
   @@map("stock_movements")
+  @@rls
 }
 
 /// Damaged / expired stock write-off. Reported separately from net profit.
@@ -380,6 +392,7 @@ model Wastage {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("wastage")
+  @@rls
 }
 
 /// Money the shop has paid a supplier. Payable = purchases minus these.
@@ -401,6 +414,7 @@ model SupplierPayment {
   // Explicit short name: the derived prefix would exceed the 54-byte cap.
   @@index([tenantId, supplierId, paymentDate], name: "sup_pay_tenant_supplier_date_idx")
   @@map("supplier_payments")
+  @@rls
 }
 
 // --- People -----------------------------------------------------------------
@@ -420,6 +434,7 @@ model Customer {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("customers")
+  @@rls
 }
 
 // --- Sales ------------------------------------------------------------------
@@ -450,6 +465,7 @@ model Sale {
   @@index([tenantId, status, createdAt])
   @@index([tenantId, customerId])
   @@map("sales")
+  @@rls
 }
 
 /// `unitCost` snapshots the product cost price at sale time so the P&L report
@@ -473,6 +489,7 @@ model SaleItem {
   @@index([tenantId, saleId])
   @@index([tenantId, productId])
   @@map("sale_items")
+  @@rls
 }
 
 /// Customer returns against a sold line item.
@@ -493,6 +510,7 @@ model SaleReturn {
   @@index([tenantId, createdAt])
   @@index([tenantId, saleItemId])
   @@map("returns")
+  @@rls
 }
 
 // --- Finance ----------------------------------------------------------------
@@ -510,6 +528,7 @@ model ExpenseCategory {
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
   @@map("expense_categories")
+  @@rls
 }
 
 model Expense {
@@ -531,6 +550,7 @@ model Expense {
   @@index([tenantId, expenseDate])
   @@index([tenantId, categoryId, expenseDate])
   @@map("expenses")
+  @@rls
 }
 
 // --- Audit ------------------------------------------------------------------
@@ -553,4 +573,179 @@ model AuditLog {
   @@index([tenantId, createdAt])
   @@index([tenantId, entityType, entityId])
   @@map("audit_logs")
+  @@rls
+}
+
+// --- Row-Level Security -----------------------------------------------------
+//
+// Second enforcement layer for tenant isolation. The application already
+// filters every query by the `tenantId` taken from the verified access token
+// (see `lib/tenant/scope.ts`); these policies make the DATABASE refuse to
+// return or accept a row belonging to another tenant even when that filter is
+// missing. A forgotten `WHERE tenant_id = ...` then yields zero rows instead
+// of another shop's sales figures.
+//
+// HOW A REQUEST TELLS POSTGRES WHO IT IS
+// Every request runs inside one transaction that sets two transaction-local
+// settings (`lib/db/rls.ts`):
+//
+//   app.tenant_id   the verified tenant's uuid — read from the user row the
+//                   access token resolved to, NEVER from client input.
+//   app.bypass_rls  'on' only where there is no tenant yet (login, signup,
+//                   token refresh) or where crossing tenants is the point
+//                   (the Super Admin panel).
+//
+// An unset setting reads as NULL, and `tenant_id = NULL` is never true, so a
+// query that runs outside such a transaction sees NOTHING. The policies fail
+// closed: a missing RLS session is a loud empty result, not a silent leak.
+//
+// WHICH POSTGRES ROLE RUNS WHAT
+// Policies are skipped entirely for a role with the BYPASSRLS attribute, and
+// Neon creates its `neondb_owner` with exactly that (only a superuser could
+// remove it, which Neon does not offer). So the two jobs run as two roles:
+//
+//   neondb_owner  DATABASE_URL     — owns the tables, runs migrations. Bypasses
+//                                    RLS, which is what DDL needs.
+//   app_runtime   APP_DATABASE_URL — what the app connects as. No BYPASSRLS,
+//                                    no ownership, no CREATE: subject to every
+//                                    policy below. Created by
+//                                    `npm run db:app-role -- --write-env`.
+//
+// The tables also carry FORCE ROW LEVEL SECURITY (see the migration), which
+// covers the owner too on any database whose owner is not BYPASSRLS.
+//
+// WHAT THIS DOES AND DOES NOT PROTECT AGAINST
+// `app_runtime` can set `app.bypass_rls` itself, so these policies defend
+// against APPLICATION BUGS — a missing tenant filter, a join that widens scope,
+// a hand-written report query — rather than against someone already running
+// arbitrary SQL as that role. Splitting the bypass onto a third role, used only
+// by the auth and Super Admin paths, is the upgrade if that threat matters.
+//
+// Predicates are verbatim SQL: they name PHYSICAL columns and are not rewritten
+// when a field is renamed here, so keep them in step with `@map` by hand.
+
+policy_all tenant_isolation_tenants {
+  target    = Tenant
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_users {
+  target    = User
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_refresh_sessions {
+  target    = RefreshSession
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_subscriptions {
+  target    = Subscription
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_categories {
+  target    = Category
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_variant_colors {
+  target    = VariantColor
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_variant_sizes {
+  target    = VariantSize
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_variant_weights {
+  target    = VariantWeight
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_variant_units {
+  target    = VariantUnit
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_suppliers {
+  target    = Supplier
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_products {
+  target    = Product
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_stock_movements {
+  target    = StockMovement
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_wastage {
+  target    = Wastage
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_supplier_payments {
+  target    = SupplierPayment
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_customers {
+  target    = Customer
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_sales {
+  target    = Sale
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_sale_items {
+  target    = SaleItem
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_returns {
+  target    = SaleReturn
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_expense_categories {
+  target    = ExpenseCategory
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_expenses {
+  target    = Expense
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_audit_logs {
+  target    = AuditLog
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
 }

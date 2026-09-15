@@ -10,6 +10,7 @@
  */
 import "dotenv/config";
 import { db } from "../prisma/db.ts";
+import { withRlsBypass } from "../lib/db/rls.ts";
 import { numeric } from "../lib/numeric.ts";
 
 function assert(condition: unknown, message: string): asserts condition {
@@ -20,7 +21,7 @@ async function main() {
   const stamp = Date.now();
 
   // --- create a tenant + owner + one product, all in one transaction --------
-  const { tenant, owner, product } = await db.transaction(async (tx) => {
+  const { tenant, owner, product } = await withRlsBypass(async (tx) => {
     const tenant = await tx.orm.public.Tenant.create({
       name: `Smoke Test Shop ${stamp}`,
       email: `smoke-${stamp}@example.com`,
@@ -53,10 +54,11 @@ async function main() {
   console.log("created product:", product.id, product.sku);
 
   // --- tenant-scoped read back ---------------------------------------------
-  const products = await db.orm.public.Product
-    .where({ tenantId: tenant.id })
-    .select("id", "name", "sku", "sellPrice", "stockQty", "attributes")
-    .all();
+  const products = await withRlsBypass((tx) =>
+    tx.orm.public.Product.where({ tenantId: tenant.id })
+      .select("id", "name", "sku", "sellPrice", "stockQty", "attributes")
+      .all(),
+  );
 
   assert(products.length === 1, "expected exactly one product for this tenant");
   assert(products[0].sku === `SMOKE-${stamp}`, "sku round-tripped");
@@ -65,7 +67,9 @@ async function main() {
   // --- referential integrity: the tenant must not be deletable -------------
   let blocked = false;
   try {
-    await db.orm.public.Tenant.where({ id: tenant.id }).delete();
+    await withRlsBypass((tx) =>
+      tx.orm.public.Tenant.where({ id: tenant.id }).delete(),
+    );
   } catch {
     blocked = true;
   }
@@ -73,7 +77,7 @@ async function main() {
   console.log("restrict check : tenant delete correctly blocked");
 
   // --- clean up in dependency order ----------------------------------------
-  await db.transaction(async (tx) => {
+  await withRlsBypass(async (tx) => {
     await tx.orm.public.Product.where({ id: product.id }).delete();
     await tx.orm.public.User.where({ id: owner.id }).delete();
     await tx.orm.public.Tenant.where({ id: tenant.id }).delete();

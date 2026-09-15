@@ -1,11 +1,11 @@
-import { db } from "@/prisma/db.ts";
+import { rlsDb } from "@/lib/db/rls.ts";
 import { withAuth } from "@/lib/api/guard.ts";
 import { apiSuccess } from "@/lib/api/response.ts";
 import type { AuthContext } from "@/lib/auth/context.ts";
 
 export const GET = withAuth(async (_request: Request, auth: AuthContext) => {
   const tenant = auth.user.tenantId
-    ? await db.orm.public.Tenant.select(
+    ? await rlsDb().orm.public.Tenant.select(
         "id",
         "name",
         "description",
@@ -26,7 +26,7 @@ export const GET = withAuth(async (_request: Request, auth: AuthContext) => {
         .first()
     : null;
 
-  const profile = await db.orm.public.User.select(
+  const profile = await rlsDb().orm.public.User.select(
     "id",
     "name",
     "email",

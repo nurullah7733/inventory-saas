@@ -1,4 +1,4 @@
-import { db } from "@/prisma/db.ts";
+import { rlsDb } from "@/lib/db/rls.ts";
 import { AUTH_RATE_LIMITS, clientIp, consume } from "@/lib/api/rate-limit.ts";
 import {
   apiError,
@@ -42,7 +42,7 @@ export const POST = withPublicRoute(async (request: Request) => {
   const lookup = await findActiveSession(parsed.data.refreshToken);
   if (!lookup.ok) {
     if (lookup.reason === "revoked") {
-      const compromised = await db.orm.public.RefreshSession.select("userId")
+      const compromised = await rlsDb().orm.public.RefreshSession.select("userId")
         .where({ tokenHash: hashRefreshToken(parsed.data.refreshToken) })
         .first();
       if (compromised) {
@@ -60,7 +60,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     );
   }
 
-  const user = await db.orm.public.User.select(
+  const user = await rlsDb().orm.public.User.select(
     "id",
     "tenantId",
     "name",
