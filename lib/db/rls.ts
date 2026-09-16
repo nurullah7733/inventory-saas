@@ -6,14 +6,12 @@ export type RlsSession = Parameters<Parameters<typeof db.transaction>[0]>[0];
 export type RlsMode = { kind: "tenant"; tenantId: string } | { kind: "bypass" };
 
 interface RlsContext {
-  /** Mutable: a request session starts in bypass and narrows to its tenant. */
   mode: RlsMode;
   readonly session: RlsSession;
 }
 
 const store = new AsyncLocalStorage<RlsContext>();
 
-/** Postgres setting names. Kept in one place — the policies name them too. */
 const TENANT_SETTING = "app.tenant_id";
 const BYPASS_SETTING = "app.bypass_rls";
 
@@ -22,9 +20,6 @@ function applySetting(
   name: string,
   value: string,
 ): Promise<unknown> {
-  // `SET LOCAL` cannot take a bind parameter; `set_config(..., true)` is the
-  // same thing as a function call, so the value stays a parameter and never
-  // reaches the database as concatenated SQL.
   const plan = db.raw.sql`SELECT set_config(${name}, ${value}, true)`
     .affectedCount()
     .build();
@@ -71,7 +66,6 @@ export function rlsDb(): RlsSession {
   return context.session;
 }
 
-/** Handle on an open request session, handed to the API guards. */
 export interface RequestRlsSession {
   readonly session: RlsSession;
 
@@ -102,12 +96,10 @@ export function withRequestRls<T>(
 export const rawSql: typeof db.raw.sql = (strings, ...values) =>
   db.raw.sql(strings, ...values);
 
-/** The active session's mode, or null outside a session. Useful in tests. */
 export function currentRlsMode(): RlsMode | null {
   return store.getStore()?.mode ?? null;
 }
 
-/** The tenant the current session is pinned to, or null under a bypass. */
 export function currentRlsTenantId(): string | null {
   const mode = store.getStore()?.mode;
   return mode?.kind === "tenant" ? mode.tenantId : null;

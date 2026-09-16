@@ -1,11 +1,10 @@
-import { rlsDb } from "@/lib/db/rls.ts";
 import { withTenantAuth, type TenantRequestContext } from "@/lib/api/guard.ts";
 import { apiError, apiSuccess } from "@/lib/api/response.ts";
 
 export const GET = withTenantAuth(
   async (_request: Request, auth: TenantRequestContext) => {
     const [tenant, productCount, staffCount] = await Promise.all([
-      rlsDb().orm.public.Tenant.select(
+      auth.db.orm.public.Tenant.select(
         "id",
         "name",
         "description",
