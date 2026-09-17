@@ -14,7 +14,7 @@ export interface StoredSession {
   refreshExpiresAt: string;
 }
 
-/** Access token + the wall-clock time it stops being usable. */
+//  Access token + the wall-clock time it stops being usable.
 interface AccessToken {
   value: string;
   expiresAt: number;
@@ -22,14 +22,6 @@ interface AccessToken {
 
 let accessToken: AccessToken | null = null;
 
-/**
- * Cached snapshot of the stored session.
- *
- * `undefined` means "not read from localStorage yet". The cache is not an
- * optimisation: `useSyncExternalStore` compares snapshots by identity and
- * re-renders whenever they differ, so a `getSnapshot` that re-parsed the JSON
- * on every call would hand React a new object each time and loop forever.
- */
 let snapshot: StoredSession | null | undefined;
 
 type Listener = (session: StoredSession | null) => void;
@@ -53,8 +45,6 @@ function loadSession(): StoredSession | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as StoredSession;
     if (!parsed?.refreshToken) return null;
-    // An expired refresh token cannot be rotated, so treat it as signed out
-    // rather than sending it and collecting a 401 on first load.
     if (Date.parse(parsed.refreshExpiresAt) <= Date.now()) return null;
     return parsed;
   } catch {
@@ -68,13 +58,8 @@ export function readSession(): StoredSession | null {
   return snapshot;
 }
 
-/** Stable snapshot for `useSyncExternalStore`. Identical to `readSession()`;
- *  named separately so the React contract it satisfies is visible at the
- *  call site. */
 export const getSessionSnapshot = readSession;
 
-/** During SSR there is no localStorage, so the server always renders the
- *  signed-out shape and React re-renders once the client snapshot arrives. */
 export function getServerSessionSnapshot(): StoredSession | null {
   return null;
 }

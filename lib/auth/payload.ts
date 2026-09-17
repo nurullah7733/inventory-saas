@@ -17,9 +17,6 @@ export interface AuthUserPayload {
   email: string;
   role: UserRole;
   tenantId: string | null;
-  /** Whether this account has a device PIN configured — drives the toggle in
-   *  Settings > Profile and tells a mobile client whether to offer PIN unlock
-   *  on next launch. The PIN itself is never sent. */
   pinEnabled: boolean;
 }
 

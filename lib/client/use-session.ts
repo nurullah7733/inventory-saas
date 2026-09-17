@@ -13,30 +13,12 @@ import {
   subscribeToSession,
   type StoredSession,
 } from "./session.ts";
-
-/**
- * Read the stored session, and react to sign-in / sign-out.
- *
- * `status` is three-valued rather than `session | null`, because "we have not
- * looked in localStorage yet" is a real state on the first client render and
- * is not the same as "signed out". Collapsing them would flash the login
- * screen at an already-signed-in user on every page load.
- */
 export type SessionStatus = "loading" | "authenticated" | "unauthenticated";
 
-/**
- * The token store is an external store in React's sense — it lives in
- * `localStorage` and module state, and it changes from outside the render
- * tree (a login, a token refresh, a sign-out). `useSyncExternalStore` is the
- * API for exactly that, and it avoids the read-then-setState-in-an-effect
- * pattern that causes a cascading render on every mount.
- */
 function subscribe(onChange: () => void): () => void {
   return subscribeToSession(() => onChange());
 }
 
-/** True only after hydration. During SSR and the hydrating render the store
- *  has not been read yet, so "no session" is not yet an answer. */
 function useHydrated(): boolean {
   return useSyncExternalStore(
     () => () => {},
