@@ -19,6 +19,10 @@ import { Button } from "@/components/ui/field.tsx";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/sales/create", label: "Create invoice" },
+  { href: "/sales/invoices", label: "Invoices" },
+  { href: "/sales/drafts", label: "Draft invoices" },
+  { href: "/inventory/returns", label: "Returns" },
   { href: "/inventory/products", label: "Products" },
   { href: "/inventory/stock", label: "Stock" },
   { href: "/inventory/low-stock", label: "Low stock" },

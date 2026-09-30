@@ -14,7 +14,7 @@ import {
 } from "../db/rls.ts";
 import { enforceEnvelopeHasNoTenantInput } from "../tenant/request.ts";
 import { tenantScope, type TenantScope } from "../tenant/scope.ts";
-import { apiError, type ApiFailure } from "./response.ts";
+import { ApiProblem, apiError, type ApiFailure } from "./response.ts";
 
 function failureResponse(failure: AuthFailure): NextResponse<ApiFailure> {
   switch (failure.reason) {
@@ -203,6 +203,9 @@ export async function handleWithErrors(
   try {
     return await run();
   } catch (error) {
+    if (error instanceof ApiProblem) {
+      return apiError(error.code, error.message, error.status, error.details);
+    }
     console.error("[api] unhandled route error:", error);
     return apiError(
       "INTERNAL_ERROR",

@@ -19,6 +19,7 @@ export interface CurrentTenantResponse {
     name: string;
     logoUrl: string | null;
     currencySymbol: string;
+    vatPercentage: string;
     lowStockThreshold: number;
     subscriptionPlan: string;
     subscriptionStatus: string;

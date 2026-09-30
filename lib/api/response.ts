@@ -15,6 +15,25 @@ export type ApiFailure = {
 
 export type ApiResponseBody<T> = ApiSuccess<T> | ApiFailure;
 
+/** Throw inside a write transaction so a business failure rolls back ALL writes. */
+export class ApiProblem extends Error {
+  readonly code: ApiErrorCode;
+  readonly status: number;
+  readonly details?: Record<string, string[]>;
+  constructor(
+    code: ApiErrorCode,
+    message: string,
+    status: number,
+    details?: Record<string, string[]>,
+  ) {
+    super(message);
+    this.name = "ApiProblem";
+    this.code = code;
+    this.status = status;
+    this.details = details;
+  }
+}
+
 /** Closed set so clients can exhaustively switch on it. */
 export type ApiErrorCode =
   | "VALIDATION_ERROR"

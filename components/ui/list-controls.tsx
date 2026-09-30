@@ -140,7 +140,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
   return (
     <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
       <p className="font-medium">{message}</p>
-      <Button variant="ghost" className="mt-3" onClick={onRetry}>
+      <Button type="button" variant="ghost" className="mt-3" onClick={onRetry}>
         Try again
       </Button>
     </div>
