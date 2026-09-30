@@ -72,6 +72,7 @@ async function accessTokenForRequest(): Promise<string | null> {
 
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** JSON-encoded, unless it is a FormData (sent as multipart). */
   body?: unknown;
   /** Skip the bearer token — for login / signup / refresh themselves. */
   anonymous?: boolean;
@@ -84,15 +85,19 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const { method = "GET", body, anonymous = false, signal } = options;
 
+  // A FormData body (image upload) goes as multipart; the browser writes the
+  // content-type itself, boundary included, so it must not be set here.
+  const multipart = body instanceof FormData;
+
   const send = async (token: string | null): Promise<Response> => {
     const headers: Record<string, string> = {};
-    if (body !== undefined) headers["content-type"] = "application/json";
+    if (body !== undefined && !multipart) headers["content-type"] = "application/json";
     if (token) headers.authorization = `Bearer ${token}`;
 
     return fetch(`/api/v1${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: multipart ? body : body === undefined ? undefined : JSON.stringify(body),
       signal,
     });
   };

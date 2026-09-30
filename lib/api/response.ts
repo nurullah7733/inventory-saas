@@ -30,6 +30,9 @@ export type ApiErrorCode =
   | "PIN_NOT_SET"
   | "PIN_LOCKED"
   | "SUBSCRIPTION_INACTIVE"
+  | "PLAN_LIMIT_REACHED"
+  | "INSUFFICIENT_STOCK"
+  | "STORAGE_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export function apiSuccess<T>(

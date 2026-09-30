@@ -19,11 +19,13 @@
     "tenant:smoke": "node --experimental-strip-types scripts/tenant-smoke-test.ts",
     "settings:smoke": "node --experimental-strip-types scripts/settings-smoke-test.ts",
     "inventory:smoke": "node --experimental-strip-types scripts/inventory-smoke-test.ts",
+    "products:smoke": "node --experimental-strip-types scripts/products-smoke-test.ts",
     "db:app-role": "node --experimental-strip-types scripts/create-app-role.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",
     "@tanstack/react-query": "^5.102.8",
+    "@vercel/blob": "^2.8.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "jose": "^6.2.12",

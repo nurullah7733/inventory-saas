@@ -1,9 +1,8 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { apiRequest } from "@/lib/client/api.ts";
+import { useCurrentTenant } from "@/lib/client/current-tenant.ts";
 import { useRequireSession, useSignOut } from "@/lib/client/use-session.ts";
 import { Button } from "@/components/ui/field.tsx";
 
@@ -18,21 +17,14 @@ import { Button } from "@/components/ui/field.tsx";
  * tenant id the client holds.
  */
 
-interface CurrentTenantResponse {
-  tenant: {
-    id: string;
-    name: string;
-    logoUrl: string | null;
-    currencySymbol: string;
-    subscriptionPlan: string;
-    subscriptionStatus: string;
-  };
-  usage: { products: number; maxProducts: number; staff: number; maxStaff: number };
-  viewer: { id: string; name: string; role: string };
-}
-
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/inventory/products", label: "Products" },
+  { href: "/inventory/stock", label: "Stock" },
+  { href: "/inventory/low-stock", label: "Low stock" },
+  { href: "/inventory/near-expiry", label: "Near expiry" },
+  { href: "/inventory/wastage", label: "Wastage" },
+  { href: "/inventory/suppliers", label: "Suppliers" },
   { href: "/inventory/categories", label: "Categories" },
   { href: "/inventory/variants", label: "Variant options" },
   { href: "/settings/business", label: "Business settings" },
@@ -43,12 +35,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const signOut = useSignOut();
 
-  const currentTenant = useQuery({
-    queryKey: ["tenant", "current"],
-    queryFn: () => apiRequest<CurrentTenantResponse>("/tenant/current"),
-    // No point asking who we are before we hold a token.
-    enabled: status === "authenticated",
-  });
+  const currentTenant = useCurrentTenant();
 
   if (status !== "authenticated") {
     // `useRequireSession` is already redirecting; this is the frame in between.

@@ -18,12 +18,15 @@ export function Sheet({
   onOpenChange,
   title,
   description,
+  size = "md",
   children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  /** `lg` for long multi-section forms (Add product) on a wider screen. */
+  size?: "md" | "lg";
   children: React.ReactNode;
 }) {
   const titleId = useId();
@@ -73,7 +76,7 @@ export function Sheet({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className="relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl outline-none sm:max-w-md sm:rounded-2xl sm:p-6 dark:bg-zinc-900"
+        className={`relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl outline-none ${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl sm:p-6 dark:bg-zinc-900`}
       >
         {/* Grab handle — a visual cue that this is a sheet on touch screens. */}
         <div

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
 import { useSession } from "@/lib/client/use-session.ts";
@@ -12,6 +12,7 @@ import {
   type CategoryResponse,
 } from "@/lib/inventory/categories.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
+import { ImageUploadField } from "@/components/ui/image-upload.tsx";
 import { ConfirmSheet, Sheet } from "@/components/ui/sheet.tsx";
 
 /**
@@ -324,8 +325,6 @@ function CategoryFormSheet({
     },
   });
 
-  const imagePreview = useWatch({ control: form.control, name: "imageUrl" });
-
   const save = useMutation({
     mutationFn: (values: CategoryForm) =>
       editing
@@ -386,33 +385,20 @@ function CategoryFormSheet({
           )}
         </Field>
 
-        <Field
-          label="Image URL"
-          hint="Paste a hosted image URL (https://…). File upload arrives with the storage integration."
-          error={errors.imageUrl?.message}
-        >
-          {(props) => (
-            <input
-              {...props}
-              type="url"
-              inputMode="url"
-              placeholder="https://cdn.example.com/sneakers.jpg"
-              {...form.register("imageUrl")}
+        <Controller
+          control={form.control}
+          name="imageUrl"
+          render={({ field, fieldState }) => (
+            <ImageUploadField
+              label="Image"
+              purpose="category"
+              value={field.value}
+              onChange={field.onChange}
+              error={fieldState.error?.message}
+              disabled={save.isPending}
             />
           )}
-        </Field>
-
-        {imagePreview && /^https?:\/\//i.test(imagePreview) ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={imagePreview}
-            alt=""
-            className="h-24 w-24 rounded-lg border border-zinc-200 bg-white object-cover dark:border-zinc-700"
-            onError={(event) => {
-              event.currentTarget.style.display = "none";
-            }}
-          />
-        ) : null}
+        />
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Button

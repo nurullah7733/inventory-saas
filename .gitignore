@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# images written by the local storage driver (lib/storage/images.ts)
+/.uploads
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
