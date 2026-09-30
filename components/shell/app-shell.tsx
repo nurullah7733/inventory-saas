@@ -33,6 +33,8 @@ interface CurrentTenantResponse {
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/inventory/categories", label: "Categories" },
+  { href: "/inventory/variants", label: "Variant options" },
   { href: "/settings/business", label: "Business settings" },
 ] as const;
 

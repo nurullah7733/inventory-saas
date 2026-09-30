@@ -116,15 +116,19 @@ export function Button({
   className = "",
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "ghost";
+  variant?: "primary" | "ghost" | "danger";
 }) {
   const base =
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 " +
     "text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60";
-  const styles =
-    variant === "primary"
-      ? "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-      : "border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800";
+  const styles = {
+    primary:
+      "bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300",
+    ghost:
+      "border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800",
+    danger:
+      "bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600",
+  }[variant];
 
   return <button className={`${base} ${styles} ${className}`} {...props} />;
 }
