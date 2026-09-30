@@ -11,6 +11,7 @@ const SESSION_HINT_COOKIE = "has_session";
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/inventory",
+  "/people",
   "/sales",
   "/finance",
   "/reports",

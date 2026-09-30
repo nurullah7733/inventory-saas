@@ -27,6 +27,7 @@ const NAV = [
   { href: "/inventory/suppliers", label: "Suppliers" },
   { href: "/inventory/categories", label: "Categories" },
   { href: "/inventory/variants", label: "Variant options" },
+  { href: "/people/customers", label: "Customers" },
   { href: "/settings/business", label: "Business settings" },
 ] as const;
 
