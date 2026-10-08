@@ -28,7 +28,10 @@
     "billing:test": "node --experimental-strip-types scripts/billing-test.ts",
     "billing:smoke": "node --experimental-strip-types scripts/billing-smoke-test.ts",
     "sales:smoke": "node --experimental-strip-types scripts/sales-smoke-test.ts",
-    "db:app-role": "node --experimental-strip-types scripts/create-app-role.ts"
+    "db:app-role": "node --experimental-strip-types scripts/create-app-role.ts",
+    "admin:create": "node --experimental-strip-types scripts/create-super-admin.ts",
+    "admin:test": "node --experimental-strip-types scripts/admin-test.ts",
+    "admin:smoke": "node --experimental-strip-types scripts/admin-smoke-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",

@@ -29,12 +29,12 @@ export interface CurrentTenantResponse {
 }
 
 export function useCurrentTenant() {
-  const { status } = useSession();
+  const { status, session } = useSession();
   return useQuery({
     queryKey: CURRENT_TENANT_QUERY_KEY,
     queryFn: () => apiRequest<CurrentTenantResponse>("/tenant/current"),
     // No point asking who we are before we hold a token.
-    enabled: status === "authenticated",
+    enabled: status === "authenticated" && session?.user.role !== "super_admin",
   });
 }
 

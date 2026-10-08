@@ -30,7 +30,7 @@ const NAV = [
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { status } = useRequireSession();
+  const { status, session } = useRequireSession();
   const pathname = usePathname();
   const signOut = useSignOut();
 
@@ -43,6 +43,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Checking your session…
       </div>
     );
+  }
+
+  if (session?.user.role === "super_admin") {
+    return <main className="mx-auto w-full max-w-4xl p-6"><h1 className="text-xl font-semibold">Platform account</h1><Link className="mt-4 inline-block underline" href="/admin">Open Super Admin panel</Link></main>;
   }
 
   const tenant = currentTenant.data?.tenant;

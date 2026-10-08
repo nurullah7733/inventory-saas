@@ -108,9 +108,13 @@ export async function authenticate(
     return { ok: false, failure: { reason: "tenant_mismatch" } };
   }
 
-  if (options.verifySession) {
+  // Default to live session checks so suspension/logout remains effective
+  // after a workspace is reactivated, even for ordinary read endpoints.
+  if (options.verifySession !== false) {
     const session = await rlsDb().orm.public.RefreshSession.select(
       "id",
+      "userId",
+      "tenantId",
       "revokedAt",
       "expiresAt",
     )
@@ -118,6 +122,8 @@ export async function authenticate(
       .first();
     const live =
       session &&
+      session.userId === row.id &&
+      session.tenantId === row.tenantId &&
       session.revokedAt === null &&
       Date.parse(session.expiresAt) > Date.now();
     if (!live) return { ok: false, failure: { reason: "session_revoked" } };
