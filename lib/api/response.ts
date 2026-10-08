@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server.js";
 import type { ZodError } from "zod";
 
 export type ApiSuccess<T> = { ok: true; data: T };
@@ -52,6 +52,7 @@ export type ApiErrorCode =
   | "PLAN_LIMIT_REACHED"
   | "INSUFFICIENT_STOCK"
   | "STORAGE_UNAVAILABLE"
+  | "BILLING_UNAVAILABLE"
   | "INTERNAL_ERROR";
 
 export function apiSuccess<T>(

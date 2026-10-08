@@ -6,11 +6,6 @@ export function numeric<P extends number, S extends number>(
   return String(value) as unknown as Numeric<P, S>;
 }
 
-/**
- * Money is `numeric(10, 2)` in the database and a decimal STRING everywhere
- * else ("1250.50"), so no amount ever passes through a binary float. Arithmetic
- * on it (quantity × cost for a wastage loss) runs in integer cents as BigInt.
- */
 export const MONEY_PATTERN = /^\d{1,8}(\.\d{1,2})?$/;
 
 /** The largest value a `numeric(10, 2)` column accepts. */

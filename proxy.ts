@@ -38,6 +38,8 @@ const PUBLIC_API_ROUTES = new Set([
   `${API_PREFIX}/auth/logout`,
   `${API_PREFIX}/auth/refresh`,
   `${API_PREFIX}/auth/pin/unlock`,
+  // This exact endpoint authenticates Stripe's raw-body signature itself.
+  `${API_PREFIX}/billing/webhook`,
 ]);
 
 /**

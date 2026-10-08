@@ -6,17 +6,6 @@ import { useCurrentTenant } from "@/lib/client/current-tenant.ts";
 import { useRequireSession, useSignOut } from "@/lib/client/use-session.ts";
 import { Button } from "@/components/ui/field.tsx";
 
-/**
- * The signed-in chrome: header with the shop's identity, and navigation.
- *
- * Deliberately the smallest thing that makes the Business Settings screen
- * reachable and recognisable — the full sidebar, the module navigation and
- * the dashboard summary cards belong to later steps of the build order. What
- * IS implemented properly here is the rule from the brief: the shop's name and
- * logo come from the authenticated `/tenant/current` endpoint, never from a
- * tenant id the client holds.
- */
-
 const NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/sales/create", label: "Create invoice" },
@@ -35,7 +24,9 @@ const NAV = [
   { href: "/finance/expense-categories", label: "Expense categories" },
   { href: "/finance/expenses", label: "Expenses" },
   { href: "/finance/supplier-payments", label: "Supplier payments" },
+  { href: "/reports", label: "Reports" },
   { href: "/settings/business", label: "Business settings" },
+  { href: "/settings/billing", label: "Subscription & billing" },
 ] as const;
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -82,7 +73,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </p>
             <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
               {currentTenant.data?.viewer.name}
-              {currentTenant.data ? ` · ${currentTenant.data.viewer.role.replace("_", " ")}` : ""}
+              {currentTenant.data
+                ? ` · ${currentTenant.data.viewer.role.replace("_", " ")}`
+                : ""}
             </p>
           </div>
 
@@ -112,7 +105,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-6">
+        {children}
+      </main>
     </div>
   );
 }
