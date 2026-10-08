@@ -91,24 +91,28 @@ export function buildReport(kind: ReportKind, filter: ReportFilter, data: Report
     report.notes.push("Outstanding amounts for invoices issued in the selected range, after return credits through the end date. Paid amounts reflect the currently recorded invoice payments; this is not a historical payment ledger.");
     report.tables.push({ title: "Customer balances", columns: ["Customer", "Phone", "Invoices", "Due"], rows: sorted.map(([id, b]) => [customers.get(id)?.name ?? "Walk-in", customers.get(id)?.phone ?? "", b.invoices, fromCents(b.due)]) });
   } else if (kind === "payable") {
-    const balances = new Map(data.suppliers.map((s) => [s.id, { ...s, opening: zero, purchase: zero, paid: zero }]));
-    for (const m of data.movements.filter((m) => m.type === "in" && m.supplierId && reportDay(m.createdAt) <= to)) {
+    const balances = new Map(data.suppliers.map((s) => [s.id, { ...s, opening: zero, purchase: zero, returned: zero, paid: zero }]));
+    for (const m of data.movements.filter((m) => ["in", "purchase_return"].includes(m.type) && m.supplierId && reportDay(m.createdAt) <= to)) {
       const b = balances.get(m.supplierId!); if (!b) continue;
       const amount = toCents(m.unitCost ?? "0") * BigInt(m.quantity);
-      if (reportDay(m.createdAt) < from) b.opening += amount; else b.purchase += amount;
+      if (reportDay(m.createdAt) < from) b.opening += amount;
+      else if (m.type === "purchase_return") b.returned -= amount;
+      else b.purchase += amount;
     }
     for (const p of data.payments.filter((p) => p.paymentDate <= to)) {
       const b = balances.get(p.supplierId); if (!b) continue;
       if (p.paymentDate < from) b.opening -= toCents(p.amount); else b.paid += toCents(p.amount);
     }
-    const rows = [...balances.values()].map((b) => ({ ...b, closing: b.opening + b.purchase - b.paid }))
-      .filter((b) => b.opening !== zero || b.purchase !== zero || b.paid !== zero)
+    const rows = [...balances.values()].map((b) => ({ ...b, closing: b.opening + b.purchase - b.returned - b.paid }))
+      .filter((b) => b.opening !== zero || b.purchase !== zero || b.returned !== zero || b.paid !== zero)
       .sort((a, b) => a.closing > b.closing ? -1 : a.closing < b.closing ? 1 : a.name.localeCompare(b.name));
     cash("Total payable", rows.reduce((s, b) => s + (b.closing > zero ? b.closing : zero), zero));
     metric("Suppliers owed", rows.filter((b) => b.closing > zero).length);
     cash("Supplier advances", rows.reduce((s, b) => s + (b.closing < zero ? -b.closing : zero), zero));
-    report.notes.push("Opening balance includes all purchases and payments before the start date. Closing balance is as of the end date; negative balances are supplier advances.");
-    report.tables.push({ title: "Supplier balances", columns: ["Supplier", "Phone", "Opening", "Purchases", "Payments", "Closing"], rows: rows.map((b) => [b.name, b.phone ?? "", fromCents(b.opening), fromCents(b.purchase), fromCents(b.paid), fromCents(b.closing)]) });
+    cash("Purchases", rows.reduce((s, b) => s + b.purchase, zero));
+    cash("Purchase return credits", rows.reduce((s, b) => s + b.returned, zero));
+    report.notes.push("Opening balance includes purchases, purchase returns and payments before the start date. Closing = opening + purchases - return credits - payments. Negative balances are supplier advances; return credits do not record cash received.");
+    report.tables.push({ title: "Supplier balances", columns: ["Supplier", "Phone", "Opening", "Purchases", "Purchase returns", "Payments", "Closing"], rows: rows.map((b) => [b.name, b.phone ?? "", fromCents(b.opening), fromCents(b.purchase), fromCents(b.returned), fromCents(b.paid), fromCents(b.closing)]) });
   } else if (kind === "stock") {
     const products = data.products.filter((p) => !p.isDeleted).sort((a, b) => a.stockQty-b.stockQty || a.name.localeCompare(b.name));
     metric("Products", products.length); metric("Low stock", products.filter((p) => p.stockQty <= business.lowStockThreshold).length);

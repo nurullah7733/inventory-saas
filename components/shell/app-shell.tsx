@@ -14,6 +14,7 @@ const NAV = [
   { href: "/sales/invoices", label: "Invoices" },
   { href: "/sales/drafts", label: "Draft invoices" },
   { href: "/inventory/returns", label: "Returns" },
+  { href: "/inventory/purchase-returns", label: "Purchase returns" },
   { href: "/inventory/products", label: "Products" },
   { href: "/inventory/stock", label: "Stock" },
   { href: "/inventory/low-stock", label: "Low stock" },

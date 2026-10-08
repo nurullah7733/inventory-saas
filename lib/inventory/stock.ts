@@ -5,7 +5,7 @@ import type { NamedRef } from "./products.ts";
 /**
  * SIGN CONVENTION for `stock_movements.quantity`: it is the signed change to
  * `products.stock_qty`. Stock in and customer returns are positive; sales
- * ("out") and wastage are negative; an adjustment is either. So for any
+ * ("out"), supplier purchase returns and wastage are negative; an adjustment is either. So for any
  * product, SUM(quantity) over its movements equals its stock_qty, and the
  * Stock Report's movement log needs no per-type CASE to add up.
  */
@@ -64,7 +64,7 @@ export type WastageInput = z.input<typeof wastageSchema>;
 
 export const WASTAGE_REASONS = ["Expired", "Damaged", "Lost", "Other"] as const;
 
-export const MOVEMENT_TYPES = ["in", "out", "adjustment", "return", "wastage"] as const;
+export const MOVEMENT_TYPES = ["in", "out", "adjustment", "return", "purchase_return", "wastage"] as const;
 export type MovementType = (typeof MOVEMENT_TYPES)[number];
 
 export interface ProductRef extends NamedRef {
@@ -77,6 +77,7 @@ export interface StockMovementResponse {
   /** Signed: positive adds stock, negative removes it. */
   quantity: number;
   unitCost: string | null;
+  sourceMovementId: string | null;
   note: string | null;
   product: ProductRef | null;
   supplier: NamedRef | null;

@@ -23,7 +23,7 @@ Responses are private and not cached. Invalid dates/ranges produce the standard 
 - COGS uses immutable `sale_items.unit_cost × quantity`, reversing the returned quantity on its return date.
 - Per project brief, gross profit = net sales including VAT − COGS. Net profit = gross profit − operating expenses. Wastage is a separate disclosure and is not deducted from net profit. VAT charged is disclosed separately; this is the brief's VAT-inclusive operational metric.
 - Due covers invoices issued in the selected date range, reduced by return credits through its end date and the currently recorded paid amount. The invoice model does not have a customer payment ledger, so this is not a reconstructed historical payment balance.
-- Payable carries purchases/payments before From as opening balance, adds purchases and subtracts payments during the range, and shows closing balance at To. Supplier advances are separate from positive amounts owed. Inactive suppliers remain in history.
+- Payable carries purchases, purchase return credits and payments before From as opening balance. Closing = opening + purchases - purchase return credits - payments during the range. Purchase returns are shown separately and use the original receipt cost. Supplier advances are separate from positive amounts owed; credits do not record a cash refund. Inactive suppliers remain in history.
 - Stock on-hand is the current snapshot at current product cost. The date range filters movements, not the snapshot. Movements retain archived products and signed quantity changes. Active products at or below the business threshold count as low stock.
 - Expenses include uncategorized entries and inactive categories with history.
 

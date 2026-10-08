@@ -42,7 +42,20 @@ assert.equal(run("profit-loss").trend.find((d) => d.date === "2026-10-03")?.netP
 assert.equal(value("due", "Total customer due"), "35.00", "Return credits reduce due, future returns excluded");
 assert.equal(value("payable", "Total payable"), "20.00");
 assert.equal(value("payable", "Supplier advances"), "7.00");
-assert.deepEqual(run("payable").tables[0].rows[0].slice(2), ["15.00", "15.00", "10.00", "20.00"]);
+assert.deepEqual(run("payable").tables[0].rows[0].slice(2), ["15.00", "15.00", "0.00", "10.00", "20.00"]);
+const withPurchaseReturns: ReportData = { ...data, movements: [...data.movements,
+  { productId: "p", supplierId: "sp", type: "purchase_return", quantity: -2, unitCost: "2.00", note: null, createdAt: "2026-09-10T00:00:00Z" },
+  { productId: "p", supplierId: "sp", type: "purchase_return", quantity: -1, unitCost: "3.00", note: null, createdAt: "2026-10-02T00:00:00Z" },
+  { productId: "p", supplierId: "sp", type: "purchase_return", quantity: -1, unitCost: "3.00", note: null, createdAt: "2026-10-09T00:00:00Z" }] };
+const payableWithReturns = run("payable", withPurchaseReturns);
+assert.equal(payableWithReturns.summary.find((v) => v.label === "Total payable")?.value, "13.00", "Earlier return reduces opening; current return reduces closing; future return excluded");
+assert.equal(payableWithReturns.summary.find((v) => v.label === "Purchase return credits")?.value, "3.00");
+assert.deepEqual(payableWithReturns.tables[0].rows[0].slice(2), ["11.00", "15.00", "3.00", "10.00", "13.00"]);
+const paidPurchaseReturned = run("payable", { ...data,
+  payments: [...data.payments, { supplierId: "sp", amount: "20.00", paymentDate: "2026-10-01" }],
+  movements: [...data.movements, { productId: "p", supplierId: "sp", type: "purchase_return", quantity: -1, unitCost: "3.00", note: null, createdAt: "2026-10-02T00:00:00Z" }] });
+assert.equal(paidPurchaseReturned.summary.find((v) => v.label === "Total payable")?.value, "0.00");
+assert.equal(paidPurchaseReturned.summary.find((v) => v.label === "Supplier advances")?.value, "10.00", "Returns against paid purchases create supplier credit without fake cash payments");
 assert.equal(value("stock", "Value at current cost"), "297.00");
 assert.equal(value("stock", "Low stock"), 1);
 assert.equal(run("stock").tables[1].rows.length, 2, "Movement dates filtered and archived product history kept");

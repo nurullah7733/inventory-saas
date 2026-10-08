@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -15,9 +16,8 @@ import { Button, Field } from "@/components/ui/field.tsx";
  *
  * Scoped to exactly what the Business Settings step needs: `proxy.ts` bounces
  * an unauthenticated visitor from `/settings/*` to `/login`, so without this
- * page the settings screen is unreachable in a browser. Signup, email
- * verification, forgot-password and PIN unlock are separate screens against
- * endpoints that already exist — they are not part of this step.
+ * page the settings screen is unreachable in a browser.
+ * Shop owners can create their workspace through the linked signup screen.
  */
 
 interface LoginFormValues {
@@ -108,6 +108,9 @@ function LoginForm() {
       <Button type="submit" disabled={submitting}>
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
+      <p className="text-center text-sm text-zinc-500">
+        New here? <Link href="/signup" className="inline-flex min-h-11 items-center font-medium text-emerald-700 underline dark:text-emerald-400">Create your shop account</Link>
+      </p>
     </form>
   );
 }

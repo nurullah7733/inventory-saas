@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type { AuthSessionPayload } from "../auth/payload.ts";
+import { signupSchema, type SignupInput } from "../auth/schemas.ts";
 import { apiRequest } from "./api.ts";
 import {
   clearSession,
@@ -64,6 +65,18 @@ export function useSignIn() {
     const payload = await apiRequest<AuthSessionPayload>("/auth/login", {
       method: "POST",
       body: input,
+      anonymous: true,
+    });
+    storeSession(payload);
+    return payload;
+  }, []);
+}
+
+export function useSignUp() {
+  return useCallback(async (input: SignupInput) => {
+    const payload = await apiRequest<AuthSessionPayload>("/auth/signup", {
+      method: "POST",
+      body: signupSchema.parse(input),
       anonymous: true,
     });
     storeSession(payload);

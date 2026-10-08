@@ -1,15 +1,37 @@
-# Dashboard and current tenant (build step 14)
+# Dashboard analytics
 
-Open `/dashboard` after signing in. The shared shell and dashboard use `useCurrentTenant()` with `useQuery({ queryKey: ['currentTenant'], queryFn: ... })`, the object syntax supported by the installed TanStack Query version. Both consumers share and deduplicate one authenticated `GET /api/v1/tenant/current` request; no client-supplied tenant identifier is sent.
+The shop dashboard loads `GET /api/v1/dashboard/summary` using TanStack Query. It refreshes when mounted and when the dashboard Refresh button is pressed.
 
-The endpoint resolves the tenant from the verified bearer session, filters queries with that tenant and applies database RLS. It returns shop name/logo/contact info, subscription status, usage/limits and viewer information. Responses are `private, no-store`. The client uses the existing bearer API helper, including token refresh; cookies are only a navigation hint. Since credentials are held in the client session, the server page renders a loading state and the client performs the authenticated fetch.
+## Filters and access
 
-The header displays the server-returned shop name/logo and viewer, with an initial fallback when a logo is missing or cannot load. A changed logo URL retries automatically. Request failures show a retry action; 401/403 workspace failures hide the tenant content. The responsive dashboard shows workspace details, product/active-user usage, subscription and quick actions.
+- A live authenticated shop session is required; owner, manager and staff can read their own tenant's summary.
+- Supply both `from=YYYY-MM-DD` and `to=YYYY-MM-DD`, or neither. The default is the current month through today.
+- Dates use Asia/Dhaka. Ranges are inclusive, at most 93 days, and cannot end after today.
+- The response is private and not cached by HTTP intermediaries.
+- The weekly comparison always covers the current Monday–Sunday, independently of the selected range.
 
-The query provider is keyed by signed-in account/workspace/role, creating a fresh cache before rendering another identity. Signing out or switching accounts cannot display the previous tenant's cached data. Token refresh for the same identity preserves the cache. Shop IDs in the session are used only to partition cache lifetimes; the authenticated endpoint alone decides which tenant data to return.
+## Calculations
 
-Business Settings saves, product changes and billing status updates invalidate the shared `CURRENT_TENANT_QUERY_KEY`. A name/logo change therefore refreshes the header and overview together. Super Admin accounts use their separate `/admin` panel and do not request current shop info.
+- Total sales: completed invoice totals, including VAT. Draft invoices are excluded.
+- Total purchases: stock-in quantity multiplied by its recorded unit cost, including receipts without a supplier. Missing unit costs count as zero.
+- Sales returns: customer return credits on the return date, including returns against older invoices.
+- Purchase returns: supplier return quantities valued at their original receipt cost on the return date.
+- Net sales and purchases subtract their respective return credits. A return-only period can have negative net sales.
+- The bar chart shows daily sales and customer return credits, including zero-activity days.
+- Top five products are ranked by units sold minus units returned in the selected period. Archived products remain visible; products without positive net units are excluded.
+- The weekly donut compares gross sales and gross purchases. Return credits are shown separately in the summary cards.
+- Money is aggregated in PostgreSQL and calculated using integer cents; JSON amounts and quantities are strings to preserve precision.
 
-Verification: production build/TypeScript, targeted lint and isolated browser checks for authenticated fetch deduplication, narrow-screen layout, logo fallback, retry, settings refresh and account-switch cache isolation. Existing tenant smoke tests verify the endpoint's auth and isolation. No schema/migration or new dependencies are needed.
+## Files
 
-References: [TanStack query keys](https://tanstack.com/query/latest/docs/framework/react/guides/query-keys), [useQuery](https://tanstack.com/query/latest/docs/framework/react/reference/functions/useQuery).
+- `app/api/v1/dashboard/summary/route.ts`: authenticated endpoint, date validation and response caching policy.
+- `lib/dashboard/types.ts`: shared response types, timezone, week boundaries and filters.
+- `lib/dashboard/service.ts`: tenant-scoped database aggregation.
+- `lib/dashboard/calculations.ts`: exact totals and daily chart series.
+- `components/dashboard/dashboard-analytics.tsx`: filters, six summary cards, bar chart, weekly donut and product ranking.
+- `components/dashboard/dashboard-overview.tsx`: embeds analytics and refreshes its query with shop information.
+- `scripts/dashboard-calculations-test.ts`: date and monetary calculation checks.
+- `scripts/dashboard-smoke-test.ts`: real API checks using temporary isolated tenants, including permissions, filtering, returns and empty data; fixtures are removed afterward.
+- `package.json`: adds `dashboard:test` and `dashboard:smoke` commands.
+
+No schema migration is required for dashboard analytics. Supplier purchase returns require the migration documented in `docs/purchase-returns.md`.

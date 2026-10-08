@@ -10,7 +10,7 @@ Each event includes tenant, verified user, action, entity type/ID, metadata and 
 | --- | --- |
 | Master data | Category, color/size/weight/unit variant, product, supplier, customer and expense-category create/update/delete |
 | Shop | Settings update; signup tenant/owner creation |
-| Inventory | Stock additions and wastage creation |
+| Inventory | Stock additions, supplier purchase returns and wastage creation |
 | Sales | Invoice create/update/complete; return creation |
 | Finance | Expense and supplier-payment create/update/delete, changed-field diffs and no-op detection |
 | Authentication | Successful login/logout, password update, PIN setup/removal, session revocation |

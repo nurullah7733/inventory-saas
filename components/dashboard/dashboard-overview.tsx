@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCurrentTenant } from "@/lib/client/current-tenant.ts";
 import { Button } from "@/components/ui/field.tsx";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { DashboardAnalytics } from "./dashboard-analytics.tsx";
 
 const QUICK_LINKS = [
   { href: "/sales/create", label: "Create invoice" },
@@ -10,12 +12,15 @@ const QUICK_LINKS = [
   { href: "/sales/drafts", label: "Draft invoices" },
   { href: "/inventory/products", label: "Products" },
   { href: "/inventory/stock", label: "Stock movements" },
+  { href: "/inventory/purchase-returns", label: "Purchase returns" },
   { href: "/reports", label: "Reports" },
 ];
 
 export function DashboardOverview() {
   const query = useCurrentTenant();
   const data = query.data;
+  const client = useQueryClient();
+  const fetchingAnalytics = useIsFetching({ queryKey: ["dashboard", "summary"] }) > 0;
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -25,11 +30,12 @@ export function DashboardOverview() {
             {data ? `Welcome, ${data.viewer.name}.` : "Your workspace overview"}
           </p>
         </div>
-        <Button variant="ghost" disabled={query.isFetching} onClick={() => void query.refetch()}>
-          {query.isFetching ? "Refreshing…" : "Refresh"}
+        <Button variant="ghost" disabled={query.isFetching || fetchingAnalytics} onClick={() => { void query.refetch(); void client.refetchQueries({ queryKey: ["dashboard", "summary"] }); }}>
+          {query.isFetching || fetchingAnalytics ? "Refreshing…" : "Refresh"}
         </Button>
       </div>
       {query.isPending && <div role="status" className="rounded-xl border border-zinc-200 p-5 text-sm text-zinc-500 dark:border-zinc-800">Loading workspace information…</div>}
+      {data && <DashboardAnalytics />}
       {data && (
         <>
           <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900" aria-label="Current workspace">

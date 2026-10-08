@@ -126,6 +126,10 @@
                 "value": "return"
               },
               {
+                "name": "purchase_return",
+                "value": "purchase_return"
+              },
+              {
                 "name": "wastage",
                 "value": "wastage"
               }
@@ -1765,6 +1769,13 @@
                   "kind": "scalar"
                 }
               },
+              "sourceMovementId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
               "supplierId": {
                 "nullable": true,
                 "type": {
@@ -1835,6 +1846,21 @@
                   "namespace": "public"
                 }
               },
+              "sourceMovement": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "sourceMovementId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "StockMovement",
+                  "namespace": "public"
+                }
+              },
               "supplier": {
                 "cardinality": "N:1",
                 "on": {
@@ -1885,6 +1911,9 @@
                 },
                 "quantity": {
                   "column": "quantity"
+                },
+                "sourceMovementId": {
+                  "column": "source_movement_id"
                 },
                 "supplierId": {
                   "column": "supplier_id"
@@ -5160,9 +5189,14 @@
             "stock_movements": {
               "checks": [
                 {
-                  "expression": "\"type\" IN ('in', 'out', 'adjustment', 'return', 'wastage')",
-                  "name": "stock_movements_type_check_21048d23",
+                  "expression": "\"type\" IN ('in', 'out', 'adjustment', 'return', 'purchase_return', 'wastage')",
+                  "name": "stock_movements_type_check_226c0006",
                   "prefix": "stock_movements_type_check"
+                },
+                {
+                  "expression": "(type = 'purchase_return' AND source_movement_id IS NOT NULL AND source_movement_id <> id AND supplier_id IS NOT NULL AND unit_cost IS NOT NULL AND quantity < 0) OR (type <> 'purchase_return' AND source_movement_id IS NULL)",
+                  "name": "stock_purchase_return_check_d16ddb80",
+                  "prefix": "stock_purchase_return_check"
                 }
               ],
               "columns": {
@@ -5199,6 +5233,11 @@
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": false
+                },
+                "source_movement_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
                 },
                 "supplier_id": {
                   "codecId": "pg/uuid@1",
@@ -5287,6 +5326,23 @@
                   "onDelete": "restrict",
                   "source": {
                     "columns": [
+                      "source_movement_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "stock_movements"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "stock_movements"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
                       "created_by"
                     ],
                     "namespaceId": "public",
@@ -5316,6 +5372,14 @@
                   ],
                   "name": "stock_movements_product_id_idx_22a2b7d2",
                   "prefix": "stock_movements_product_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "source_movement_id"
+                  ],
+                  "name": "stock_movements_source_movement_id_idx_83e9f6f3",
+                  "prefix": "stock_movements_source_movement_id_idx",
                   "unique": false
                 },
                 {
@@ -5369,6 +5433,15 @@
                   ],
                   "name": "stock_movements_tenant_id_supplier_id_idx_c237d355",
                   "prefix": "stock_movements_tenant_id_supplier_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "source_movement_id"
+                  ],
+                  "name": "stock_source_tenant_idx_154068f0",
+                  "prefix": "stock_source_tenant_idx",
                   "unique": false
                 }
               ],
@@ -6666,6 +6739,7 @@
                 "out",
                 "adjustment",
                 "return",
+                "purchase_return",
                 "wastage"
               ]
             },
@@ -6701,7 +6775,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "334c80fa7b5c8248eaa7db4bed7ccf2ca12cb6d2abf3a8a77178e5514286aee2"
+    "storageHash": "9759b50c479435158ecb0e4838c8d7712caeb8aceece2d0e77665d958b369d9d"
   },
   "execution": {
     "executionHash": "e3e50dea5cb86e50bff6ea408baa6b9bd84f9c200164b3dee03d14f952da61f7",

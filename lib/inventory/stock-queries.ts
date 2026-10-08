@@ -65,7 +65,7 @@ export async function applyStockDelta(
 
 export function selectMovements(collection: TenantScope["StockMovement"]) {
   return collection
-    .select("id", "type", "quantity", "unitCost", "note", "createdAt")
+    .select("id", "type", "quantity", "unitCost", "sourceMovementId", "note", "createdAt")
     .include("product", (p) => p.select("id", "name", "sku"))
     .include("supplier", (s) => s.select("id", "name"))
     .include("createdByUser", (u) => u.select("id", "name"));
@@ -81,6 +81,7 @@ export function toMovementResponse(row: MovementRow): StockMovementResponse {
     type: row.type,
     quantity: row.quantity,
     unitCost: row.unitCost === null ? null : String(row.unitCost),
+    sourceMovementId: row.sourceMovementId,
     note: row.note,
     product: row.product
       ? { id: row.product.id, name: row.product.name, sku: row.product.sku }

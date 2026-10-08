@@ -112,7 +112,7 @@ export async function getReport(
     let movements = s.StockMovement.where((r) => r.createdAt.lt(end));
     if (kind === "stock")
       movements = movements.where((r) => r.createdAt.gte(start));
-    else movements = movements.where({ type: "in" });
+    else movements = movements.where((m) => m.type.in(["in", "purchase_return"]));
     const rows = await movements
       .select(
         "productId",

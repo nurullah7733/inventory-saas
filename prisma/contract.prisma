@@ -77,6 +77,7 @@ enum stock_movement_type {
   stock_out  = "out"
   adjustment = "adjustment"
   returned   = "return"
+  purchase_return = "purchase_return"
   wastage    = "wastage"
 
   @@type("pg/text@1")
@@ -359,6 +360,9 @@ model StockMovement {
   product       Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
   supplierId    Uuid?               @map("supplier_id")
   supplier      Supplier?           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  /// Only purchase returns reference the original supplier stock-in entry.
+  sourceMovementId Uuid?             @map("source_movement_id")
+  sourceMovement StockMovement?     @relation(fields: [sourceMovementId], references: [id], onDelete: Restrict)
   type          stock_movement_type
   quantity      Int
   unitCost      Numeric(10, 2)?     @map("unit_cost")
@@ -371,6 +375,8 @@ model StockMovement {
   @@index([tenantId, createdAt])
   @@index([tenantId, supplierId])
   @@index([tenantId, productId, createdAt])
+  @@index([tenantId, sourceMovementId], name: "stock_source_tenant_idx")
+  @@check(expression: "(type = 'purchase_return' AND source_movement_id IS NOT NULL AND source_movement_id <> id AND supplier_id IS NOT NULL AND unit_cost IS NOT NULL AND quantity < 0) OR (type <> 'purchase_return' AND source_movement_id IS NULL)", name: "stock_purchase_return_check")
   @@map("stock_movements")
   @@rls
 }

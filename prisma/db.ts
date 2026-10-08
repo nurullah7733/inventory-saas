@@ -15,6 +15,7 @@ import contractJson from "./contract.json" with { type: "json" };
  */
 declare global {
   var __inventoryDb: ReturnType<typeof createClient> | undefined;
+  var __inventoryDbStorageHash: string | undefined;
 }
 
 function createClient() {
@@ -43,8 +44,13 @@ function createClient() {
   return postgres<Contract>({ contractJson, url });
 }
 
-export const db = globalThis.__inventoryDb ?? createClient();
+// Reuse across ordinary hot reloads, but rebuild the query surface after a
+// contract migration. Otherwise new fields are queried using the old mapping.
+export const db = globalThis.__inventoryDbStorageHash === contractJson.storage.storageHash
+  ? globalThis.__inventoryDb ?? createClient()
+  : createClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.__inventoryDb = db;
+  globalThis.__inventoryDbStorageHash = contractJson.storage.storageHash;
 }

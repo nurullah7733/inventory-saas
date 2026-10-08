@@ -24,7 +24,7 @@ function invalidField(field: string, message: string) {
 /**
  * The stock ledger, newest first.
  *
- *   ?type=        in | out | adjustment | return | wastage | all (default)
+ *   ?type=        in | out | adjustment | return | purchase_return | wastage | all (default)
  *   ?productId=   one product's history
  *   ?supplierId=  everything bought from one supplier
  *   ?from=&to=    ISO timestamps, [from, to)
