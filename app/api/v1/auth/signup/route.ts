@@ -1,4 +1,5 @@
 import { rlsDb } from "@/lib/db/rls.ts";
+import { recordAudit } from "@/lib/audit/log.ts";
 import { numeric } from "@/lib/numeric.ts";
 import { AUTH_RATE_LIMITS, clientIp, consume } from "@/lib/api/rate-limit.ts";
 import {
@@ -123,6 +124,12 @@ export const POST = withPublicRoute(async (request: Request) => {
   }
 
   const client = readClientContext(request);
+  await recordAudit({ tenantId: created.tenant.id, userId: created.user.id,
+    action: "tenant.create", entityType: "tenant", entityId: created.tenant.id,
+    metadata: { name: created.tenant.name, subscriptionPlan: "trial" } });
+  await recordAudit({ tenantId: created.tenant.id, userId: created.user.id,
+    action: "user.create", entityType: "user", entityId: created.user.id,
+    metadata: { name: created.user.name, role: "shop_owner" } });
   const session = await issueSession({
     userId: created.user.id,
     tenantId: created.tenant.id,

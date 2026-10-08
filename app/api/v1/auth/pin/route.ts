@@ -1,4 +1,5 @@
 import { rlsDb } from "@/lib/db/rls.ts";
+import { recordAudit } from "@/lib/audit/log.ts";
 import { withAuth } from "@/lib/api/guard.ts";
 import {
   apiError,
@@ -38,6 +39,9 @@ export const PUT = withAuth(
       pinLockedUntil: null,
     });
 
+    await recordAudit({ tenantId: auth.user.tenantId, userId: auth.user.id,
+      action: "user.pin.update", entityType: "user", entityId: auth.user.id,
+      metadata: { pinEnabled: true } });
     return apiSuccess({ pinEnabled: true });
   },
   { verifySession: true },
@@ -51,7 +55,7 @@ export const DELETE = withAuth(
     const parsed = disablePinSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
 
-    const user = await rlsDb().orm.public.User.select("id", "passwordHash")
+    const user = await rlsDb().orm.public.User.select("id", "passwordHash", "pinHash")
       .where({ id: auth.user.id })
       .first();
     if (!user)
@@ -65,12 +69,16 @@ export const DELETE = withAuth(
       );
     }
 
+    if (user.pinHash === null) return apiSuccess({ pinEnabled: false });
     await rlsDb().orm.public.User.where({ id: auth.user.id }).update({
       pinHash: null,
       pinFailedAttempts: 0,
       pinLockedUntil: null,
     });
 
+    await recordAudit({ tenantId: auth.user.tenantId, userId: auth.user.id,
+      action: "user.pin.delete", entityType: "user", entityId: auth.user.id,
+      metadata: { pinEnabled: false } });
     return apiSuccess({ pinEnabled: false });
   },
   { verifySession: true },

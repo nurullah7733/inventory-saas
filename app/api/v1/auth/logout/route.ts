@@ -4,6 +4,7 @@ import {
   validationError,
 } from "@/lib/api/response.ts";
 import { withPublicRoute } from "@/lib/api/guard.ts";
+import { recordAudit } from "@/lib/audit/log.ts";
 import { logoutSchema } from "@/lib/auth/schemas.ts";
 import {
   findActiveSession,
@@ -25,6 +26,9 @@ export const POST = withPublicRoute(async (request: Request) => {
     } else {
       await revokeSession(lookup.session.id);
     }
+    await recordAudit({ tenantId: lookup.session.tenantId, userId: lookup.session.userId,
+      action: "auth.logout", entityType: "user", entityId: lookup.session.userId,
+      metadata: { allDevices: parsed.data.allDevices } });
   }
 
   return apiSuccess({ signedOut: true });

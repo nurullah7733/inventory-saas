@@ -1,4 +1,5 @@
 import { ApiProblem } from "../api/response.ts";
+import { recordAudit } from "../audit/log.ts";
 import type { AuthContext } from "../auth/context.ts";
 import { currentRlsMode, rawSql, rlsDb } from "../db/rls.ts";
 import type { TenantListFilter } from "./types.ts";
@@ -52,7 +53,7 @@ export async function setTenantAccess(auth: AuthContext, tenantId: string, input
     await tx.execute(rawSql`UPDATE public.refresh_sessions SET revoked_at = ${now}::timestamptz
       WHERE tenant_id = ${tenantId}::uuid AND revoked_at IS NULL`.affectedCount().build());
   }
-  await tx.orm.public.AuditLog.create({ tenantId: null, userId: auth.user.id,
+  await recordAudit({ tenantId: null, userId: auth.user.id,
     action: input.isActive ? "tenant.reactivate" : "tenant.suspend", entityType: "tenant", entityId: tenantId,
     metadata: { reason: input.reason, previousIsActive: before.isActive, isActive: input.isActive } });
   return { changed: true, isActive: input.isActive };

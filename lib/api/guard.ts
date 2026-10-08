@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withAuditActor } from "../audit/context.ts";
 import {
   authenticate,
   requireTenantContext,
@@ -129,7 +130,7 @@ export function withAuth<Ctx = unknown>(
         const { tenantId } = result.context.user;
         if (tenantId) await rls.pinToTenant(tenantId);
 
-        return handler(request, result.context, context);
+        return withAuditActor(result.context.user, () => handler(request, result.context, context));
       }),
     );
   };
@@ -183,7 +184,7 @@ export function withTenantAuth<Ctx = unknown>(
           db: rls.session,
         };
 
-        return handler(request, tenantContext, context);
+        return withAuditActor(result.context.user, () => handler(request, tenantContext, context));
       }),
     );
   };

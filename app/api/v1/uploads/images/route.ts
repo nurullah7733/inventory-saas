@@ -1,4 +1,5 @@
 import { withTenantAuth, type TenantRequestContext } from "@/lib/api/guard.ts";
+import { recordAudit } from "@/lib/audit/log.ts";
 import { apiError, apiSuccess } from "@/lib/api/response.ts";
 import { MASTER_DATA_WRITE_ROLES } from "@/lib/inventory/master-data.ts";
 import {
@@ -75,6 +76,9 @@ export const POST = withTenantAuth(
         type,
         origin: new URL(request.url).origin,
       });
+      await recordAudit({ tenantId: auth.tenantId, userId: auth.user.id,
+        action: "image.create", entityType: "image",
+        metadata: { purpose: purposeRaw, key: stored.key, contentType: stored.contentType, size: stored.size } });
       return apiSuccess(
         { image: { url: stored.url, contentType: stored.contentType, size: stored.size } },
         201,

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { isDeepStrictEqual } from "node:util";
 import { db } from "../prisma/db.ts";
 import { rawSql, withRlsBypass } from "../lib/db/rls.ts";
 import { signAccessToken } from "../lib/auth/jwt.ts";
@@ -26,9 +27,9 @@ function check(condition: unknown, label: string): void {
 interface ApiResult {
   status: number;
   // The smoke test reads many shapes; `any` keeps the assertions readable.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   body: {
     ok?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any;
     error?: {
       code?: string;
@@ -268,6 +269,12 @@ async function main() {
           updated.body.data?.[key]?.[ref] === body[ref],
         `${path}: PATCH preserves omitted fields`,
       );
+      const auditRows = () => withRlsBypass((tx) => tx.orm.public.AuditLog.where({ tenantId: a.tenantId, entityId: id }).all());
+      const priorAudit = await auditRows();
+      const updateEvent = priorAudit.find((row) => row.action.endsWith(".update"));
+      check(isDeepStrictEqual(updateEvent?.metadata, { actorType: "user", after: { amount: "250.50" }, before: { amount: "123.45" }, changed: ["amount"] }), path + ": audit records only changed fields");
+      const unchanged = await call("/" + path + "/" + id, { method: "PATCH", token: a.managerToken, body: { amount: "250.50" } });
+      check(unchanged.status === 200 && (await auditRows()).length === priorAudit.length, path + ": unchanged PATCH does not add audit history");
       const filtered = await call(
         `/${path}?from=2026-10-01&to=2026-10-01&limit=1&${ref}=${body[ref]}`,
         { token: a.ownerToken },

@@ -332,6 +332,7 @@ async function main(): Promise<void> {
   // limitation documented in lib/auth/session.ts), which would leave orphans
   // behind and trip the ON DELETE RESTRICT foreign keys below.
   await withRlsBypass(async (tx) => {
+    await tx.orm.public.AuditLog.where({ tenantId }).deleteAll();
     await tx.execute(
       rawSql`DELETE FROM "public"."refresh_sessions" WHERE "tenant_id" = ${tenantId}::uuid`
         .affectedCount()

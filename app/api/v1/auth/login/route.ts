@@ -1,4 +1,5 @@
 import { rlsDb } from "@/lib/db/rls.ts";
+import { recordAudit } from "@/lib/audit/log.ts";
 import {
   AUTH_RATE_LIMITS,
   clientIp,
@@ -134,6 +135,7 @@ export const POST = withPublicRoute(async (request: Request) => {
   });
 
   const payload = await buildAuthSessionPayload({
+    // Session tokens are returned to the caller only, never passed to audit.
     user: {
       id: user.id,
       name: user.name,
@@ -155,5 +157,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     session,
   });
 
+  await recordAudit({ tenantId: user.tenantId, userId: user.id,
+    action: "auth.login", entityType: "user", entityId: user.id });
   return apiSuccess(payload);
 });

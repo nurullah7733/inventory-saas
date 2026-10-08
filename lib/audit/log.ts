@@ -1,11 +1,15 @@
 import type { JsonValue } from "@prisma/orm-framework/contract/types";
-import { rlsDb } from "../db/rls.ts";
+import { currentRlsMode, rlsDb } from "../db/rls.ts";
+import { auditJson } from "./metadata.ts";
+import { currentAuditActor } from "./context.ts";
+export { changedFields } from "./metadata.ts";
 
 export interface AuditEntry {
   /** Null only for platform-level (super_admin) actions with no shop. */
   tenantId: string | null;
-  /** The acting user, always — an audit row with no actor has no value. */
-  userId: string;
+  /** Verified human actor, or null with an explicitly declared system source. */
+  userId: string | null;
+  source?: "stripe";
   /** Dotted verb, e.g. `tenant.settings.update`, `product.delete`. */
   action: string;
   /** The table/entity the action touched, e.g. `tenant`, `product`. */
@@ -16,37 +20,22 @@ export interface AuditEntry {
 }
 
 export async function recordAudit(entry: AuditEntry): Promise<void> {
+  const mode = currentRlsMode();
+  const actor = currentAuditActor();
+  if (actor && entry.userId !== actor.id) throw new Error("Audit actor does not match the verified request user.");
+  if (!mode || (mode.kind === "tenant" && entry.tenantId !== mode.tenantId))
+    throw new Error("Audit scope does not match the current transaction.");
+  if (entry.userId === null && entry.source !== "stripe")
+    throw new Error("Automated audit events require a declared system source.");
+  const metadata = entry.metadata || entry.source
+    ? auditJson({ ...entry.metadata, actorType: entry.userId ? "user" : "system", ...(entry.source ? { source: entry.source } : {}) })
+    : { actorType: "user" };
   await rlsDb().orm.public.AuditLog.create({
     tenantId: entry.tenantId,
     userId: entry.userId,
     action: entry.action,
     entityType: entry.entityType,
     entityId: entry.entityId ?? null,
-    metadata: entry.metadata ?? null,
+    metadata,
   });
-}
-
-export function changedFields<T extends Record<string, unknown>>(
-  before: T,
-  after: Partial<T>,
-): {
-  changed: string[];
-  before: Record<string, JsonValue>;
-  after: Record<string, JsonValue>;
-} {
-  const changed: string[] = [];
-  const beforeDiff: Record<string, JsonValue> = {};
-  const afterDiff: Record<string, JsonValue> = {};
-
-  for (const key of Object.keys(after)) {
-    const from = before[key];
-    const to = after[key];
-    if (String(from ?? "") === String(to ?? "")) continue;
-
-    changed.push(key);
-    beforeDiff[key] = (from ?? null) as JsonValue;
-    afterDiff[key] = (to ?? null) as JsonValue;
-  }
-
-  return { changed, before: beforeDiff, after: afterDiff };
 }

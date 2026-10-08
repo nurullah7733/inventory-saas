@@ -112,6 +112,12 @@ async function main() {
     const state = subscription(a); subscriptions.set(state.customerId, [state]);
     await Promise.all([syncSubscription(state.id, gateway, config), syncSubscription(state.id, gateway, config)]);
     assert.equal((await history(a)).length, 1, "Concurrent duplicate webhook creates one period row");
+    const systemLogs = () => withTenantRls(a.tenantId, (tx) => tx.orm.public.AuditLog.where({ tenantId: a.tenantId, userId: null }).all());
+    const auditEvents = await systemLogs();
+    assert.equal(auditEvents.length, 2, "Concurrent webhook records one subscription and one tenant update");
+    assert.ok(auditEvents.every((event) => (event.metadata as { actorType: string; source: string }).actorType === "system" && (event.metadata as { source: string }).source === "stripe"));
+    await syncSubscription(state.id, gateway, config);
+    assert.equal((await systemLogs()).length, 2, "Identical webhook retry does not duplicate audit history");
     assert.equal((await tenant(a))!.subscriptionStatus, "active"); assert.equal((await tenant(a))!.maxProducts, 1000);
     assert.equal((await tenant(b))!.subscriptionStatus, "trial", "Unrelated tenant unchanged");
     await assert.rejects(withOwner(a, (auth) => createCheckout(auth, "pro", gateway, config)), /already have a subscription/);

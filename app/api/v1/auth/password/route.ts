@@ -1,4 +1,5 @@
 import { rlsDb } from "@/lib/db/rls.ts";
+import { recordAudit } from "@/lib/audit/log.ts";
 import { AUTH_RATE_LIMITS, consume } from "@/lib/api/rate-limit.ts";
 import { withAuth } from "@/lib/api/guard.ts";
 import {
@@ -62,6 +63,9 @@ export const PUT = withAuth(
 
     const passwordHash = await hashPassword(parsed.data.newPassword);
     await rlsDb().orm.public.User.where({ id: user.id }).update({ passwordHash });
+    await recordAudit({ tenantId: user.tenantId, userId: user.id,
+      action: "user.password.update", entityType: "user", entityId: user.id,
+      metadata: { revokeOtherSessions: parsed.data.revokeOtherSessions } });
 
     if (!parsed.data.revokeOtherSessions) {
       return apiSuccess({

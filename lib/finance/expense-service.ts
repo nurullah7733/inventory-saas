@@ -1,7 +1,7 @@
 import type { TenantRequestContext } from "../api/guard.ts";
 import { ApiProblem } from "../api/response.ts";
 import { numeric } from "../numeric.ts";
-import { recordAudit } from "../audit/log.ts";
+import { changedFields, recordAudit } from "../audit/log.ts";
 import { escapeLike, isForeignKeyViolation } from "../inventory/master-data.ts";
 import {
   expenseSchema,
@@ -74,6 +74,8 @@ export async function save(
     ...rest,
     ...(amount !== undefined ? { amount: numeric<10, 2>(amount) } : {}),
   };
+  const diff = current ? changedFields(current, values) : null;
+  if (current && diff!.changed.length === 0) return { expense: current };
   let row;
   try {
     row = id
@@ -103,7 +105,7 @@ export async function save(
     action: "expense." + (id ? "update" : "create"),
     entityType: "expense",
     entityId: row.id,
-    metadata: { before: current, after: row },
+    metadata: current ? { ...diff! } : { after: row },
   });
   return { expense: row };
 }

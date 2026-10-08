@@ -561,8 +561,9 @@ model AuditLog {
   id         Uuid              @id @default(uuid())
   tenantId   Uuid?             @map("tenant_id")
   tenant     Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  userId     Uuid              @map("user_id")
-  user       User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  /// Null only for explicitly identified automated events (e.g. Stripe sync).
+  userId     Uuid?             @map("user_id")
+  user       User?             @relation(fields: [userId], references: [id], onDelete: Restrict)
   action     String
   entityType String            @map("entity_type")
   entityId   Uuid?             @map("entity_id")

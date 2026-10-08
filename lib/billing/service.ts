@@ -1,6 +1,6 @@
 import type { TenantRequestContext } from "../api/guard.ts";
 import { ApiProblem } from "../api/response.ts";
-import { recordAudit } from "../audit/log.ts";
+import { changedFields, recordAudit } from "../audit/log.ts";
 import { rawSql, rlsDb, withRequestRls } from "../db/rls.ts";
 import { numeric } from "../numeric.ts";
 import { tenantScope } from "../tenant/scope.ts";
@@ -66,17 +66,31 @@ export async function createCheckout(auth: TenantRequestContext, plan: PaidPlan,
 export async function createPortal(auth: TenantRequestContext, gateway: BillingGateway = stripeGateway(), config: BillingConfig = billingConfig()) {
   const customer = await auth.scope.Subscription.where((r) => r.stripeCustomerId.isNotNull()).select("stripeCustomerId").first();
   if (!customer?.stripeCustomerId) throw new ApiProblem("CONFLICT", "Start checkout before opening billing management.", 409);
-  return { url: await gateway.portal(customer.stripeCustomerId, config.appUrl) };
+  const url = await gateway.portal(customer.stripeCustomerId, config.appUrl);
+  await recordAudit({ tenantId: auth.tenantId, userId: auth.user.id,
+    action: "billing.portal.create", entityType: "tenant", entityId: auth.tenantId });
+  return { url };
 }
 
 async function savePeriod(tenantId: string, subscription: BillingSubscription, config: BillingConfig) {
   const scope = tenantScope(tenantId), projection = projectSubscription(subscription, config);
-  const current = await scope.Subscription.where({ stripeSubscriptionId: subscription.id, startedAt: projection.startedAt }).select("id").first();
+  const current = await scope.Subscription.where({ stripeSubscriptionId: subscription.id, startedAt: projection.startedAt })
+    .select("id", "stripeCustomerId", "stripeSubscriptionId", "plan", "status", "amount", "startedAt", "endsAt").first();
   const values = { stripeCustomerId: subscription.customerId, stripeSubscriptionId: subscription.id,
     plan: projection.plan, status: projection.status, amount: numeric<10, 2>(projection.amount),
     startedAt: projection.startedAt, endsAt: projection.endsAt };
-  if (current) await scope.Subscription.where({ id: current.id }).update(values);
-  else await scope.Subscription.create(scope.own(values));
+  // Postgres may return an equivalent timestamp with a different UTC offset
+  // or fractional precision. Compare instants to avoid audit events on retries.
+  const iso = (value: string | null) => value === null ? null : new Date(value).toISOString();
+  const diff = current ? changedFields({ ...current, startedAt: iso(current.startedAt)!, endsAt: iso(current.endsAt) }, values) : null;
+  if (!current || diff!.changed.length > 0) {
+    const row = current ? await scope.Subscription.where({ id: current.id }).select("id").update(values)
+      : await scope.Subscription.select("id").create(scope.own(values));
+    if (!row) throw new Error("Subscription period disappeared.");
+    await recordAudit({ tenantId, userId: null, source: "stripe",
+      action: current ? "subscription.update" : "subscription.create", entityType: "subscription", entityId: row.id,
+      metadata: current ? { ...diff! } : { after: values } });
+  }
   return projection;
 }
 /** The verified event identifies a resource; current Stripe state determines access, not event order. */
@@ -99,9 +113,19 @@ export async function syncSubscription(subscriptionId: string, gateway: BillingG
     const triggering = all.find((s) => s.id === subscriptionId)!;
     await savePeriod(tenantId, triggering, config);
     const projection = triggering.id === latest.id ? projectSubscription(latest, config) : await savePeriod(tenantId, latest, config);
-    await rls.session.orm.public.Tenant.where({ id: tenantId }).update({ subscriptionPlan: projection.plan,
+    const before = await rls.session.orm.public.Tenant.where({ id: tenantId })
+      .select("subscriptionPlan", "subscriptionStatus", "subscriptionEndsAt", "trialEndsAt", "maxProducts", "maxStaff").first();
+    if (!before) throw new Error("Billing workspace not found.");
+    const values = { subscriptionPlan: projection.plan,
       subscriptionStatus: projection.status, subscriptionEndsAt: projection.endsAt,
-      trialEndsAt: projection.trialEndsAt, maxProducts: projection.maxProducts, maxStaff: projection.maxStaff });
+      trialEndsAt: projection.trialEndsAt, maxProducts: projection.maxProducts, maxStaff: projection.maxStaff };
+    const iso = (value: string | null) => value === null ? null : new Date(value).toISOString();
+    const diff = changedFields({ ...before, subscriptionEndsAt: iso(before.subscriptionEndsAt), trialEndsAt: iso(before.trialEndsAt) }, values);
+    if (diff.changed.length > 0) {
+      await rls.session.orm.public.Tenant.where({ id: tenantId }).update(values);
+      await recordAudit({ tenantId, userId: null, source: "stripe", action: "tenant.subscription.update", entityType: "tenant", entityId: tenantId,
+        metadata: { ...diff, stripeSubscriptionId: latest.id } });
+    }
     return { ignored: false };
   });
 }
