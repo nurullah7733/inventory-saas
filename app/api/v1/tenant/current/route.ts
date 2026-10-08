@@ -47,7 +47,7 @@ export const GET = withTenantAuth(
       return apiError("NOT_FOUND", "This workspace no longer exists.", 404);
     }
 
-    return apiSuccess({
+    const response = apiSuccess({
       tenant,
       usage: {
         products: productCount.total,
@@ -61,5 +61,7 @@ export const GET = withTenantAuth(
         role: auth.user.role,
       },
     });
+    response.headers.set("Cache-Control", "private, no-store");
+    return response;
   },
 );

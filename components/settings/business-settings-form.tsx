@@ -6,6 +6,7 @@ import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
 import { useSession } from "@/lib/client/use-session.ts";
+import { CURRENT_TENANT_QUERY_KEY } from "@/lib/client/current-tenant.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
 import {
   businessSettingsSchema,
@@ -124,7 +125,7 @@ export function BusinessSettingsForm() {
       });
       // The header shows the shop name and logo from `/tenant/current`, which
       // reads the same row — it is now stale.
-      void queryClient.invalidateQueries({ queryKey: ["tenant", "current"] });
+      void queryClient.invalidateQueries({ queryKey: CURRENT_TENANT_QUERY_KEY });
       reset(toFormValues(result.settings));
     },
     onError: (error) => {

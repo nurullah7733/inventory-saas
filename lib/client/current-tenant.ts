@@ -11,18 +11,24 @@ import { useSession } from "./use-session.ts";
  * the currency symbol or the viewer's role; TanStack Query dedupes the fetch.
  */
 
-export const CURRENT_TENANT_QUERY_KEY = ["tenant", "current"] as const;
+export const CURRENT_TENANT_QUERY_KEY = ["currentTenant"] as const;
 
 export interface CurrentTenantResponse {
   tenant: {
     id: string;
     name: string;
     logoUrl: string | null;
+    description: string | null;
+    email: string;
+    phone: string | null;
+    address: string | null;
     currencySymbol: string;
     vatPercentage: string;
     lowStockThreshold: number;
     subscriptionPlan: string;
     subscriptionStatus: string;
+    trialEndsAt: string | null;
+    subscriptionEndsAt: string | null;
   };
   usage: { products: number; maxProducts: number; staff: number; maxStaff: number };
   viewer: { id: string; name: string; role: string };
@@ -32,7 +38,7 @@ export function useCurrentTenant() {
   const { status, session } = useSession();
   return useQuery({
     queryKey: CURRENT_TENANT_QUERY_KEY,
-    queryFn: () => apiRequest<CurrentTenantResponse>("/tenant/current"),
+    queryFn: ({ signal }) => apiRequest<CurrentTenantResponse>("/tenant/current", { signal }),
     // No point asking who we are before we hold a token.
     enabled: status === "authenticated" && session?.user.role !== "super_admin",
   });

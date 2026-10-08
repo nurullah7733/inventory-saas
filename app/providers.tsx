@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { Toaster } from "sonner";
 import { ApiClientError } from "@/lib/client/api.ts";
+import { useSession } from "@/lib/client/use-session.ts";
 
 /**
  * Client-side providers for the whole app.
@@ -14,7 +15,7 @@ import { ApiClientError } from "@/lib/client/api.ts";
  * creation is the documented pattern and, in a multi-tenant app, the
  * difference between a cache and a data leak.
  */
-export function Providers({ children }: { children: React.ReactNode }) {
+function SessionQueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -40,7 +41,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
+  );
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const { session } = useSession();
+  // Create a fresh cache before another identity renders the shared key.
+  // Token refresh for the same identity preserves queries and form state.
+  const identity = session
+    ? `${session.user.id}:${session.user.tenantId ?? "platform"}:${session.user.role}`
+    : "signed-out";
+  return (
+    <>
+      <SessionQueryProvider key={identity}>{children}</SessionQueryProvider>
+      <Toaster position="top-center" richColors closeButton />
+    </>
   );
 }

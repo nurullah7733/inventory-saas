@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/client/api.ts";
+import { CURRENT_TENANT_QUERY_KEY } from "@/lib/client/current-tenant.ts";
 import { Button } from "@/components/ui/field.tsx";
 import type { BillingSummary, PaidPlan } from "@/lib/billing/types.ts";
 
@@ -14,7 +15,7 @@ export function BillingManager() {
   const query = useQuery({ queryKey: ["billing"], queryFn: () => apiRequest<{ billing: BillingSummary }>("/billing"),
     // A redirect doesn't prove payment. Poll briefly for the verified webhook result.
     refetchInterval: () => returning && Date.now() < pollUntil ? 2000 : false });
-  useEffect(() => { if (returning) void client.invalidateQueries({ queryKey: ["tenant", "current"] }); }, [returning, client, query.dataUpdatedAt]);
+  useEffect(() => { if (returning) void client.invalidateQueries({ queryKey: CURRENT_TENANT_QUERY_KEY }); }, [returning, client, query.dataUpdatedAt]);
   const checkout = useMutation({ mutationFn: (plan: PaidPlan) => apiRequest<{ url: string }>("/billing/checkout", { method: "POST", body: { plan } }),
     onSuccess: ({ url }) => window.location.assign(url), onError: (error) => toast.error(error.message) });
   const portal = useMutation({ mutationFn: () => apiRequest<{ url: string }>("/billing/portal", { method: "POST", body: {} }),
@@ -49,7 +50,7 @@ export function BillingManager() {
       </section>)}</div>
       <p className="text-sm text-zinc-500">Starting checkout purchases a paid subscription at the displayed recurring price. Existing trial access is replaced only after Stripe confirms your subscription. Use Manage billing for plan changes, payment details and cancellation.</p>
       <div className="flex flex-wrap gap-2"><Button disabled={!billing.configured || !billing.canManage || !billing.hasCustomer || busy} onClick={() => portal.mutate()}>
-        {portal.isPending ? "Opening billing…" : "Manage billing"}</Button><Button variant="ghost" disabled={query.isFetching} onClick={() => { void query.refetch(); void client.invalidateQueries({ queryKey: ["tenant", "current"] }); }}>Refresh status</Button></div>
+        {portal.isPending ? "Opening billing…" : "Manage billing"}</Button><Button variant="ghost" disabled={query.isFetching} onClick={() => { void query.refetch(); void client.invalidateQueries({ queryKey: CURRENT_TENANT_QUERY_KEY }); }}>Refresh status</Button></div>
     </>}
   </div>;
 }
