@@ -36,7 +36,7 @@ async function withOwner<T>(f: Fixture, work: (auth: TenantRequestContext) => Pr
   return withTenantRls(f.tenantId, async (tx) => {
     const tenant = await tx.orm.public.Tenant.where({ id: f.tenantId }).select("id", "name", "isActive", "subscriptionPlan", "subscriptionStatus", "trialEndsAt", "subscriptionEndsAt").first();
     if (!tenant) throw new Error("Fixture missing.");
-    return work({ user: { id: f.ownerId, name: "Tester", email: "tester@example.com", tenantId: f.tenantId, role: "shop_owner" },
+    return work({ user: { id: f.ownerId, name: "Tester", email: "tester@example.com", tenantId: f.tenantId, role: "shop_owner", photoUrl: null },
       tenant, tenantId: f.tenantId, sessionId: "test", scope: tenantScope(f.tenantId), db: tx });
   });
 }

@@ -17,7 +17,7 @@ import {
  *   POST /api/v1/uploads/images
  *   Content-Type: multipart/form-data
  *     file     the image (JPEG, PNG or WebP, at most 5 MB)
- *     purpose  "product" | "category" | "logo"
+ *     purpose  "product" | "category" | "logo" | "profile"
  *
  * Returns `{ image: { url, contentType, size } }`. The client then saves that
  * `url` as the product's / category's `imageUrl` in a normal JSON request, so
@@ -44,9 +44,16 @@ export const POST = withTenantAuth(
       typeof purposeRaw !== "string" ||
       !(IMAGE_PURPOSES as readonly string[]).includes(purposeRaw)
     ) {
-      return apiError("VALIDATION_ERROR", "purpose must be product, category or logo.", 422, {
-        purpose: ["Use product, category or logo."],
+      return apiError("VALIDATION_ERROR", "purpose must be product, category, logo or profile.", 422, {
+        purpose: ["Use product, category, logo or profile."],
       });
+    }
+
+    if (purposeRaw !== "profile" && !MASTER_DATA_WRITE_ROLES.some((role) => role === auth.user.role)) {
+      return apiError("FORBIDDEN", "You do not have permission to upload this image.", 403);
+    }
+    if (Array.from(form.keys()).some((key) => key !== "purpose" && key !== "file")) {
+      return apiError("VALIDATION_ERROR", "Send only file and purpose fields.", 422);
     }
 
     if (purposeRaw === "logo" && auth.user.role !== "shop_owner") {
@@ -75,6 +82,7 @@ export const POST = withTenantAuth(
     try {
       const stored = await storeImage({
         tenantId: auth.tenantId,
+        userId: auth.user.id,
         purpose: purposeRaw as ImagePurpose,
         bytes,
         type,
@@ -94,7 +102,7 @@ export const POST = withTenantAuth(
       throw error;
     }
   },
-  { roles: MASTER_DATA_WRITE_ROLES },
+  { verifySession: true },
 );
 
 function tooLarge() {

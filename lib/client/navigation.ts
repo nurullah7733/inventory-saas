@@ -39,10 +39,11 @@ export const NAVIGATION: readonly NavigationItem[] = [
     { label: "Expense categories", icon: "categories", href: "/finance/expense-categories" },
   ] },
   { label: "Reports", icon: "reports", href: "/reports", permission: "reports.read" },
-  { label: "Settings", icon: "settings", permission: "settings.read", children: [
-    { label: "Business settings", icon: "settings", href: "/settings/business" },
+  { label: "Settings", icon: "settings", children: [
+    { label: "Profile", icon: "people", href: "/settings/profile" },
+    { label: "Business settings", icon: "settings", href: "/settings/business", permission: "settings.read" },
     { label: "Staff & managers", icon: "people", href: "/people/users", permission: "users.manage" },
-    { label: "Subscription & billing", icon: "finance", href: "/settings/billing" },
+    { label: "Subscription & billing", icon: "finance", href: "/settings/billing", permission: "settings.read" },
   ] },
 ];
 export function visibleNavigation(role: UserRole | undefined): NavigationItem[] {

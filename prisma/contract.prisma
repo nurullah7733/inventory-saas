@@ -133,6 +133,7 @@ model User {
   tenant       Tenant? @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   name         String
   email        String  @unique
+  photoUrl     String? @map("photo_url")
   passwordHash String  @map("password_hash")
 
   pinHash           String?            @map("pin_hash")

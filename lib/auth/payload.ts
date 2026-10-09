@@ -15,6 +15,7 @@ export interface AuthUserPayload {
   id: string;
   name: string;
   email: string;
+  photoUrl?: string | null;
   role: UserRole;
   tenantId: string | null;
   pinEnabled: boolean;

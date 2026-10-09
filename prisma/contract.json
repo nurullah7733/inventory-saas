@@ -2601,6 +2601,13 @@
                   "kind": "scalar"
                 }
               },
+              "photoUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "pinFailedAttempts": {
                 "nullable": false,
                 "type": {
@@ -2689,6 +2696,9 @@
                 },
                 "passwordHash": {
                   "column": "password_hash"
+                },
+                "photoUrl": {
+                  "column": "photo_url"
                 },
                 "pinFailedAttempts": {
                   "column": "pin_failed_attempts"
@@ -6106,6 +6116,11 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "photo_url": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "pin_failed_attempts": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -6775,7 +6790,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "9759b50c479435158ecb0e4838c8d7712caeb8aceece2d0e77665d958b369d9d"
+    "storageHash": "67f9d5cf657bf732c84c7c5cfbc348c3b50137d5a172a186ccadacabba12cda9"
   },
   "execution": {
     "executionHash": "e3e50dea5cb86e50bff6ea408baa6b9bd84f9c200164b3dee03d14f952da61f7",

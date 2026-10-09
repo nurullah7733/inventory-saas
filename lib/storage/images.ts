@@ -21,7 +21,7 @@ import path from "node:path";
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-export const IMAGE_PURPOSES = ["product", "category", "logo"] as const;
+export const IMAGE_PURPOSES = ["product", "category", "logo", "profile"] as const;
 export type ImagePurpose = (typeof IMAGE_PURPOSES)[number];
 
 interface ImageType {
@@ -78,12 +78,15 @@ export interface StoredImage {
 export async function storeImage(input: {
   tenantId: string;
   purpose: ImagePurpose;
+  userId?: string;
   bytes: Uint8Array;
   type: ImageType;
   /** Origin of the incoming request, for building the local driver's URL. */
   origin: string;
 }): Promise<StoredImage> {
-  const key = `tenants/${input.tenantId}/${input.purpose}/${randomUUID()}.${input.type.ext}`;
+  if (input.purpose === "profile" && !input.userId) throw new Error("Profile images require an authenticated user.");
+  const prefix = input.purpose === "profile" ? `profile/${input.userId}` : input.purpose;
+  const key = `tenants/${input.tenantId}/${prefix}/${randomUUID()}.${input.type.ext}`;
 
   switch (activeStorageDriver()) {
     case "vercel-blob": {
@@ -126,7 +129,7 @@ export class StorageUnavailableError extends Error {
 }
 
 const LOCAL_KEY =
-  /^tenants\/[0-9a-f-]{36}\/(product|category|logo)\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
+  /^tenants\/[0-9a-f-]{36}\/(?:product|category|logo|profile\/[0-9a-f-]{36})\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
 
 const MIME_BY_EXT: Record<string, string> = {
   jpg: "image/jpeg",
@@ -146,7 +149,7 @@ export async function readLocalImage(
   if (!match) return null;
   try {
     const bytes = await readFile(path.join(localUploadRoot(), ...key.split("/")));
-    return { bytes, contentType: MIME_BY_EXT[match[2]] };
+    return { bytes, contentType: MIME_BY_EXT[match[1]] };
   } catch {
     return null;
   }

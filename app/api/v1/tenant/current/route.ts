@@ -58,6 +58,8 @@ export const GET = withTenantAuth(
       viewer: {
         id: auth.user.id,
         name: auth.user.name,
+        photoUrl: auth.user.photoUrl,
+        email: auth.user.email,
         role: auth.user.role,
       },
     });

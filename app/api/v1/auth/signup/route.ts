@@ -145,6 +145,7 @@ export const POST = withPublicRoute(async (request: Request) => {
       role: "shop_owner",
       tenantId: created.tenant.id,
       pinEnabled: false,
+      photoUrl: null,
     },
     tenant: {
       id: created.tenant.id,

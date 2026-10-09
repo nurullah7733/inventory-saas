@@ -26,7 +26,7 @@ export function ImageUploadField({
   label: string;
   value: string;
   onChange: (url: string) => void | Promise<void>;
-  purpose: "product" | "category" | "logo";
+  purpose: "product" | "category" | "logo" | "profile";
   error?: string;
   disabled?: boolean;
   allowUrl?: boolean;

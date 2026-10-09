@@ -31,7 +31,7 @@ export interface CurrentTenantResponse {
     subscriptionEndsAt: string | null;
   };
   usage: { products: number; maxProducts: number; staff: number; maxStaff: number };
-  viewer: { id: string; name: string; role: string };
+  viewer: { id: string; name: string; email: string; photoUrl: string | null; role: string };
 }
 
 export function useCurrentTenant() {

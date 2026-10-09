@@ -1,0 +1,44 @@
+[
+  {
+    "id": "column.public.users.photo_url",
+    "label": "Add column \"photo_url\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "photo_url",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"photo_url\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "photo_url"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"photo_url\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"photo_url\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"photo_url\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "photo_url"
+        ]
+      }
+    ]
+  }
+]

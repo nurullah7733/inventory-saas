@@ -100,6 +100,16 @@ export function clearSession(): void {
   for (const listener of listeners) listener(null);
 }
 
+/** Update identity after a profile save without rotating or replacing tokens. */
+export function updateSessionUser(user: AuthUserPayload): void {
+  const current = readSession();
+  if (!current || current.user.id !== user.id) return;
+  const next = { ...current, user };
+  if (browser()) window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  snapshot = next;
+  for (const listener of listeners) listener(next);
+}
+
 export function readAccessToken(): string | null {
   if (!accessToken) return null;
   if (accessToken.expiresAt <= Date.now()) return null;

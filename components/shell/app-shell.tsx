@@ -7,6 +7,7 @@ import { useRequireSession, useSignOut } from "@/lib/client/use-session.ts";
 import { Button } from "@/components/ui/field.tsx";
 import { ApiClientError } from "@/lib/client/api.ts";
 import { TenantLogo } from "./tenant-logo.tsx";
+import { ProfileAvatar } from "./profile-avatar.tsx";
 import { useEffect, useId, useRef, useState } from "react";
 import { AppIcon } from "@/components/ui/app-icon.tsx";
 import { SidebarNavigation } from "./sidebar-navigation.tsx";
@@ -20,12 +21,14 @@ import { canNavigate, canViewFinance } from "@/lib/dashboard/permissions.ts";
 function ProfileMenu({
   name,
   role,
+  photoUrl,
   showBilling,
   showUsers,
   onSignOut,
 }: {
   name: string;
   role: string;
+  photoUrl: string | null;
   showBilling: boolean;
   showUsers: boolean;
   onSignOut: () => void;
@@ -108,12 +111,7 @@ function ProfileMenu({
         }}
         className="flex min-h-11 min-w-10 max-w-full items-center gap-micro rounded-lg lg:gap-small lg:px-small text-left transition hover:bg-surface-muted"
       >
-        <span
-          aria-hidden="true"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full lg:h-9 lg:w-9 bg-primary/10 text-sm font-semibold text-primary"
-        >
-          {Array.from(name)[0]?.toUpperCase()}
-        </span>
+        <ProfileAvatar key={photoUrl} name={name} photoUrl={photoUrl} />
         <span className="hidden min-w-0 max-w-36 lg:block">
           <span className="block truncate text-xs font-medium" title={name}>
             {name}
@@ -174,6 +172,14 @@ function ProfileMenu({
           >
             <span>Dark mode</span>
             <ThemeSwitch />
+          </li>
+          <li role="none">
+            <Link href="/settings/profile" role="menuitem" tabIndex={-1}
+              className="flex min-h-11 w-full items-center gap-item rounded-lg px-item text-xs text-foreground transition hover:bg-surface-muted"
+              onClick={() => setOpen(false)}>
+              <AppIcon name="people" className="shrink-0" />
+              Profile
+            </Link>
           </li>
           {showUsers && (
             <li role="none">
@@ -451,6 +457,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     currentTenant.data?.viewer.role ?? session?.user.role ?? ""
                   }
                   showBilling={canViewFinance(session?.user.role)}
+                  photoUrl={currentTenant.data ? currentTenant.data.viewer.photoUrl : session?.user.photoUrl ?? null}
                   showUsers={canNavigate(session?.user.role, "users.manage")}
                   onSignOut={() => void signOut()}
                 />

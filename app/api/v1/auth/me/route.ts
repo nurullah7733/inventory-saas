@@ -30,6 +30,7 @@ export const GET = withAuth(async (_request: Request, auth: AuthContext) => {
     "id",
     "name",
     "email",
+    "photoUrl",
     "role",
     "pinHash",
     "lastLoginAt",
@@ -43,6 +44,7 @@ export const GET = withAuth(async (_request: Request, auth: AuthContext) => {
       id: auth.user.id,
       name: profile?.name ?? auth.user.name,
       email: profile?.email ?? auth.user.email,
+      photoUrl: profile?.photoUrl ?? null,
       role: auth.user.role,
       tenantId: auth.user.tenantId,
       // Only whether a PIN exists — never the hash, and never the PIN.
