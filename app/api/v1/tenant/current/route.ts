@@ -36,7 +36,7 @@ export const GET = withTenantAuth(
       auth.scope.Product.where((p) => p.isDeleted.eq(false)).aggregate(
         (agg) => ({ total: agg.count() }),
       ),
-      auth.scope.User.where((u) => u.isActive.eq(true)).aggregate((agg) => ({
+      auth.scope.User.where((u) => u.isActive.eq(true)).where((u) => u.role.in(["manager", "staff"])).aggregate((agg) => ({
         total: agg.count(),
       })),
     ]);

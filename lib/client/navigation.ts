@@ -41,6 +41,7 @@ export const NAVIGATION: readonly NavigationItem[] = [
   { label: "Reports", icon: "reports", href: "/reports", permission: "reports.read" },
   { label: "Settings", icon: "settings", permission: "settings.read", children: [
     { label: "Business settings", icon: "settings", href: "/settings/business" },
+    { label: "Staff & managers", icon: "people", href: "/people/users", permission: "users.manage" },
     { label: "Subscription & billing", icon: "finance", href: "/settings/billing" },
   ] },
 ];

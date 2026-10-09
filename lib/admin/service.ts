@@ -30,7 +30,7 @@ export async function tenantDetail(auth: AuthContext, tenantId: string) {
   if (!tenant) throw new ApiProblem("NOT_FOUND", "Workspace not found.", 404);
   const tx = rlsDb();
   const products = await tx.orm.public.Product.where({ tenantId, isDeleted: false }).aggregate((a) => ({ total: a.count() }));
-  const staff = await tx.orm.public.User.where({ tenantId, isActive: true }).aggregate((a) => ({ total: a.count() }));
+  const staff = await tx.orm.public.User.where({ tenantId, isActive: true }).where((u) => u.role.in(["manager", "staff"])).aggregate((a) => ({ total: a.count() }));
   const owners = await tx.orm.public.User.where({ tenantId, role: "shop_owner" }).select("id", "name", "email").all();
   return { tenant, usage: { products: products.total, staff: staff.total }, owners };
 }

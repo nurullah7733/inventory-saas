@@ -38,7 +38,9 @@
     "dashboard:test": "node --experimental-strip-types scripts/dashboard-calculations-test.ts && node --experimental-strip-types scripts/dashboard-insights-test.ts",
     "dashboard:smoke": "node --experimental-strip-types scripts/dashboard-smoke-test.ts",
     "spacing:test": "node scripts/ui-spacing-test.mjs",
-    "theme:test": "node --experimental-strip-types scripts/theme-test.ts"
+    "theme:test": "node --experimental-strip-types scripts/theme-test.ts",
+    "users:test": "node --experimental-strip-types scripts/users-test.ts",
+    "users:smoke": "node --experimental-strip-types scripts/users-smoke-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",

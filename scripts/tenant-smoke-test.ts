@@ -209,8 +209,8 @@ async function main(): Promise<void> {
     "tenant B counts only its own 7 products",
   );
   check(
-    asRecord(asA.body.data?.usage)?.staff === 1,
-    "the staff count is scoped too — A sees 1 user, not 3",
+    asRecord(asA.body.data?.usage)?.staff === 0,
+    "the staff count is scoped too — A has no staff; the owner does not consume a staff slot",
   );
 
   const scopedA = await withTenantRls(a.tenantId, () =>

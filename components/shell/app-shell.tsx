@@ -15,17 +15,19 @@ import { ThemeSwitch } from "./theme-switch.tsx";
 import { CommandPalette } from "./command-palette.tsx";
 import { NotificationMenu } from "./notification-menu.tsx";
 import { navigationLinks, isActiveRoute } from "@/lib/client/navigation.ts";
-import { canViewFinance } from "@/lib/dashboard/permissions.ts";
+import { canNavigate, canViewFinance } from "@/lib/dashboard/permissions.ts";
 
 function ProfileMenu({
   name,
   role,
   showBilling,
+  showUsers,
   onSignOut,
 }: {
   name: string;
   role: string;
   showBilling: boolean;
+  showUsers: boolean;
   onSignOut: () => void;
 }) {
   const id = useId();
@@ -64,7 +66,7 @@ function ProfileMenu({
       document.removeEventListener("pointerdown", dismissOutside);
       document.removeEventListener("keydown", dismissWithEscape);
     };
-  }, [open, showBilling]);
+  }, [open, showBilling, showUsers]);
 
   return (
     <div
@@ -173,6 +175,20 @@ function ProfileMenu({
             <span>Dark mode</span>
             <ThemeSwitch />
           </li>
+          {showUsers && (
+            <li role="none">
+              <Link
+                href="/people/users"
+                role="menuitem"
+                tabIndex={-1}
+                className="flex min-h-11 w-full items-center gap-item rounded-lg px-item text-xs text-foreground transition hover:bg-surface-muted"
+                onClick={() => setOpen(false)}
+              >
+                <AppIcon name="people" className="shrink-0" />
+                Staff &amp; managers
+              </Link>
+            </li>
+          )}
           {showBilling && (
             <li role="none">
               <Link
@@ -435,6 +451,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     currentTenant.data?.viewer.role ?? session?.user.role ?? ""
                   }
                   showBilling={canViewFinance(session?.user.role)}
+                  showUsers={canNavigate(session?.user.role, "users.manage")}
                   onSignOut={() => void signOut()}
                 />
               </div>

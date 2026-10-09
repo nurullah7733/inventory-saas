@@ -80,7 +80,7 @@ async function main() {
     assert.equal((await call("/admin/tenants/not-an-id", admin.token)).status, 422);
     assert.equal((await call(`/admin/tenants/${randomUUID()}`, admin.token)).status, 404);
     const detail = await call(`/admin/tenants/${a}`, admin.token);
-    assert.equal(detail.status, 200); assert.equal(detail.body.data.usage.staff, 3); assert.equal(detail.body.data.owners[0].email, owner.email);
+    assert.equal(detail.status, 200); assert.equal(detail.body.data.usage.staff, 2); assert.equal(detail.body.data.owners[0].email, owner.email);
     assert.equal((await access(a, admin, false, true, "x")).status, 422);
     assert.equal((await call(`/admin/tenants/${a}/access`, admin.token, { isActive: false, expectedIsActive: true, reason: "QA reason", tenantId: b }, "PATCH")).status, 403);
     const concurrent = await Promise.all([access(a, admin, false, true), access(a, admin, false, true)]);

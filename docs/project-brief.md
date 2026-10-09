@@ -423,6 +423,26 @@ created_at   timestamptz default now()
 14. Dashboard UI: fetch "current tenant info" via authenticated endpoint using TanStack Query (`useQuery(['currentTenant'])`), show shop name/logo in header
 15. Audit logging on create/update/delete actions
 
+16. Staff management API + responsive People → Users screen: list, add/edit staff and manager accounts (name, email, role, assigned shop, active/inactive). Derive shop assignment from the authenticated tenant; owners manage only their own staff. Enforce `max_staff` when creating/reactivating accounts, prevent role escalation or changes to the owner's account through staff endpoints, and revoke sessions on deactivation or role changes. Preserve activity history by deactivating users instead of deleting them; audit every change.
+
+17. Profile API + responsive Settings → Profile screen: read/update the signed-in user's name and email, enforce globally unique emails, and refresh session/current-user data so the header reflects changes. Add profile photo upload using the existing image storage flow and persist its URL. Keep role, tenant assignment, and account privileges outside editable profile fields.
+
+18. Complete account security UI using the existing APIs: current-password-confirmed password change, 4-digit PIN enable/disable, and a mobile-friendly PIN unlock screen. Handle session/token replacement after password changes and keep full password login available as a fallback.
+
+19. Email verification: add expiring, single-use verification tokens, email delivery configuration, verification/resend APIs, and signup/profile verification screens. Rate-limit sending and verification attempts; require verification of a new email before replacing the account's existing verified email. Define and enforce the unverified-account access policy consistently across web and API clients.
+
+20. Forgot/reset password: add request/reset APIs, email delivery, expiring single-use reset tokens, and responsive Forgot Password / Reset Password screens. Use generic request responses to avoid disclosing registered emails, rate-limit requests, invalidate used tokens, and revoke existing sessions after a successful reset. Reuse the email delivery infrastructure from step 19.
+
+21. Safe product bulk actions: add tenant-scoped APIs and a responsive selection/confirmation UI, including explicit selected-product actions and a preview of "last N products" before confirmation. Apply product soft deletion and the existing referential-integrity rules; report affected/skipped records, refresh relevant queries, and audit each operation.
+
+22. Reports sharing: extend the existing PDF/Excel exports with a Share action using the native Web Share API where supported, with download fallback elsewhere. Share the same generated files and respect current date-range filters, tenant permissions, and loading/error states.
+
+23. Initial data loading: implement the brief's authenticated Server Component/native-fetch first-paint loading where appropriate, then hydrate TanStack Query for client-side filtering and mutations. Never share tenant data through a global server cache or rely on browser-only cookies as the API's authentication mechanism.
+
+24. Shared component layer: align reusable controls, dialogs, menus, and forms with the brief's Radix/shadcn requirement while retaining existing spacing tokens, dark mode, keyboard/focus behavior, and mobile layouts. Migrate shared primitives first, then their consumers.
+
+25. Completion verification: review every screen and MVP requirement against the implementation, not just this suggested order. Add/run relevant auth, tenant-isolation, permission, staff-limit, persistence, and referential-integrity tests; check affected mobile flows and run lint, type-check, and build. Document any remaining partial features or external configuration requirements before declaring the brief complete.
+
 ---
 
 ## GUARDRAILS TO REMIND THE AI DURING DEVELOPMENT
