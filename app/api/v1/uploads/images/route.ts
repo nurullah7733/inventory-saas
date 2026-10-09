@@ -12,12 +12,12 @@ import {
 } from "@/lib/storage/images.ts";
 
 /**
- * Upload one product or category image.
+ * Upload one product, category or business logo image.
  *
  *   POST /api/v1/uploads/images
  *   Content-Type: multipart/form-data
  *     file     the image (JPEG, PNG or WebP, at most 5 MB)
- *     purpose  "product" | "category"
+ *     purpose  "product" | "category" | "logo"
  *
  * Returns `{ image: { url, contentType, size } }`. The client then saves that
  * `url` as the product's / category's `imageUrl` in a normal JSON request, so
@@ -44,9 +44,13 @@ export const POST = withTenantAuth(
       typeof purposeRaw !== "string" ||
       !(IMAGE_PURPOSES as readonly string[]).includes(purposeRaw)
     ) {
-      return apiError("VALIDATION_ERROR", "purpose must be product or category.", 422, {
-        purpose: ["Use product or category."],
+      return apiError("VALIDATION_ERROR", "purpose must be product, category or logo.", 422, {
+        purpose: ["Use product, category or logo."],
       });
+    }
+
+    if (purposeRaw === "logo" && auth.user.role !== "shop_owner") {
+      return apiError("FORBIDDEN", "Only the shop owner can upload a business logo.", 403);
     }
 
     const file = form.get("file");

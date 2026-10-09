@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
 import { useSession } from "@/lib/client/use-session.ts";
@@ -15,6 +15,7 @@ import {
   type BusinessSettingsResponse,
   type InvoiceType,
 } from "@/lib/tenant/settings.ts";
+import { ImageUploadField } from "@/components/ui/image-upload.tsx";
 import { Button, Field, FormSection } from "@/components/ui/field.tsx";
 
 /**
@@ -82,6 +83,7 @@ function isInvoiceType(value: string): value is InvoiceType {
 
 export function BusinessSettingsForm() {
   const queryClient = useQueryClient();
+  const [logoUploading, setLogoUploading] = useState(false);
   const { session } = useSession();
 
   // Only the shop owner may write. The API enforces this (403 for anyone
@@ -91,7 +93,7 @@ export function BusinessSettingsForm() {
 
   const settingsQuery = useQuery({
     queryKey: SETTINGS_QUERY_KEY,
-    queryFn: () => apiRequest<SettingsEnvelope>("/tenant/settings"),
+    queryFn: ({ signal }) => apiRequest<SettingsEnvelope>("/tenant/settings", { signal }),
   });
 
   const form = useForm<FormValues>({
@@ -100,18 +102,20 @@ export function BusinessSettingsForm() {
   });
 
   const { reset, formState } = form;
+  const { dirtyFields } = formState;
   const settings = settingsQuery.data?.settings;
 
-  // `useWatch` rather than `form.watch(...)`: it subscribes through the
-  // control object, so only this preview re-renders when the URL changes —
-  // and, unlike `watch()`, it is a value the React Compiler can memoize.
-  const logoPreview = useWatch({ control: form.control, name: "logoUrl" });
-
   useEffect(() => {
-    if (settings) reset(toFormValues(settings));
+    // Background refetches must not replace an uploaded logo or other edits.
+    if (settings) reset(toFormValues(settings), { keepDirtyValues: true, keepDirty: true });
   }, [settings, reset]);
 
   const save = useMutation({
+    onMutate: async () => {
+      // A read started before saving must not put the previous logo back.
+      await queryClient.cancelQueries({ queryKey: SETTINGS_QUERY_KEY });
+      await queryClient.cancelQueries({ queryKey: CURRENT_TENANT_QUERY_KEY });
+    },
     mutationFn: (patch: Partial<FormValues>) =>
       apiRequest<SaveResult>("/tenant/settings", {
         method: "PATCH",
@@ -144,11 +148,30 @@ export function BusinessSettingsForm() {
     },
   });
 
+  const saveLogo = useMutation({
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: SETTINGS_QUERY_KEY });
+      await queryClient.cancelQueries({ queryKey: CURRENT_TENANT_QUERY_KEY });
+    },
+    mutationFn: (logoUrl: string) => apiRequest<SaveResult>("/tenant/settings", {
+      method: "PATCH",
+      body: { logoUrl },
+    }),
+    onSuccess: (result) => {
+      // Persist only the logo; keep unrelated settings edits in the form.
+      form.resetField("logoUrl", { defaultValue: result.settings.logoUrl ?? "" });
+      queryClient.setQueryData<SettingsEnvelope>(SETTINGS_QUERY_KEY, { settings: result.settings });
+      void queryClient.invalidateQueries({ queryKey: CURRENT_TENANT_QUERY_KEY });
+      toast.success(result.settings.logoUrl ? "Logo saved." : "Logo removed.");
+    },
+  });
+
   const onSubmit = form.handleSubmit((values) => {
+    if (logoUploading) return;
     // PATCH means partial: send only what the user actually touched. A field
     // they never opened is not echoed back, so two people editing different
     // sections cannot overwrite each other.
-    const dirty = Object.keys(formState.dirtyFields) as (keyof FormValues)[];
+    const dirty = Object.keys(dirtyFields) as (keyof FormValues)[];
     const patch: Partial<FormValues> = {};
     for (const key of dirty) {
       patch[key] = values[key] as never;
@@ -220,22 +243,21 @@ export function BusinessSettingsForm() {
           )}
         </Field>
 
-        <Field
-          label="Logo URL"
-          hint="Paste a hosted image URL (https://…). File upload arrives with the storage integration."
-          error={errors.logoUrl?.message}
-        >
-          {(props) => (
-            <input
-              {...props}
-              type="url"
-              inputMode="url"
-              placeholder="https://cdn.example.com/logo.png"
-              disabled={!canEdit}
-              {...form.register("logoUrl")}
-            />
-          )}
-        </Field>
+        <Controller
+          name="logoUrl"
+          control={form.control}
+          render={({ field, fieldState }) => <ImageUploadField
+            label="Business logo"
+            purpose="logo"
+            value={field.value ?? ""}
+            allowUrl={false}
+            disabled={!canEdit || save.isPending}
+            error={fieldState.error?.message}
+            onUploadingChange={setLogoUploading}
+            onChange={async (url) => { await saveLogo.mutateAsync(url); }}
+          />}
+        />
+        <p className="text-xs text-muted sm:col-span-2">Logo changes are saved automatically.</p>
 
         <div className="sm:col-span-2">
           <Field label="Description" error={errors.description?.message}>
@@ -250,26 +272,6 @@ export function BusinessSettingsForm() {
           </Field>
         </div>
 
-        {logoPreview && /^https?:\/\//i.test(logoPreview) ? (
-          <div className="sm:col-span-2">
-            <p className="mb-small text-sm text-zinc-500 dark:text-zinc-400">
-              Logo preview
-            </p>
-            {/* A plain <img>, not next/image: the URL is tenant-supplied, and
-                next/image would need every possible host allow-listed in
-                next.config.ts up front. Unoptimised is the honest option until
-                logos are uploaded to storage we control. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={logoPreview}
-              alt=""
-              className="h-16 w-auto max-w-[200px] rounded-lg border border-zinc-200 bg-white object-contain p-tight dark:border-zinc-700"
-              onError={(event) => {
-                event.currentTarget.style.display = "none";
-              }}
-            />
-          </div>
-        ) : null}
       </FormSection>
 
       <FormSection
@@ -403,13 +405,13 @@ export function BusinessSettingsForm() {
             <Button
               type="button"
               variant="ghost"
-              disabled={save.isPending}
+              disabled={save.isPending || logoUploading}
               onClick={() => settings && reset(toFormValues(settings))}
             >
               Discard changes
             </Button>
           ) : null}
-          <Button type="submit" disabled={save.isPending || !formState.isDirty}>
+          <Button type="submit" disabled={save.isPending || logoUploading || !formState.isDirty}>
             {save.isPending ? "Saving…" : "Save settings"}
           </Button>
         </div>

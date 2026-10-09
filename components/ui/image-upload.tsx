@@ -20,13 +20,17 @@ export function ImageUploadField({
   purpose,
   error,
   disabled,
+  allowUrl = true,
+  onUploadingChange,
 }: {
   label: string;
   value: string;
-  onChange: (url: string) => void;
-  purpose: "product" | "category";
+  onChange: (url: string) => void | Promise<void>;
+  purpose: "product" | "category" | "logo";
   error?: string;
   disabled?: boolean;
+  allowUrl?: boolean;
+  onUploadingChange?: (uploading: boolean) => void;
 }) {
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -38,6 +42,7 @@ export function ImageUploadField({
   async function upload(file: File) {
     setUploadError(null);
     setUploading(true);
+    onUploadingChange?.(true);
     try {
       const blob = await prepareImageForUpload(file);
       const form = new FormData();
@@ -47,13 +52,29 @@ export function ImageUploadField({
         method: "POST",
         body: form,
       });
+      await onChange(result.image.url);
       setBroken(false);
-      onChange(result.image.url);
     } catch (caught) {
       setUploadError(errorMessage(caught, "Upload failed. Try again."));
     } finally {
       setUploading(false);
+      onUploadingChange?.(false);
       if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  async function remove() {
+    setUploadError(null);
+    setUploading(true);
+    onUploadingChange?.(true);
+    try {
+      await onChange("");
+      setBroken(false);
+    } catch (caught) {
+      setUploadError(errorMessage(caught, "Could not remove image. Try again."));
+    } finally {
+      setUploading(false);
+      onUploadingChange?.(false);
     }
   }
 
@@ -70,7 +91,7 @@ export function ImageUploadField({
           <img
             src={value}
             alt=""
-            className="h-20 w-20 shrink-0 rounded-lg border border-zinc-200 bg-white object-cover dark:border-zinc-700"
+            className={`h-20 w-20 shrink-0 rounded-lg border border-zinc-200 bg-white ${purpose === "logo" ? "object-contain" : "object-cover"} dark:border-zinc-700`}
             onError={() => setBroken(true)}
           />
         ) : (
@@ -101,14 +122,14 @@ export function ImageUploadField({
             disabled={disabled || uploading}
             onClick={() => fileRef.current?.click()}
           >
-            {uploading ? "Uploading…" : value ? "Change photo" : "Upload photo"}
+            {uploading ? "Uploading…" : purpose === "logo" ? (value ? "Change logo" : "Upload logo") : value ? "Change photo" : "Upload photo"}
           </Button>
           {value ? (
             <Button
               type="button"
               variant="ghost"
               disabled={disabled || uploading}
-              onClick={() => onChange("")}
+              onClick={() => void remove()}
             >
               Remove
             </Button>
@@ -116,7 +137,7 @@ export function ImageUploadField({
         </div>
       </div>
 
-      {showUrl ? (
+      {allowUrl && (showUrl ? (
         <input
           type="url"
           inputMode="url"
@@ -138,7 +159,7 @@ export function ImageUploadField({
         >
           Or paste an image URL
         </button>
-      )}
+      ))}
 
       {message ? (
         <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">

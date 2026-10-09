@@ -21,7 +21,7 @@ import path from "node:path";
 
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
-export const IMAGE_PURPOSES = ["product", "category"] as const;
+export const IMAGE_PURPOSES = ["product", "category", "logo"] as const;
 export type ImagePurpose = (typeof IMAGE_PURPOSES)[number];
 
 interface ImageType {
@@ -126,7 +126,7 @@ export class StorageUnavailableError extends Error {
 }
 
 const LOCAL_KEY =
-  /^tenants\/[0-9a-f-]{36}\/(product|category)\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
+  /^tenants\/[0-9a-f-]{36}\/(product|category|logo)\/[0-9a-f-]{36}\.(jpg|png|webp)$/;
 
 const MIME_BY_EXT: Record<string, string> = {
   jpg: "image/jpeg",

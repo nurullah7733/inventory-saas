@@ -23,6 +23,8 @@
  * here is removed at the end, in foreign-key order.
  */
 import "dotenv/config";
+import { unlink } from "node:fs/promises";
+import path from "node:path";
 import { db } from "../prisma/db.ts";
 import { rawSql, withRlsBypass } from "../lib/db/rls.ts";
 import { signAccessToken } from "../lib/auth/jwt.ts";
@@ -418,6 +420,41 @@ async function main(): Promise<void> {
   );
 
   // --- cleanup --------------------------------------------------------------
+  console.log("\nbusiness logo upload");
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=", "base64");
+  async function uploadLogo(token: string, bytes: Uint8Array = png) {
+    const form = new FormData();
+    form.set("purpose", "logo");
+    form.set("file", new Blob([bytes as BlobPart], { type: "image/png" }), "logo.png");
+    return fetch(`${BASE_URL}/api/v1/uploads/images`, { method: "POST", headers: { authorization: `Bearer ${token}` }, body: form });
+  }
+  check((await uploadLogo(a.managerToken)).status === 403, "manager cannot upload a business logo");
+  check((await uploadLogo(a.ownerToken, new TextEncoder().encode("not an image"))).status === 422, "invalid logo content is rejected");
+  const logoResponse = await uploadLogo(a.ownerToken);
+  if (logoResponse.status === 503) console.log("  skip logo storage is not configured");
+  else {
+    check(logoResponse.status === 201, "owner can upload a logo");
+    const logoBody = await logoResponse.json();
+    const url: string = logoBody.data?.image?.url ?? "";
+    check(url.includes(`/tenants/${a.tenantId}/logo/`), "logo uses its own tenant storage prefix");
+    try {
+      const image = await fetch(url);
+      check(image.status === 200 && image.headers.get("content-type") === "image/png", "uploaded logo is served as PNG");
+      const saved = await call(SETTINGS, { method: "PATCH", token: a.ownerToken, body: { logoUrl: url } });
+      check(saved.status === 200 && saved.body.data?.settings?.logoUrl === url, "uploaded logo saves to business settings");
+      const current = await fetch(`${BASE_URL}/api/v1/tenant/current`, { headers: { authorization: `Bearer ${a.ownerToken}` } });
+      check((await current.json()).data?.tenant?.logoUrl === url, "shell tenant data receives the saved logo");
+      const removed = await call(SETTINGS, { method: "PATCH", token: a.ownerToken, body: { logoUrl: "" } });
+      check(removed.body.data?.settings?.logoUrl === null, "logo can be removed");
+    } finally {
+      const localPrefix = `/media/tenants/${a.tenantId}/logo/`;
+      const pathname = new URL(url).pathname;
+      if (pathname.startsWith(localPrefix) && /^[a-f0-9-]+\.png$/.test(pathname.slice(localPrefix.length))) {
+        await unlink(path.resolve(process.env.LOCAL_UPLOAD_DIR ?? ".uploads", "tenants", a.tenantId, "logo", pathname.slice(localPrefix.length)));
+      }
+    }
+  }
+
   console.log("\ncleanup");
   // Bulk deletes go through the raw lane for the reason documented in
   // scripts/auth-smoke-test.ts: an ORM `.delete()` behind a multi-row
