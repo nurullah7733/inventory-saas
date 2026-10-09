@@ -43,13 +43,13 @@ export default function SignupPage() {
       toast.error(message);
     }
   });
-  return <div className="flex flex-1 items-center justify-center p-4">
-    <form onSubmit={onSubmit} className="flex w-full max-w-md flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+  return <div className="flex flex-1 items-center justify-center p-content">
+    <form onSubmit={onSubmit} className="flex w-full max-w-md flex-col gap-content rounded-xl border border-zinc-200 bg-white p-roomy shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Create your shop account</h1>
-        <p className="mt-1 text-sm text-zinc-500">Start a 14-day trial. You will be the owner of your new shop.</p>
+        <p className="mt-tight text-sm text-zinc-500">Start a 14-day trial. You will be the owner of your new shop.</p>
       </div>
-      <fieldset disabled={form.formState.isSubmitting} className="flex min-w-0 flex-col gap-4">
+      <fieldset disabled={form.formState.isSubmitting} className="flex min-w-0 flex-col gap-content">
         <Field label="Shop name" required error={form.formState.errors.businessName?.message}>{(props) =>
           <input {...props} autoComplete="organization" maxLength={160} {...form.register("businessName")} />}</Field>
         <Field label="Your name" required error={form.formState.errors.name?.message}>{(props) =>
@@ -60,7 +60,7 @@ export default function SignupPage() {
           <input {...props} type="tel" autoComplete="tel" maxLength={32} {...form.register("phone")} />}</Field>
         <Field label="Password" required error={form.formState.errors.password?.message}>{(props) =>
           <input {...props} type="password" autoComplete="new-password" minLength={8} maxLength={72} {...form.register("password")} />}</Field>
-        <p className="-mt-2 text-xs text-zinc-500">Use 8–72 characters.</p>
+        <p className="-mt-small text-xs text-zinc-500">Use 8–72 characters.</p>
         <Field label="Confirm password" required error={form.formState.errors.confirmPassword?.message}>{(props) =>
           <input {...props} type="password" autoComplete="new-password" minLength={8} maxLength={72} {...form.register("confirmPassword")} />}</Field>
         {form.formState.errors.root?.server && <p role="alert" className="text-sm text-red-600">{form.formState.errors.root.server.message}</p>}

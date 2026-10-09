@@ -52,6 +52,10 @@ async function call(query = "", token?: string) {
   const response = await fetch(`${base}/api/v1/dashboard/summary${query}`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
   return { status: response.status, body: await response.json(), headers: response.headers };
 }
+async function insightCall(path: string, token?: string) {
+  const response = await fetch(`${base}/api/v1/dashboard/${path}`, { headers: token ? { authorization: `Bearer ${token}` } : {} });
+  return { status: response.status, body: await response.json(), headers: response.headers };
+}
 async function main() {
   try {
     const a = await fixture(true), b = await fixture(false);
@@ -73,11 +77,39 @@ async function main() {
     const empty = await call(`?from=${today}&to=${today}`, b.owner.token);
     assert.equal(empty.status, 200); assert.equal(empty.body.data.summary.totals.sales, "0.00"); assert.equal(empty.body.data.summary.topProducts.length, 0);
     assert.equal((await call(`?from=${today}&to=${today}`, a.staff.token)).status, 200);
+    const insights = await insightCall(`insights?from=${today}&to=${today}`, a.owner.token);
+    assert.equal(insights.status, 200, JSON.stringify(insights.body));
+    assert.equal(insights.headers.get("cache-control"), "private, no-store");
+    for (const section of ["comparison", "finance", "stock", "dues", "products", "invoices", "categories", "returns"]) assert.ok(insights.body.data.sections[section].data, `${section}: ${JSON.stringify(insights.body)}`);
+    assert.equal(insights.body.data.sections.products.data[0].netQuantity, "2");
+    assert.equal(insights.body.data.sections.products.data[0].isDeleted, true);
+    assert.equal(insights.body.data.sections.finance.data.expenses, "0.00");
+    assert.equal(insights.body.data.sections.returns.data.salesCount, "2");
+    assert.equal(insights.body.data.sections.returns.data.purchaseCount, "1");
+    assert.ok(insights.body.data.sections.invoices.data.some((invoice: { status: string }) => invoice.status === "draft"));
+    const staffInsights = await insightCall(`insights?from=${today}&to=${today}`, a.staff.token);
+    assert.equal(staffInsights.status, 200); assert.equal(staffInsights.body.data.sections.finance, undefined); assert.equal(staffInsights.body.data.sections.dues, undefined);
+    assert.equal((await insightCall("insights?section=finance", a.staff.token)).status, 403);
+    assert.equal((await insightCall("insights?section=dues", a.staff.token)).status, 403);
+    assert.equal((await insightCall("insights?section=stock", a.owner.token)).status, 200);
+    assert.equal((await insightCall("insights")).status, 401);
+    for (const path of ["insights?section=invalid", "insights?from=2026-02-30&to=2026-03-01", `insights?from=${addDays(today, 1)}&to=${addDays(today, 1)}`, "chart?window=invalid", "chart?from=2026-01-01&to=2026-12-31"]) assert.equal((await insightCall(path, a.owner.token)).status, 422);
+    assert.equal((await insightCall(`insights?tenant_id=${b.tenantId}`, a.owner.token)).status, 403);
+    const otherInsights = await insightCall(`insights?from=${today}&to=${today}`, b.owner.token);
+    assert.equal(otherInsights.body.data.sections.products.data.length, 0); assert.equal(otherInsights.body.data.sections.invoices.data.length, 0);
+    const chart = await insightCall(`chart?from=${today}&to=${today}&window=selected`, a.owner.token);
+    assert.equal(chart.status, 200); assert.deepEqual(chart.body.data.points, [{ date: today, sales: "220.00", purchases: "104.51", salesReturns: "105.00", netSales: "115.00" }]);
+    const annual = await insightCall("chart?window=12m", a.owner.token);
+    assert.equal(annual.status, 200); assert.equal(annual.body.data.points.length, 12); assert.equal(annual.body.data.monthly, true);
     for (const query of ["?from=2026-02-30&to=2026-03-01", "?from=2026-01-01&to=2026-12-31", `?from=${today}`, `?from=${addDays(today, 1)}&to=${addDays(today, 1)}`, "?unknown=1"])
       assert.equal((await call(query, a.owner.token)).status, 422);
     assert.equal((await call(`?tenant_id=${b.tenantId}`, a.owner.token)).status, 403);
     await withRlsBypass((tx) => tx.orm.public.RefreshSession.where({ id: a.staff.sessionId }).update({ revokedAt: new Date().toISOString() }));
     assert.equal((await call("", a.staff.token)).status, 401);
+    if (process.env.DASHBOARD_BROWSER_CHECK === "1") {
+      const { runDashboardBrowserCheck } = await import("./dashboard-browser-check.ts");
+      await runDashboardBrowserCheck(base, { user: { ...a.owner.user, pinEnabled: false }, tenant: null, refreshToken: a.owner.refreshToken, refreshExpiresAt: a.owner.refreshExpiresAt });
+    }
     console.log("Dashboard API smoke tests passed: exact totals, both return types, draft exclusion, net product ranking, historical/weekly ranges, filters, live session and tenant isolation.");
   } finally {
     for (const tenantId of tenants) await withRlsBypass(async (tx) => {

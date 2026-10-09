@@ -61,10 +61,10 @@ export function ImageUploadField({
   const showPreview = value !== "" && /^https?:\/\//i.test(value) && !broken;
 
   return (
-    <div className="flex flex-col gap-2 sm:col-span-2">
+    <div className="flex flex-col gap-small sm:col-span-2">
       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-item">
         {showPreview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -82,7 +82,7 @@ export function ImageUploadField({
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-small">
           <input
             ref={fileRef}
             id={inputId}
@@ -128,7 +128,7 @@ export function ImageUploadField({
             setBroken(false);
             onChange(event.target.value);
           }}
-          className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-item py-small text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
         />
       ) : (
         <button

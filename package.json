@@ -35,8 +35,10 @@
     "audit:test": "node --experimental-strip-types scripts/audit-test.ts",
     "audit:smoke": "node --experimental-strip-types scripts/audit-smoke-test.ts",
     "purchase-returns:smoke": "node --experimental-strip-types scripts/purchase-returns-smoke-test.ts",
-    "dashboard:test": "node --experimental-strip-types scripts/dashboard-calculations-test.ts",
-    "dashboard:smoke": "node --experimental-strip-types scripts/dashboard-smoke-test.ts"
+    "dashboard:test": "node --experimental-strip-types scripts/dashboard-calculations-test.ts && node --experimental-strip-types scripts/dashboard-insights-test.ts",
+    "dashboard:smoke": "node --experimental-strip-types scripts/dashboard-smoke-test.ts",
+    "spacing:test": "node scripts/ui-spacing-test.mjs",
+    "theme:test": "node --experimental-strip-types scripts/theme-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",
@@ -52,6 +54,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.88.0",
+    "recharts": "^3.10.1",
     "sonner": "^2.0.8",
     "stripe": "^23.0.0",
     "zod": "^4.5.4"

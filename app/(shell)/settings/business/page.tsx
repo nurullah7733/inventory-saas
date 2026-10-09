@@ -7,12 +7,12 @@ export const metadata: Metadata = {
 
 export default function BusinessSettingsPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="ui-stack">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">
           Business settings
         </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-tight text-sm text-zinc-500 dark:text-zinc-400">
           Your shop&apos;s identity, contact details, and the tax and stock
           rules the rest of the app runs on.
         </p>

@@ -32,13 +32,13 @@ export function PurchaseReturnsManager() {
   const history = useQuery({ queryKey: ["inventory", "purchase-returns", params.toString()],
     queryFn: () => apiRequest<PurchaseReturnList>(`/purchase-returns?${params}`), enabled: tab === "returns" && datesValid });
   const query = tab === "purchases" ? purchases : history;
-  return <div className="space-y-4">
-    <div className="flex flex-wrap gap-3">
+  return <div className="space-y-content">
+    <div className="flex flex-wrap gap-item">
       <Button variant={tab === "purchases" ? "primary" : "ghost"} onClick={() => { setTab("purchases"); setPage(1); }}>Purchase entries</Button>
       <Button variant={tab === "returns" ? "primary" : "ghost"} onClick={() => { setTab("returns"); setPage(1); }}>Return history</Button>
       <Link href="/inventory/stock" className="inline-flex min-h-11 items-center underline">Receive stock</Link>
     </div>
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid gap-item sm:grid-cols-2">
       <Field label="From date">{(props) => <input {...props} type="date" value={from} max={localToday()} onChange={(e) => { setFrom(e.target.value); setPage(1); }} />}</Field>
       <Field label="To date">{(props) => <input {...props} type="date" value={to} max={localToday()} onChange={(e) => { setTo(e.target.value); setPage(1); }} />}</Field>
     </div>
@@ -46,7 +46,7 @@ export function PurchaseReturnsManager() {
     {datesValid && query.isLoading && <ListSkeleton label="Loading purchase returns" />}
     {datesValid && query.isError && <ErrorState message={query.error.message} onRetry={() => void query.refetch()} />}
     {datesValid && tab === "purchases" && purchases.data?.purchases.length === 0 && <EmptyState>No supplier purchases in this range. Receive stock with a supplier first.</EmptyState>}
-    {datesValid && tab === "purchases" && purchases.data?.purchases.map((entry) => <article key={entry.id} className="space-y-2 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+    {datesValid && tab === "purchases" && purchases.data?.purchases.map((entry) => <article key={entry.id} className="space-y-small rounded-xl border border-zinc-200 p-content dark:border-zinc-800">
       <h2 className="font-semibold">{entry.product?.name} · {entry.supplier?.name}</h2>
       <p className="text-sm text-zinc-500">{entry.product?.sku} · {formatDateTime(entry.createdAt)}</p>
       {entry.note && <p className="whitespace-pre-wrap break-words text-sm">{entry.note}</p>}
@@ -56,7 +56,7 @@ export function PurchaseReturnsManager() {
       {!entry.productAvailable && <p className="text-sm text-zinc-500">Restore the product before returning stock.</p>}
     </article>)}
     {datesValid && tab === "returns" && history.data?.returns.length === 0 && <EmptyState>No purchase returns recorded in this range.</EmptyState>}
-    {datesValid && tab === "returns" && history.data?.returns.map((entry) => <article key={entry.id} className="space-y-2 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+    {datesValid && tab === "returns" && history.data?.returns.map((entry) => <article key={entry.id} className="space-y-small rounded-xl border border-zinc-200 p-content dark:border-zinc-800">
       <h2 className="font-semibold">{entry.product?.name} · {entry.supplier?.name}</h2>
       <p>Returned: {entry.returnedQuantity} · Credit: {formatMoney(entry.creditAmount, currency)}</p>
       {entry.note && <p className="whitespace-pre-wrap break-words text-sm">{entry.note}</p>}
@@ -85,7 +85,7 @@ function ReturnPurchaseSheet({ purchase, currency, onClose }: { purchase: Purcha
       toast.error(errorMessage(error, "Could not record purchase return."));
     } });
   return <Sheet open title="Return to supplier" description={`${purchase.product?.name} · ${purchase.supplier?.name}`} onOpenChange={(open) => { if (!open && !mutation.isPending) onClose(); }}>
-    <form className="space-y-4" onSubmit={(event) => {
+    <form className="space-y-content" onSubmit={(event) => {
       event.preventDefault(); if (!retry && !valid) return;
       const body = retry ?? { requestId: crypto.randomUUID(), sourceMovementId: purchase.id, quantity: count, reason: reason.trim() || null };
       setRetry(body); mutation.mutate(body);
@@ -95,7 +95,7 @@ function ReturnPurchaseSheet({ purchase, currency, onClose }: { purchase: Purcha
       <Field label="Reason">{(props) => <textarea {...props} maxLength={500} value={reason} disabled={mutation.isPending || !!retry} onChange={(e) => setReason(e.target.value)} />}</Field>
       <p>Return credit: {valid ? formatMoney(fromCents(toCents(purchase.unitCost ?? "0.00") * BigInt(count)), currency) : "—"}</p>
       {mutation.isError && <p role="alert" className="text-sm text-red-600">{errorMessage(mutation.error, "Could not record purchase return.")}</p>}
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-small">
         <Button type="button" variant="ghost" disabled={mutation.isPending} onClick={onClose}>Close</Button>
         <Button type="submit" disabled={mutation.isPending || (!retry && !valid)}>{mutation.isPending ? "Saving…" : retry ? "Retry same return" : "Confirm return"}</Button>
       </div>

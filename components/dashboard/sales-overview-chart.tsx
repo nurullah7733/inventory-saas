@@ -1,0 +1,29 @@
+"use client";
+import { useState } from "react";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useSalesChart } from "@/lib/client/dashboard.ts";
+import { formatMoney } from "@/lib/client/format.ts";
+import type { DashboardPeriod } from "@/lib/dashboard/types.ts";
+import type { ChartWindow, SalesChartPoint } from "@/lib/dashboard/insights-types.ts";
+import { DashboardCard, DashboardEmpty } from "./dashboard-card.tsx";
+
+function ChartTooltip({ active, payload, currency }: { active?: boolean; payload?: readonly { payload?: SalesChartPoint }[]; currency: string }) {
+  const day = payload?.[0]?.payload;
+  if (!active || !day) return null;
+  return <div className="ui-panel max-w-60 p-item text-xs"><p className="mb-small font-semibold">{day.date}</p>{[["Sales", day.sales], ["Purchases", day.purchases], ["Returns", day.salesReturns], ["Net sales", day.netSales]].map(([label, value]) => <p key={label} className="flex justify-between gap-content py-micro"><span className="text-muted">{label}</span><span>{formatMoney(value, currency)}</span></p>)}</div>;
+}
+export function SalesOverviewChart({ period, currency }: { period: DashboardPeriod; currency: string }) {
+  const [window, setWindow] = useState<ChartWindow>("selected"), [pinned, setPinned] = useState<SalesChartPoint | null>(null);
+  const query = useSalesChart(period, window), points = query.data?.points ?? [];
+  const data = points.map((point) => ({ ...point, salesValue: Number(point.sales), purchaseValue: Number(point.purchases), returnValue: Number(point.salesReturns) }));
+  const hasActivity = data.some((point) => point.salesValue || point.purchaseValue || point.returnValue);
+  const selected = pinned ? points.find((point) => point.date === pinned.date) : undefined;
+  return <DashboardCard stretch={hasActivity} title="Sales overview" subtitle="Completed sales, received purchases and customer return credits" loading={query.isPending} error={query.isError ? query.error.message : undefined} onRetry={() => void query.refetch()}>
+    <div role="group" aria-label="Chart range" className="mb-content flex flex-wrap gap-tight">{([{ value: "selected", label: "Selected range" }, { value: "7d", label: "7 days" }, { value: "30d", label: "30 days" }, { value: "12m", label: "12 months" }] as const).map((tab) => <button type="button" key={tab.value} aria-pressed={window === tab.value} className={`min-h-11 rounded-lg px-item text-xs ${window === tab.value ? "bg-primary/10 font-semibold text-primary" : "text-muted hover:bg-surface-muted"}`} onClick={() => { setWindow(tab.value); setPinned(null); }}>{tab.label}</button>)}</div>
+    {!hasActivity ? <DashboardEmpty message="No sales or purchases in this period yet" invoice /> : <><div className="mb-item flex flex-wrap gap-content text-[11px] text-muted">{[["Sales", "bg-chart-sales"], ["Purchases", "bg-chart-purchases"], ["Return credits", "bg-chart-returns"]].map(([label, color]) => <span key={label} className="inline-flex items-center gap-compact"><span className={`h-2 w-2 rounded-sm ${color}`} />{label}</span>)}</div><div className="h-64 min-h-48 min-w-0 flex-1" role="group" aria-label="Sales, purchases and returns chart. Use arrow keys to inspect bars; click or tap for details."><ResponsiveContainer width="100%" height="100%"><BarChart data={data} accessibilityLayer onClick={(state) => { const point = state.activeIndex !== undefined ? points[Number(state.activeIndex)] : undefined; if (point) setPinned(point); }} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}><CartesianGrid vertical={false} stroke="var(--border)" /><XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted)" }} tickFormatter={(date: string) => date.slice(5)} axisLine={false} tickLine={false} minTickGap={24} /><YAxis tick={{ fontSize: 10, fill: "var(--muted)" }} axisLine={false} tickLine={false} tickFormatter={(value: number) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(value)} /><Tooltip content={<ChartTooltip currency={currency} />} /><Bar dataKey="salesValue" name="Sales" fill="var(--chart-sales)" radius={[3, 3, 0, 0]} isAnimationActive={false} /><Bar dataKey="purchaseValue" name="Purchases" fill="var(--chart-purchases)" radius={[3, 3, 0, 0]} isAnimationActive={false} /><Bar dataKey="returnValue" name="Returns" fill="var(--chart-returns)" radius={[3, 3, 0, 0]} isAnimationActive={false} /></BarChart></ResponsiveContainer></div>
+      {selected && <div role="status" className="mt-item flex items-start justify-between gap-small rounded-lg bg-surface-muted p-item"><ChartTooltip active payload={[{ payload: selected }]} currency={currency} /><button type="button" className="min-h-11 px-small text-xs text-primary" onClick={() => setPinned(null)}>Close</button></div>}
+      <details className="mt-item text-xs"><summary className="min-h-11 cursor-pointer py-item text-muted">Accessible chart data · {query.data?.period.from} to {query.data?.period.to}</summary><div className="max-h-56 overflow-auto"><table className="w-full text-left"><caption className="sr-only">Exact amounts for every chart date</caption><thead><tr>{["Date", "Sales", "Purchases", "Returns", "Net"].map((heading) => <th key={heading} className="px-small py-small">{heading}</th>)}</tr></thead><tbody>{points.map((point) => <tr key={point.date}><th className="whitespace-nowrap px-small py-small font-normal">{point.date}</th>{[point.sales, point.purchases, point.salesReturns, point.netSales].map((value, index) => <td key={index} className="whitespace-nowrap px-small py-small">{formatMoney(value, currency)}</td>)}</tr>)}</tbody></table></div></details>
+    </>}
+    <p className="mt-item text-[11px] text-muted">{window === "selected" ? "Follows the dashboard filter." : "Chart tabs use the current day; KPI cards keep the dashboard filter."} · Asia/Dhaka</p>
+  </DashboardCard>;
+}

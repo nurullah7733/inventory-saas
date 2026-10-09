@@ -109,20 +109,20 @@ export function CategoriesManager() {
   );
 
   return (
-    <div className="flex flex-col gap-4 pb-24 sm:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-content pb-dock sm:pb-0">
+      <div className="flex flex-col gap-item sm:flex-row sm:items-center">
         <input
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search categories"
           aria-label="Search categories"
-          className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 sm:flex-1 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400"
+          className="min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-item py-small text-base text-zinc-900 shadow-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 sm:flex-1 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400"
         />
         <div
           role="group"
           aria-label="Filter by status"
-          className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900"
+          className="grid grid-cols-3 gap-tight rounded-xl bg-zinc-100 p-tight dark:bg-zinc-900"
         >
           {FILTERS.map((item) => (
             <button
@@ -130,7 +130,7 @@ export function CategoriesManager() {
               type="button"
               aria-pressed={filter === item.value}
               onClick={() => setFilter(item.value)}
-              className={`min-h-9 rounded-lg px-3 text-sm font-medium transition ${
+              className={`min-h-9 rounded-lg px-item text-sm font-medium transition ${
                 filter === item.value
                   ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -143,7 +143,7 @@ export function CategoriesManager() {
         {canEdit ? (
           /* Pinned to the bottom on a phone, inline from `sm` up — same as
              the Business Settings save bar. */
-          <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none dark:border-zinc-800 dark:bg-zinc-950/95 sm:dark:bg-transparent">
+          <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-item backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none dark:border-zinc-800 dark:bg-zinc-950/95 sm:dark:bg-transparent">
             <Button
               type="button"
               className="w-full sm:w-auto"
@@ -158,20 +158,20 @@ export function CategoriesManager() {
       {list.isPending ? (
         <ListSkeleton />
       ) : list.isError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-content text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <p className="font-medium">
             {errorMessage(list.error, "Could not load categories.")}
           </p>
           <Button
             variant="ghost"
-            className="mt-3"
+            className="mt-item"
             onClick={() => list.refetch()}
           >
             Try again
           </Button>
         </div>
       ) : visible.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+        <p className="rounded-xl border border-dashed border-zinc-300 p-large text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
           {all.length === 0
             ? canEdit
               ? "No categories yet. Add your first one."
@@ -179,19 +179,19 @@ export function CategoriesManager() {
             : "No categories match this search or filter."}
         </p>
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-item sm:grid-cols-2">
           {visible.map((category) => (
             <li
               key={category.id}
-              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+              className="flex items-center gap-item rounded-xl border border-zinc-200 bg-white p-item shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
             >
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-2">
+                <p className="flex items-center gap-small">
                   <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                     {category.name}
                   </span>
                   {!category.isActive ? (
-                    <span className="shrink-0 rounded-full bg-zinc-200 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    <span className="shrink-0 rounded-full bg-zinc-200 px-small py-micro text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
                       Archived
                     </span>
                   ) : null}
@@ -200,7 +200,7 @@ export function CategoriesManager() {
                   {expensesLabel(category.expenseCount)}
                 </p>
                 {canEdit ? (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-small flex flex-wrap gap-small">
                     <Button
                       type="button"
                       variant="ghost"
@@ -344,7 +344,7 @@ function CategoryFormSheet({
       }}
       title={editing ? "Edit category" : "Add category"}
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
         <Field label="Name" error={errors.name?.message} required>
           {(props) => (
             <input
@@ -358,7 +358,7 @@ function CategoryFormSheet({
           )}
         </Field>
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="ghost"
@@ -379,7 +379,7 @@ function CategoryFormSheet({
 function ListSkeleton() {
   return (
     <div
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+      className="grid grid-cols-1 gap-item sm:grid-cols-2"
       aria-busy="true"
       aria-live="polite"
     >

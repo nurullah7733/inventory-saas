@@ -9,9 +9,8 @@ import { Button } from "./field.tsx";
  */
 
 export const inputClasses =
-  "min-h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-base text-zinc-900 " +
-  "shadow-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 " +
-  "dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-400";
+  "min-h-11 w-full rounded-lg border border-border bg-surface px-control-x py-control-y text-base text-foreground " +
+  "shadow-panel outline-none focus:border-primary focus:ring-2 focus:ring-primary/10";
 
 export function SearchInput({
   value,
@@ -51,7 +50,7 @@ export function Segmented<T extends string>({
     <div
       role="group"
       aria-label={label}
-      className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900"
+      className="flex gap-tight overflow-x-auto rounded-xl bg-surface-muted p-tight"
     >
       {options.map((item) => (
         <button
@@ -59,10 +58,10 @@ export function Segmented<T extends string>({
           type="button"
           aria-pressed={value === item.value}
           onClick={() => onChange(item.value)}
-          className={`min-h-9 flex-1 whitespace-nowrap rounded-lg px-3 text-sm font-medium transition ${
+          className={`min-h-9 flex-1 whitespace-nowrap rounded-lg px-item text-sm font-medium transition ${
             value === item.value
-              ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100"
-              : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+              ? "bg-surface text-foreground shadow-panel"
+              : "text-muted hover:text-foreground"
           }`}
         >
           {item.label}
@@ -81,7 +80,7 @@ export function PrimaryAction({
   onClick: () => void;
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none dark:border-zinc-800 dark:bg-zinc-950/95 sm:dark:bg-transparent">
+    <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-surface/95 p-item backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
       <Button type="button" className="w-full sm:w-auto" onClick={onClick}>
         {children}
       </Button>
@@ -111,7 +110,7 @@ export function Pager({
   return (
     <nav
       aria-label="Pagination"
-      className="flex items-center justify-between gap-2 text-sm text-zinc-600 dark:text-zinc-400"
+      className="flex items-center justify-between gap-small text-sm text-muted"
     >
       <Button
         type="button"
@@ -138,9 +137,9 @@ export function Pager({
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+    <div className="rounded-panel border border-danger/20 bg-danger/5 p-panel text-sm text-danger">
       <p className="font-medium">{message}</p>
-      <Button type="button" variant="ghost" className="mt-3" onClick={onRetry}>
+      <Button type="button" variant="ghost" className="mt-item" onClick={onRetry}>
         Try again
       </Button>
     </div>
@@ -149,7 +148,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry: () 
 
 export function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
+    <p className="rounded-panel border border-dashed border-border p-large text-center text-sm text-muted">
       {children}
     </p>
   );
@@ -157,10 +156,10 @@ export function EmptyState({ children }: { children: React.ReactNode }) {
 
 export function ListSkeleton({ label, rows = 4 }: { label: string; rows?: number }) {
   return (
-    <div className="flex flex-col gap-3" aria-busy="true" aria-live="polite">
+    <div className="flex flex-col gap-item" aria-busy="true" aria-live="polite">
       <span className="sr-only">{label}</span>
       {Array.from({ length: rows }, (_, row) => (
-        <div key={row} className="h-20 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />
+        <div key={row} className="h-20 motion-safe:animate-pulse rounded-panel bg-surface-muted" />
       ))}
     </div>
   );
@@ -174,13 +173,13 @@ export function Badge({
   children: React.ReactNode;
 }) {
   const styles = {
-    neutral: "bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-    warning: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-    danger: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-    success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+    neutral: "bg-surface-muted text-foreground",
+    warning: "bg-warning/10 text-warning",
+    danger: "bg-danger/10 text-danger",
+    success: "bg-success/10 text-success",
   }[tone];
   return (
-    <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium ${styles}`}>
+    <span className={`inline-flex shrink-0 items-center rounded-full px-small py-micro text-xs font-medium ${styles}`}>
       {children}
     </span>
   );
@@ -206,7 +205,7 @@ export function Thumb({
         src={src}
         alt=""
         loading="lazy"
-        className={`${box} shrink-0 rounded-lg border border-zinc-200 bg-white object-cover dark:border-zinc-700`}
+        className={`${box} shrink-0 rounded-lg border border-border bg-surface object-cover`}
         onError={(event) => {
           event.currentTarget.style.visibility = "hidden";
         }}
@@ -216,7 +215,7 @@ export function Thumb({
   return (
     <div
       aria-hidden="true"
-      className={`${box} flex shrink-0 items-center justify-center rounded-lg bg-zinc-100 font-semibold text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400`}
+      className={`${box} flex shrink-0 items-center justify-center rounded-lg bg-surface-muted font-semibold text-muted`}
     >
       {name.slice(0, 1).toUpperCase()}
     </div>

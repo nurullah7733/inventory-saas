@@ -7,10 +7,10 @@ export const metadata: Metadata = {
 
 export default function VariantOptionsPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="ui-stack">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Variant options</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-tight text-sm text-zinc-500 dark:text-zinc-400">
           The colors, sizes, weights and units your products choose from.
           Define each one once here, then pick it from a dropdown when adding
           a product.

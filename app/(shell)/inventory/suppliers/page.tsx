@@ -7,10 +7,10 @@ export const metadata: Metadata = {
 
 export default function SuppliersPage() {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="ui-stack">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Suppliers</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-tight text-sm text-zinc-500 dark:text-zinc-400">
           The wholesalers and vendors you buy stock from. A supplier with
           purchase history cannot be deleted — mark it inactive instead and its
           history stays intact.

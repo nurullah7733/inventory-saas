@@ -180,11 +180,11 @@ export function BusinessSettingsForm() {
         ? settingsQuery.error.message
         : "Could not load your business settings.";
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+      <div className="rounded-xl border border-red-200 bg-red-50 p-content text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
         <p className="font-medium">{message}</p>
         <Button
           variant="ghost"
-          className="mt-3"
+          className="mt-item"
           onClick={() => settingsQuery.refetch()}
         >
           Try again
@@ -196,9 +196,9 @@ export function BusinessSettingsForm() {
   const errors = formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4 pb-24 sm:pb-6">
+    <form onSubmit={onSubmit} className="flex flex-col gap-content pb-dock sm:pb-roomy">
       {!canEdit ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-item text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           You have read-only access to these settings. Ask the shop owner to
           make changes.
         </p>
@@ -252,7 +252,7 @@ export function BusinessSettingsForm() {
 
         {logoPreview && /^https?:\/\//i.test(logoPreview) ? (
           <div className="sm:col-span-2">
-            <p className="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="mb-small text-sm text-zinc-500 dark:text-zinc-400">
               Logo preview
             </p>
             {/* A plain <img>, not next/image: the URL is tenant-supplied, and
@@ -263,7 +263,7 @@ export function BusinessSettingsForm() {
             <img
               src={logoPreview}
               alt=""
-              className="h-16 w-auto max-w-[200px] rounded-lg border border-zinc-200 bg-white object-contain p-1 dark:border-zinc-700"
+              className="h-16 w-auto max-w-[200px] rounded-lg border border-zinc-200 bg-white object-contain p-tight dark:border-zinc-700"
               onError={(event) => {
                 event.currentTarget.style.display = "none";
               }}
@@ -398,7 +398,7 @@ export function BusinessSettingsForm() {
         /* Sticky action bar on a phone — the form is taller than a handset
            screen, and the brief expects staff saving this one-handed without
            scrolling back down to find the button. */
-        <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-3 border-t border-zinc-200 bg-white/95 p-3 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none dark:border-zinc-800 dark:bg-zinc-950/95 sm:dark:bg-transparent">
+        <div className="fixed inset-x-0 bottom-0 z-10 flex items-center justify-end gap-item border-t border-zinc-200 bg-white/95 p-item backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none dark:border-zinc-800 dark:bg-zinc-950/95 sm:dark:bg-transparent">
           {formState.isDirty ? (
             <Button
               type="button"
@@ -420,15 +420,15 @@ export function BusinessSettingsForm() {
 
 function SettingsSkeleton() {
   return (
-    <div className="flex flex-col gap-4" aria-busy="true" aria-live="polite">
+    <div className="flex flex-col gap-content" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading business settings…</span>
       {[0, 1, 2].map((section) => (
         <div
           key={section}
-          className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900"
+          className="rounded-xl border border-zinc-200 bg-white p-content sm:p-roomy dark:border-zinc-800 dark:bg-zinc-900"
         >
-          <div className="mb-4 h-5 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="mb-content h-5 w-40 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
+          <div className="grid grid-cols-1 gap-content sm:grid-cols-2">
             {[0, 1].map((field) => (
               <div
                 key={field}

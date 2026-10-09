@@ -61,11 +61,11 @@ export function VariantOptionsManager() {
   const canEdit = role === "shop_owner" || role === "manager";
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-content">
       <div
         role="tablist"
         aria-label="Variant lists"
-        className="grid grid-cols-4 gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900"
+        className="grid grid-cols-4 gap-tight rounded-xl bg-zinc-100 p-tight dark:bg-zinc-900"
       >
         {VARIANT_KINDS.map((item) => {
           const selected = item === kind;
@@ -78,7 +78,7 @@ export function VariantOptionsManager() {
               aria-selected={selected}
               aria-controls={`variant-panel-${item}`}
               onClick={() => setKind(item)}
-              className={`min-h-11 rounded-lg px-2 text-sm font-medium transition ${
+              className={`min-h-11 rounded-lg px-small text-sm font-medium transition ${
                 selected
                   ? "bg-white text-zinc-900 shadow-sm dark:bg-zinc-800 dark:text-zinc-100"
                   : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -91,7 +91,7 @@ export function VariantOptionsManager() {
       </div>
 
       {!canEdit ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-item text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
           You can view these lists. Ask a manager or the shop owner to change
           them.
         </p>
@@ -171,10 +171,10 @@ function VariantPanel({
       role="tabpanel"
       id={`variant-panel-${kind}`}
       aria-labelledby={`variant-tab-${kind}`}
-      className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900"
+      className="rounded-xl border border-zinc-200 bg-white p-content shadow-sm sm:p-roomy dark:border-zinc-800 dark:bg-zinc-900"
     >
       {canEdit ? (
-        <form onSubmit={onAdd} className="mb-4 flex items-start gap-2" noValidate>
+        <form onSubmit={onAdd} className="mb-content flex items-start gap-small" noValidate>
           <div className="flex-1">
             <Field
               label={`New ${labels.singular.toLowerCase()}`}
@@ -193,7 +193,7 @@ function VariantPanel({
             </Field>
           </div>
           {/* Aligns with the input, not the label above it. */}
-          <Button type="submit" className="mt-7" disabled={create.isPending}>
+          <Button type="submit" className="mt-spacious" disabled={create.isPending}>
             {create.isPending ? "Adding…" : "Add"}
           </Button>
         </form>
@@ -202,23 +202,23 @@ function VariantPanel({
       {list.isPending ? (
         <ListSkeleton />
       ) : list.isError ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-item text-sm text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
           <p className="font-medium">
             {errorMessage(list.error, `Could not load ${labels.plural.toLowerCase()}.`)}
           </p>
-          <Button variant="ghost" className="mt-3" onClick={() => list.refetch()}>
+          <Button variant="ghost" className="mt-item" onClick={() => list.refetch()}>
             Try again
           </Button>
         </div>
       ) : options.length === 0 ? (
-        <p className="py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="py-roomy text-center text-sm text-zinc-500 dark:text-zinc-400">
           No {labels.plural.toLowerCase()} yet.
           {canEdit ? " Add the first one above." : ""}
         </p>
       ) : (
         <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {options.map((option) => (
-            <li key={option.id} className="flex items-center gap-3 py-2">
+            <li key={option.id} className="flex items-center gap-item py-small">
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                   {option.name}
@@ -230,7 +230,7 @@ function VariantPanel({
                 </p>
               </div>
               {canEdit ? (
-                <div className="flex shrink-0 gap-2">
+                <div className="flex shrink-0 gap-small">
                   <Button
                     type="button"
                     variant="ghost"
@@ -347,7 +347,7 @@ function RenameSheet({
           : undefined
       }
     >
-      <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+      <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
         <Field label="Name" error={form.formState.errors.name?.message} required>
           {(props) => (
             <input
@@ -359,7 +359,7 @@ function RenameSheet({
             />
           )}
         </Field>
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
           <Button
             type="button"
             variant="ghost"
@@ -379,7 +379,7 @@ function RenameSheet({
 
 function ListSkeleton() {
   return (
-    <div className="flex flex-col gap-2" aria-busy="true" aria-live="polite">
+    <div className="flex flex-col gap-small" aria-busy="true" aria-live="polite">
       <span className="sr-only">Loading…</span>
       {[0, 1, 2].map((row) => (
         <div

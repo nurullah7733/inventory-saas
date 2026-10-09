@@ -63,7 +63,7 @@ export function Sheet({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center sm:p-content">
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-zinc-950/40"
@@ -76,28 +76,28 @@ export function Sheet({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className={`relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl outline-none ${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl sm:p-6 dark:bg-zinc-900`}
+        className={`relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-surface p-dialog pb-[max(var(--space-dialog),env(safe-area-inset-bottom))] shadow-xl outline-none ${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl`}
       >
         {/* Grab handle — a visual cue that this is a sheet on touch screens. */}
         <div
           aria-hidden="true"
-          className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-zinc-300 sm:hidden dark:bg-zinc-700"
+          className="mx-auto mb-item h-1.5 w-10 rounded-full bg-border sm:hidden"
         />
         <h2
           id={titleId}
-          className="text-base font-semibold text-zinc-900 dark:text-zinc-100"
+          className="text-base font-semibold text-foreground"
         >
           {title}
         </h2>
         {description ? (
           <p
             id={descriptionId}
-            className="mt-1 text-sm text-zinc-500 dark:text-zinc-400"
+            className="mt-tight text-sm text-muted"
           >
             {description}
           </p>
         ) : null}
-        <div className="mt-4">{children}</div>
+        <div className="mt-content">{children}</div>
       </div>
     </div>
   );
@@ -131,7 +131,7 @@ export function ConfirmSheet({
       title={title}
       description={description}
     >
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
         <Button
           type="button"
           variant="ghost"

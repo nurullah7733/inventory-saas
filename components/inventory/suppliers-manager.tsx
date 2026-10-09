@@ -104,8 +104,8 @@ export function SuppliersManager() {
   );
 
   return (
-    <div className="flex flex-col gap-4 pb-24 sm:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-content pb-dock sm:pb-0">
+      <div className="flex flex-col gap-item sm:flex-row sm:items-center">
         <SearchInput
           value={search}
           onChange={setSearch}
@@ -134,13 +134,13 @@ export function SuppliersManager() {
             : "No suppliers match this search or filter."}
         </EmptyState>
       ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-item sm:grid-cols-2">
           {visible.map((supplier) => (
             <li
               key={supplier.id}
-              className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+              className="flex flex-col gap-small rounded-xl border border-zinc-200 bg-white p-item shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
             >
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-small">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                     {supplier.name}
@@ -167,7 +167,7 @@ export function SuppliersManager() {
               </p>
 
               {canEdit ? (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-small">
                   <Button
                     type="button"
                     variant="ghost"
@@ -318,7 +318,7 @@ function SupplierFormBody({
   const errors = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
       <Field label="Name" error={errors.name?.message} required>
         {(props) => (
           <input
@@ -347,7 +347,7 @@ function SupplierFormBody({
         {(props) => <textarea {...props} rows={3} maxLength={500} {...form.register("address")} />}
       </Field>
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
         <Button type="button" variant="ghost" disabled={save.isPending} onClick={onClose}>
           Cancel
         </Button>

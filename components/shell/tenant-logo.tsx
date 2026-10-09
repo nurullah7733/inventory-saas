@@ -14,12 +14,12 @@ export function TenantLogo({ name, logoUrl }: { name: string; logoUrl: string | 
         width={36}
         height={36}
         onError={() => setFailed(true)}
-        className="h-9 w-9 shrink-0 rounded-lg border border-zinc-200 object-contain dark:border-zinc-700"
+        className="h-9 w-9 shrink-0 rounded-lg border border-border bg-surface object-contain"
       />
     );
   }
   return (
-    <div aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-sm font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">
+    <div aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
       {Array.from(name.trim())[0]?.toUpperCase() ?? "?"}
     </div>
   );

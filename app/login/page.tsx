@@ -68,11 +68,11 @@ function LoginForm() {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex w-full max-w-sm flex-col gap-4 rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className="flex w-full max-w-sm flex-col gap-content rounded-xl border border-zinc-200 bg-white p-roomy shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-tight text-sm text-zinc-500 dark:text-zinc-400">
           Use your shop account.
         </p>
       </div>
@@ -117,7 +117,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="flex flex-1 items-center justify-center p-4">
+    <div className="flex flex-1 items-center justify-center p-content">
       {/* `useSearchParams` opts the subtree into client-side rendering, so it
           needs a Suspense boundary or the whole route deopts. */}
       <Suspense fallback={null}>

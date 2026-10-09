@@ -55,10 +55,10 @@ export function WastageManager() {
   const rows = list.data?.wastage ?? [];
 
   return (
-    <div className="flex flex-col gap-4 pb-24 sm:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-content pb-dock sm:pb-0">
+      <div className="flex flex-col gap-item sm:flex-row sm:items-center">
         {list.data ? (
-          <div className="rounded-xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="rounded-xl border border-zinc-200 bg-white px-content py-item dark:border-zinc-800 dark:bg-zinc-900">
             <p className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Total loss</p>
             <p className="text-lg font-semibold text-red-700 dark:text-red-400">
               {formatMoney(list.data.totalLoss, currency)}
@@ -83,7 +83,7 @@ export function WastageManager() {
       ) : rows.length === 0 ? (
         <EmptyState>No wastage recorded. Nothing damaged or expired so far.</EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-item">
           {rows.map((row) => (
             <WastageRow key={row.id} row={row} currency={currency} />
           ))}
@@ -107,7 +107,7 @@ export function WastageManager() {
 
 function WastageRow({ row, currency }: { row: WastageResponse; currency: string }) {
   return (
-    <li className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <li className="flex flex-col gap-tight rounded-xl border border-zinc-200 bg-white p-item shadow-sm sm:flex-row sm:items-center sm:gap-content dark:border-zinc-800 dark:bg-zinc-900">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
           {row.product?.name ?? "Unknown product"}
@@ -117,7 +117,7 @@ function WastageRow({ row, currency }: { row: WastageResponse; currency: string 
           {row.reason ? ` · ${row.reason}` : ""}
         </p>
       </div>
-      <div className="flex items-baseline justify-between gap-4 sm:flex-col sm:items-end sm:gap-0">
+      <div className="flex items-baseline justify-between gap-content sm:flex-col sm:items-end sm:gap-0">
         <p className="text-base font-semibold text-red-700 dark:text-red-400">−{row.quantity}</p>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           loss {formatMoney(row.lossAmount, currency)}
@@ -245,7 +245,7 @@ function WastageForm({
   const errors = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
       <ProductPicker
         value={product}
         error={productError}
@@ -271,14 +271,14 @@ function WastageForm({
         )}
       </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <div role="group" aria-label="Common reasons" className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-compact">
+        <div role="group" aria-label="Common reasons" className="flex flex-wrap gap-small">
           {WASTAGE_REASONS.map((reason) => (
             <button
               key={reason}
               type="button"
               onClick={() => form.setValue("reason", reason, { shouldDirty: true })}
-              className="min-h-9 rounded-full border border-zinc-300 px-3 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="min-h-9 rounded-full border border-zinc-300 px-item text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               {reason}
             </button>
@@ -291,7 +291,7 @@ function WastageForm({
         </Field>
       </div>
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
         <Button type="button" variant="ghost" disabled={save.isPending} onClick={onClose}>
           Cancel
         </Button>

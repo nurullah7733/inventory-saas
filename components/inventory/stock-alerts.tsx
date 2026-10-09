@@ -60,10 +60,10 @@ function AlertRow({
   action: React.ReactNode;
 }) {
   return (
-    <li className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <li className="flex items-center gap-item rounded-xl border border-zinc-200 bg-white p-item shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <Thumb src={product.imageUrl} name={product.name} />
       <div className="min-w-0 flex-1">
-        <p className="flex items-center gap-2">
+        <p className="flex items-center gap-small">
           <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">{product.name}</span>
           {badge}
         </p>
@@ -102,8 +102,8 @@ export function LowStockList() {
   const data = list.data;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <div className="flex flex-col gap-content">
+      <div className="flex flex-col gap-item sm:flex-row sm:items-end">
         <SearchInput
           value={search}
           onChange={(value) => {
@@ -113,7 +113,7 @@ export function LowStockList() {
           label="Search by name or SKU"
           className="sm:flex-1"
         />
-        <label className="flex flex-col gap-1 text-sm font-medium text-zinc-700 sm:w-48 dark:text-zinc-300">
+        <label className="flex flex-col gap-tight text-sm font-medium text-zinc-700 sm:w-48 dark:text-zinc-300">
           Threshold
           <input
             type="text"
@@ -145,7 +145,7 @@ export function LowStockList() {
       ) : data && data.products.length === 0 ? (
         <EmptyState>{term ? "No low-stock products match." : "Nothing is running low."}</EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-item">
           {data?.products.map((product) => (
             <AlertRow
               key={product.id}
@@ -216,8 +216,8 @@ export function NearExpiryList() {
   const data = list.data;
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-content">
+      <div className="flex flex-col gap-item sm:flex-row sm:items-center">
         <SearchInput
           value={search}
           onChange={(value) => {
@@ -255,7 +255,7 @@ export function NearExpiryList() {
           {term ? "No near-expiry products match." : `Nothing in stock expires within ${days} days.`}
         </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-item">
           {data?.products.map((product) => (
             <AlertRow
               key={product.id}

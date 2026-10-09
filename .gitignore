@@ -39,6 +39,7 @@ yarn-error.log*
 
 # images written by the local storage driver (lib/storage/images.ts)
 /.uploads
+docs/design/*
 
 # typescript
 *.tsbuildinfo

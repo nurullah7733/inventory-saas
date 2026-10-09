@@ -38,8 +38,8 @@ function ReturnForm({ invoice }: { invoice: InvoiceData }) {
     onSuccess: async () => { await invalidateSales(client); requestId.current = null; form.reset(); },
   });
   const available = invoice.items.filter((item) => item.returnableQuantity > 0);
-  if (!available.length) return <p className="rounded-xl border p-4">All items have been returned.</p>;
-  return <form className="space-y-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800" onSubmit={(event) => { void form.handleSubmit(async (data) => {
+  if (!available.length) return <p className="rounded-xl border p-content">All items have been returned.</p>;
+  return <form className="space-y-content rounded-xl border border-zinc-200 p-content dark:border-zinc-800" onSubmit={(event) => { void form.handleSubmit(async (data) => {
     if (submitting.current) return;
     submitting.current = true;
     setMessage("");
@@ -50,7 +50,7 @@ function ReturnForm({ invoice }: { invoice: InvoiceData }) {
     finally { submitting.current = false; }
   })(event); }}>
     <h2 className="font-semibold">Add return</h2>
-    <fieldset disabled={mutation.isPending} className="space-y-4">
+    <fieldset disabled={mutation.isPending} className="space-y-content">
       <Field label="Invoice item" error={form.formState.errors.saleItemId?.message}>{(props) => <select {...props} {...form.register("saleItemId")}><option value="">Choose item</option>{available.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.returnableQuantity} returnable)</option>)}</select>}</Field>
       <Field label="Quantity" error={form.formState.errors.quantity?.message}>{(props) => <input {...props} type="number" min="1" step="1" max={selected?.returnableQuantity ?? 1000000} {...form.register("quantity", { valueAsNumber: true })} />}</Field>
       <Field label="Reason" error={form.formState.errors.reason?.message}>{(props) => <textarea {...props} maxLength={1000} {...form.register("reason")} />}</Field>
@@ -69,13 +69,13 @@ export function InvoiceDetail({ id }: { id: string }) {
   if (query.isError) return <ErrorState message={query.error.message} onRetry={() => void query.refetch()} />;
   const invoice = query.data?.invoice;
   if (!invoice) return null;
-  return <div className="space-y-5">
+  return <div className="space-y-section">
     <Link href={invoice.status === "draft" ? "/sales/drafts" : "/sales/invoices"} className="inline-flex min-h-11 items-center underline">Back to {invoice.status === "draft" ? "drafts" : "invoices"}</Link>
     <h1 className="break-all text-xl font-semibold">{invoice.invoiceNo}</h1>
     <p>{invoice.status === "draft" ? "Draft invoice" : "Completed sale"} · {invoice.customer?.name ?? "Walk-in customer"}</p>
     {invoice.status === "draft" ? <InvoiceEditor key={invoice.id} invoice={invoice} /> : <>
-      <div className="space-y-3">{invoice.items.map((item) => <article key={item.id} className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><h2 className="font-semibold">{item.name}</h2><p className="text-sm text-zinc-500">{item.sku}</p><p>{item.quantity} × {currency} {item.unitPrice} = {currency} {item.subtotal}</p><p className="text-sm">Returned: {item.returnedQuantity} · Returnable: {item.returnableQuantity}</p></article>)}</div>
-      <dl className="grid grid-cols-2 gap-3 rounded-xl bg-zinc-100 p-4 dark:bg-zinc-900">{[
+      <div className="space-y-item">{invoice.items.map((item) => <article key={item.id} className="rounded-xl border border-zinc-200 p-content dark:border-zinc-800"><h2 className="font-semibold">{item.name}</h2><p className="text-sm text-zinc-500">{item.sku}</p><p>{item.quantity} × {currency} {item.unitPrice} = {currency} {item.subtotal}</p><p className="text-sm">Returned: {item.returnedQuantity} · Returnable: {item.returnableQuantity}</p></article>)}</div>
+      <dl className="grid grid-cols-2 gap-item rounded-xl bg-zinc-100 p-content dark:bg-zinc-900">{[
         ["Subtotal", invoice.subtotal], ["Discount", invoice.discount], ["VAT", invoice.vatAmount], ["Original total", invoice.totalAmount],
         ["Original payment", invoice.paidAmount], ["Return credit", invoice.creditAmount], ["Net after returns", invoice.netAmount], ["Remaining due", invoice.dueAmount], ["Total cash refund", invoice.cashRefundAmount],
       ].map(([label, amount]) => <div key={label}><dt className="text-sm text-zinc-500">{label}</dt><dd className="font-semibold">{currency} {amount}</dd></div>)}</dl>

@@ -50,9 +50,9 @@ export function ProductPicker({
 
   if (value) {
     return (
-      <div className="flex flex-col gap-1.5">
+      <div className="flex flex-col gap-compact">
         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Product</span>
-        <div className="flex items-center gap-3 rounded-lg border border-zinc-300 p-2 dark:border-zinc-700">
+        <div className="flex items-center gap-item rounded-lg border border-zinc-300 p-small dark:border-zinc-700">
           <Thumb src={value.imageUrl} name={value.name} size="sm" />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">{value.name}</p>
@@ -80,9 +80,9 @@ export function ProductPicker({
   const products = results.data?.products ?? [];
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-compact">
       <label htmlFor={id} className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-        Product<span className="ml-0.5 text-red-600" aria-hidden="true">*</span>
+        Product<span className="ml-micro text-red-600" aria-hidden="true">*</span>
       </label>
       <input
         id={id}
@@ -102,11 +102,11 @@ export function ProductPicker({
         className="max-h-60 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-800"
       >
         {results.isPending ? (
-          <li className="p-3 text-sm text-zinc-500">Searching…</li>
+          <li className="p-item text-sm text-zinc-500">Searching…</li>
         ) : results.isError ? (
-          <li className="p-3 text-sm text-red-600">Could not search products.</li>
+          <li className="p-item text-sm text-red-600">Could not search products.</li>
         ) : products.length === 0 ? (
-          <li className="p-3 text-sm text-zinc-500">
+          <li className="p-item text-sm text-zinc-500">
             {term ? "No products match." : "No products yet — add one on the Products screen."}
           </li>
         ) : (
@@ -116,7 +116,7 @@ export function ProductPicker({
                 type="button"
                 disabled={disabled}
                 onClick={() => onChange(product)}
-                className="flex min-h-11 w-full items-center gap-3 px-2 py-1.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                className="flex min-h-11 w-full items-center gap-item px-small py-compact text-left hover:bg-zinc-50 dark:hover:bg-zinc-800"
               >
                 <Thumb src={product.imageUrl} name={product.name} size="sm" />
                 <span className="min-w-0 flex-1">

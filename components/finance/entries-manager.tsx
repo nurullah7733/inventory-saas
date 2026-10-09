@@ -97,8 +97,8 @@ export function EntriesManager({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid gap-3 sm:grid-cols-3">
+    <div className="flex flex-col gap-content">
+      <div className="grid gap-item sm:grid-cols-3">
         <Field label="From">
           {(props) => (
             <input
@@ -163,11 +163,11 @@ export function EntriesManager({
             {list.data?.total ?? 0} records
           </p>
           {rows.length === 0 && (
-            <p className="rounded-xl border border-dashed p-8 text-center">
+            <p className="rounded-xl border border-dashed p-large text-center">
               No records for these filters.
             </p>
           )}
-          <ul className="grid gap-3 sm:grid-cols-2">
+          <ul className="grid gap-item sm:grid-cols-2">
             {rows.map((row) => {
               const reference =
                 "categoryId" in row ? row.categoryId : row.supplierId;
@@ -177,25 +177,25 @@ export function EntriesManager({
               return (
                 <li
                   key={row.id}
-                  className="min-w-0 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+                  className="min-w-0 rounded-xl border border-zinc-200 p-content dark:border-zinc-800"
                 >
                   <h2 className="break-words font-semibold">
                     {"title" in row ? row.title : name}
                   </h2>
                   {expense && <p className="text-sm text-zinc-500">{name}</p>}
-                  <p className="mt-2 font-medium">
+                  <p className="mt-small font-medium">
                     {currency} {row.amount}
                   </p>
                   <p className="text-sm">
                     {"expenseDate" in row ? row.expenseDate : row.paymentDate}
                   </p>
                   {row.note && (
-                    <p className="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-500">
+                    <p className="mt-small whitespace-pre-wrap break-words text-sm text-zinc-500">
                       {row.note}
                     </p>
                   )}
                   {canEdit && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-item flex gap-small">
                       <Button variant="ghost" onClick={() => setTarget(row)}>
                         Edit
                       </Button>
@@ -208,7 +208,7 @@ export function EntriesManager({
               );
             })}
           </ul>
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-small">
             <Button
               variant="ghost"
               disabled={page === 1}
@@ -333,7 +333,7 @@ function EntryForm({
     >
       <form
         noValidate
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-content"
         onSubmit={form.handleSubmit((values) => {
           toast.promise(save.mutateAsync(values), {
             loading: "Saving...",
@@ -410,7 +410,7 @@ function EntryForm({
             {form.formState.errors.root.message}
           </p>
         )}
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-small">
           <Button
             type="button"
             variant="ghost"

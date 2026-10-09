@@ -1,10 +1,11 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { Toaster } from "sonner";
 import { ApiClientError } from "@/lib/client/api.ts";
 import { useSession } from "@/lib/client/use-session.ts";
+import { resolvedThemeSnapshot, subscribeTheme } from "@/lib/client/theme.ts";
 
 /**
  * Client-side providers for the whole app.
@@ -46,6 +47,7 @@ function SessionQueryProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const theme = useSyncExternalStore(subscribeTheme, resolvedThemeSnapshot, () => "light" as const);
   const { session } = useSession();
   // Create a fresh cache before another identity renders the shared key.
   // Token refresh for the same identity preserves queries and form state.
@@ -55,7 +57,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SessionQueryProvider key={identity}>{children}</SessionQueryProvider>
-      <Toaster position="top-center" richColors closeButton />
+      <Toaster theme={theme} position="top-center" richColors closeButton />
     </>
   );
 }

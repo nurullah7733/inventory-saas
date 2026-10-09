@@ -64,8 +64,8 @@ export function StockManager() {
   const movements = list.data?.movements ?? [];
 
   return (
-    <div className="flex flex-col gap-4 pb-24 sm:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-content pb-dock sm:pb-0">
+      <div className="flex flex-col gap-item sm:flex-row sm:items-center">
         <select
           aria-label="Filter by supplier"
           value={supplierId}
@@ -100,7 +100,7 @@ export function StockManager() {
           {supplierId ? "No stock entries from this supplier yet." : "No stock received yet. Add your first delivery."}
         </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-item">
           {movements.map((movement) => (
             <MovementRow key={movement.id} movement={movement} currency={currency} />
           ))}
@@ -135,7 +135,7 @@ function MovementRow({
       : null;
 
   return (
-    <li className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:gap-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <li className="flex flex-col gap-tight rounded-xl border border-zinc-200 bg-white p-item shadow-sm sm:flex-row sm:items-center sm:gap-content dark:border-zinc-800 dark:bg-zinc-900">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
           {movement.product?.name ?? "Unknown product"}
@@ -145,10 +145,10 @@ function MovementRow({
           {movement.supplier ? ` · from ${movement.supplier.name}` : ""}
         </p>
         {movement.note ? (
-          <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{movement.note}</p>
+          <p className="mt-tight line-clamp-2 text-sm text-zinc-600 dark:text-zinc-400">{movement.note}</p>
         ) : null}
       </div>
-      <div className="flex items-baseline justify-between gap-4 sm:flex-col sm:items-end sm:gap-0">
+      <div className="flex items-baseline justify-between gap-content sm:flex-col sm:items-end sm:gap-0">
         <p className="text-base font-semibold text-emerald-700 dark:text-emerald-400">
           +{movement.quantity}
         </p>
@@ -312,7 +312,7 @@ function AddStockForm({
   const errors = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
       <ProductPicker
         value={product}
         error={productError}
@@ -340,7 +340,7 @@ function AddStockForm({
         )}
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-item">
         <Field label="Quantity" error={errors.quantity?.message} required>
           {(props) => (
             <input {...props} type="text" inputMode="numeric" autoComplete="off" placeholder="0" {...form.register("quantity")} />
@@ -361,12 +361,12 @@ function AddStockForm({
         {(props) => <input {...props} type="text" maxLength={500} {...form.register("note")} />}
       </Field>
 
-      <label className="flex min-h-11 items-center gap-3 text-sm text-zinc-700 dark:text-zinc-300">
+      <label className="flex min-h-11 items-center gap-item text-sm text-zinc-700 dark:text-zinc-300">
         <input type="checkbox" className="h-5 w-5" {...form.register("updateCostPrice")} />
         Also set the product&apos;s cost price to this unit cost
       </label>
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
         <Button type="button" variant="ghost" disabled={save.isPending} onClick={onClose}>
           Cancel
         </Button>

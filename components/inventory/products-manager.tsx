@@ -149,8 +149,8 @@ export function ProductsManager() {
   const filtered = term !== "" || categoryId !== "";
 
   return (
-    <div className="flex flex-col gap-4 pb-24 sm:pb-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="flex flex-col gap-content pb-dock sm:pb-0">
+      <div className="flex flex-col gap-item sm:flex-row sm:flex-wrap sm:items-center">
         <SearchInput
           value={search}
           onChange={(value) => {
@@ -214,7 +214,7 @@ export function ProductsManager() {
                 : "No products yet."}
         </EmptyState>
       ) : (
-        <ul className="flex flex-col gap-3">
+        <ul className="flex flex-col gap-item">
           {products.map((product) => (
             <ProductRow
               key={product.id}
@@ -310,11 +310,11 @@ function ProductRow({
   const daysLeft = product.expiryDate ? daysBetween(localToday(), product.expiryDate) : null;
 
   return (
-    <li className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
+    <li className="flex flex-col gap-item rounded-xl border border-zinc-200 bg-white p-item shadow-sm sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex min-w-0 flex-1 items-start gap-item">
         <Thumb src={product.imageUrl} name={product.name} />
         <div className="min-w-0 flex-1">
-          <p className="flex flex-wrap items-center gap-2">
+          <p className="flex flex-wrap items-center gap-small">
             <span className="truncate font-medium text-zinc-900 dark:text-zinc-100">{product.name}</span>
             {product.isDeleted ? <Badge>Deleted</Badge> : null}
           </p>
@@ -324,9 +324,9 @@ function ProductRow({
             {product.brand ? ` · ${product.brand}` : ""}
           </p>
           {variants.length > 0 ? (
-            <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">{variants.join(" · ")}</p>
+            <p className="mt-micro text-xs text-zinc-600 dark:text-zinc-400">{variants.join(" · ")}</p>
           ) : null}
-          <div className="mt-1 flex flex-wrap gap-1.5">
+          <div className="mt-tight flex flex-wrap gap-compact">
             {product.stockQty === 0 ? (
               <Badge tone="danger">Out of stock</Badge>
             ) : product.stockQty <= lowStockThreshold ? (
@@ -347,7 +347,7 @@ function ProductRow({
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-3 sm:flex-col sm:items-end">
+      <div className="flex items-end justify-between gap-item sm:flex-col sm:items-end">
         <div className="sm:text-right">
           <p className="font-semibold text-zinc-900 dark:text-zinc-100">
             {formatMoney(product.sellPrice, currency)}
@@ -358,7 +358,7 @@ function ProductRow({
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex flex-wrap justify-end gap-small">
           {product.isDeleted ? (
             canEdit ? (
               <Button type="button" variant="ghost" aria-label={`Restore ${product.name}`} onClick={onRestore}>
@@ -595,7 +595,7 @@ function ProductFormBody({
   const errors = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4" noValidate>
+    <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
       <FormSection title="Basics">
         <Field label="Name" error={errors.name?.message} required>
           {(props) => (
@@ -689,9 +689,9 @@ function ProductFormBody({
         title="Extra details"
         description="Anything specific to this kind of product — warranty months, batch number, IMEI."
       >
-        <div className="flex flex-col gap-2 sm:col-span-2">
+        <div className="flex flex-col gap-small sm:col-span-2">
           {attributes.fields.map((row, index) => (
-            <div key={row.id} className="flex items-start gap-2">
+            <div key={row.id} className="flex items-start gap-small">
               <div className="flex-1">
                 <input
                   aria-label={`Detail ${index + 1} name`}
@@ -700,7 +700,7 @@ function ProductFormBody({
                   {...form.register(`attributes.${index}.key`)}
                 />
                 {errors.attributes?.[index]?.key ? (
-                  <p role="alert" className="mt-1 text-sm text-red-600 dark:text-red-400">
+                  <p role="alert" className="mt-tight text-sm text-red-600 dark:text-red-400">
                     {errors.attributes[index]?.key?.message}
                   </p>
                 ) : null}
@@ -734,7 +734,7 @@ function ProductFormBody({
         </div>
       </FormSection>
 
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+      <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
         <Button type="button" variant="ghost" disabled={save.isPending} onClick={onClose}>
           Cancel
         </Button>
