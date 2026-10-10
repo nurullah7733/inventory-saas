@@ -16,10 +16,12 @@
     "db:verify": "prisma db verify",
     "db:smoke": "node --experimental-strip-types scripts/db-smoke-test.ts",
     "auth:smoke": "node --experimental-strip-types scripts/auth-smoke-test.ts",
+    "firstpaint:smoke": "node --experimental-strip-types scripts/firstpaint-smoke-test.ts",
     "tenant:smoke": "node --experimental-strip-types scripts/tenant-smoke-test.ts",
     "settings:smoke": "node --experimental-strip-types scripts/settings-smoke-test.ts",
     "inventory:smoke": "node --experimental-strip-types scripts/inventory-smoke-test.ts",
     "products:smoke": "node --experimental-strip-types scripts/products-smoke-test.ts",
+    "products-bulk:smoke": "node --experimental-strip-types scripts/products-bulk-smoke-test.ts",
     "customers:smoke": "node --experimental-strip-types scripts/customers-smoke-test.ts",
     "finance:smoke": "node --experimental-strip-types scripts/finance-smoke-test.ts",
     "sales:test": "node --experimental-strip-types scripts/sales-calculations-test.ts",
@@ -44,10 +46,16 @@
     "profile:test": "node --experimental-strip-types scripts/profile-test.ts",
     "profile:smoke": "node --experimental-strip-types scripts/profile-smoke-test.ts",
     "security:test": "node --experimental-strip-types scripts/security-test.ts",
-    "security:smoke": "node --experimental-strip-types scripts/security-smoke-test.ts"
+    "security:smoke": "node --experimental-strip-types scripts/security-smoke-test.ts",
+    "email:test": "node --experimental-strip-types scripts/email-verification-test.ts",
+    "email:smoke": "node --experimental-strip-types scripts/email-verification-smoke-test.ts",
+    "recovery:test": "node --experimental-strip-types scripts/password-reset-test.ts",
+    "recovery:smoke": "node --experimental-strip-types scripts/password-reset-smoke-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",
+    "@radix-ui/react-dialog": "^1.2.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.25",
     "@tanstack/react-query": "^5.102.8",
     "@vercel/blob": "^2.8.0",
     "bcryptjs": "^3.0.3",
@@ -63,6 +71,7 @@
     "recharts": "^3.10.1",
     "sonner": "^2.0.8",
     "stripe": "^23.0.0",
+    "tw-animate-css": "^1.4.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {

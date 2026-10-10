@@ -1,3 +1,4 @@
+import { sendVerification } from "../auth/email-verification.ts";
 import { or } from "@prisma/orm-postgres/orm-client";
 import type { TenantRequestContext } from "../api/guard.ts";
 import { ApiProblem } from "../api/response.ts";
@@ -51,8 +52,9 @@ export async function createStaff(auth: TenantRequestContext, data: z.output<typ
   if (data.isActive) await requireCapacity(auth, tenant.maxStaff);
   let row;
   try {
-    row = await auth.scope.User.select(...columns).create(auth.scope.own({ name: data.name, email: data.email, role: data.role, isActive: data.isActive, passwordHash }));
+    row = await auth.scope.User.select(...columns).create(auth.scope.own({ name: data.name, email: data.email, role: data.role, isActive: data.isActive, emailVerifiedAt: null, passwordHash }));
   } catch (error) { rethrowEmailConflict(error); }
+  await sendVerification(row.id);
   await recordAudit({ tenantId: auth.tenantId, userId: auth.user.id, action: "user.create", entityType: "user", entityId: row.id,
     metadata: { name: row.name, email: row.email, role: row.role, isActive: row.isActive } });
   return { user: response(row) };
@@ -67,12 +69,14 @@ export async function updateStaff(auth: TenantRequestContext, id: string, data: 
   const changes = Object.keys(data).filter((key) => data[key as keyof typeof data] !== before[key as keyof typeof data]);
   if (!changes.length) return { user: response(before), sessionsRevoked: 0 };
   let after;
-  try { after = await auth.scope.User.select(...columns).where({ id }).update(data); }
+  const { email, ...details } = data;
+  if (email !== undefined && email !== before.email) await sendVerification(id, email);
+  try { after = Object.keys(details).length ? await auth.scope.User.select(...columns).where({ id }).update(details) : before; }
   catch (error) { rethrowEmailConflict(error); }
   if (!after) throw new ApiProblem("NOT_FOUND", "User not found.", 404);
   const revoke = (data.role !== undefined && data.role !== before.role) || (data.isActive === false && before.isActive) || (data.email !== undefined && data.email !== before.email);
   const sessionsRevoked = revoke ? await revokeAllUserSessions(id) : 0;
   await recordAudit({ tenantId: auth.tenantId, userId: auth.user.id, action: "user.update", entityType: "user", entityId: id,
     metadata: { changes: Object.fromEntries(changes.map((key) => [key, { before: before[key as keyof typeof data], after: after[key as keyof typeof data] }])), sessionsRevoked } });
-  return { user: response(after), sessionsRevoked };
+  return { user: response(after), sessionsRevoked, emailVerificationPending: email !== undefined && email !== before.email };
 }

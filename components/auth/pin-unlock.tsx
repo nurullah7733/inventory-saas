@@ -25,6 +25,7 @@ export function PinUnlock() {
   useEffect(() => {
     if (status === "unauthenticated") { clearSession(); router.replace("/login"); }
     if (status === "authenticated") router.replace(destination);
+    if (status === "unverified") router.replace("/verify-email");
   }, [status, destination, router]);
   const submit = form.handleSubmit(async ({ pin }) => {
     setBusy(true); form.clearErrors();

@@ -2,6 +2,12 @@ import { rawSql, rlsDb } from "../db/rls.ts";
 import { refreshTokenTtlSeconds } from "../env.ts";
 import { generateRefreshToken, hashRefreshToken } from "./tokens.ts";
 import type { UserRole } from "./roles.ts";
+import { ApiProblem } from "../api/response.ts";
+
+/** Serialize credential changes and session issuance on the account row. */
+export async function lockAccount(userId: string): Promise<void> {
+  await rlsDb().query(rawSql`SELECT id FROM public.users WHERE id = ${userId}::uuid FOR UPDATE`.returnsRow({ id: "pg/uuid@1" }).build());
+}
 
 export interface IssuedSession {
   sessionId: string;
@@ -24,6 +30,7 @@ function expiryFromNow(seconds: number): string {
 export async function issueSession(
   input: IssueSessionInput,
 ): Promise<IssuedSession> {
+  await lockAccount(input.userId);
   const refreshToken = generateRefreshToken();
   const expiresAt = expiryFromNow(refreshTokenTtlSeconds());
 
@@ -87,6 +94,11 @@ export async function rotateSession(
   session: ActiveSession,
   context: { userAgent?: string | null; ipAddress?: string | null },
 ): Promise<IssuedSession> {
+  await lockAccount(session.userId);
+  const active = await rlsDb().orm.public.RefreshSession.select("userId", "revokedAt", "expiresAt").where({ id: session.id }).first();
+  if (!active || active.userId !== session.userId || active.revokedAt !== null || Date.parse(active.expiresAt) <= Date.now()) {
+    throw new ApiProblem("UNAUTHENTICATED", "Invalid or expired session.", 401);
+  }
   const refreshToken = generateRefreshToken();
   const expiresAt = expiryFromNow(refreshTokenTtlSeconds());
   const now = new Date().toISOString();
@@ -124,6 +136,7 @@ export async function revokeSession(sessionId: string): Promise<void> {
 }
 
 export async function revokeAllUserSessions(userId: string): Promise<number> {
+  await lockAccount(userId);
   const now = new Date().toISOString();
   const plan = rawSql`
     UPDATE "public"."refresh_sessions"

@@ -1,3 +1,4 @@
+import { sendVerification } from "@/lib/auth/email-verification.ts";
 import { rlsDb } from "@/lib/db/rls.ts";
 import { recordAudit } from "@/lib/audit/log.ts";
 import { numeric } from "@/lib/numeric.ts";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/auth/payload.ts";
 import { signupSchema } from "@/lib/auth/schemas.ts";
 import { issueSession } from "@/lib/auth/session.ts";
+import { setSessionCookie } from "@/lib/auth/cookies.ts";
 
 const TRIAL_DAYS = 14;
 
@@ -98,6 +100,7 @@ export const POST = withPublicRoute(async (request: Request) => {
       name,
       email,
       passwordHash,
+      emailVerifiedAt: null,
 
       role: "shop_owner",
     });
@@ -123,6 +126,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     throw error;
   }
 
+  await sendVerification(created.user.id);
   const client = readClientContext(request);
   await recordAudit({ tenantId: created.tenant.id, userId: created.user.id,
     action: "tenant.create", entityType: "tenant", entityId: created.tenant.id,
@@ -145,6 +149,8 @@ export const POST = withPublicRoute(async (request: Request) => {
       role: "shop_owner",
       tenantId: created.tenant.id,
       pinEnabled: false,
+      emailVerifiedAt: null,
+      pendingEmail: null,
       photoUrl: null,
     },
     tenant: {
@@ -158,5 +164,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     session,
   });
 
-  return apiSuccess(payload, 201);
+  const response = apiSuccess(payload, 201);
+  setSessionCookie(response, session.refreshToken);
+  return response;
 });

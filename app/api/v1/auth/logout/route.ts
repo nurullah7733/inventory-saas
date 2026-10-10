@@ -11,6 +11,7 @@ import {
   revokeAllUserSessions,
   revokeSession,
 } from "@/lib/auth/session.ts";
+import { clearSessionCookie } from "@/lib/auth/cookies.ts";
 
 export const POST = withPublicRoute(async (request: Request) => {
   const body = await readJsonBody(request);
@@ -31,5 +32,8 @@ export const POST = withPublicRoute(async (request: Request) => {
       metadata: { allDevices: parsed.data.allDevices } });
   }
 
-  return apiSuccess({ signedOut: true });
+  // The RSC mirror dies with the session, whatever the body said.
+  const response = apiSuccess({ signedOut: true });
+  clearSessionCookie(response);
+  return response;
 });

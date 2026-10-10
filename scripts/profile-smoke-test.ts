@@ -1,7 +1,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { unlink } from "node:fs/promises";
+import { readdir, unlink } from "node:fs/promises";
 import path from "node:path";
 import { db } from "../prisma/db.ts";
 import { withRlsBypass } from "../lib/db/rls.ts";
@@ -11,9 +11,11 @@ import { issueSession } from "../lib/auth/session.ts";
 import { signAccessToken } from "../lib/auth/jwt.ts";
 import { localUploadRoot } from "../lib/storage/images.ts";
 import type { UserRole } from "../lib/auth/roles.ts";
+import { localVerificationToken } from "./email-test-helpers.ts";
 
 const base = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 const tenants: string[] = [], uploaded: string[] = [];
+const emailUsers: string[] = [];
 const password = "Profile-QA-password";
 let checks = 0;
 async function call(route: string, token?: string, body?: unknown, method = body ? "POST" : "GET") {
@@ -58,7 +60,9 @@ async function main() {
     const changed = await call("/profile", a.token, { name: " Updated Owner ", email: nextEmail.toUpperCase() }, "PATCH");
     equal(changed.status, 200, "profile saves name and email");
     equal(changed.data.user.name, "Updated Owner", "name normalized");
-    equal(changed.data.user.email, nextEmail, "email normalized");
+    equal(changed.data.user.email, a.user.email, "current email preserved until verification");
+    equal(changed.data.user.pendingEmail, nextEmail, "pending email normalized");
+    equal((await call("/auth/email-verification/verify", undefined, { token: await localVerificationToken(a.user.id) })).status, 200, "email change verified");
     equal(changed.data.user.role, "shop_owner", "role unchanged");
     equal(changed.data.user.tenantId, a.tenant.id, "shop unchanged");
     equal(Object.keys(changed.data.user).some((key) => /hash|password|token/i.test(key)), false, "profile contains no credentials");
@@ -89,8 +93,11 @@ async function main() {
     equal(audits.length, 1, "successful change audited once");
     equal(audits[0]?.userId, a.user.id, "audit records signed-in actor");
     const concurrentEmail = `${randomUUID()}@example.com`;
+    for (const id of [a.user.id, c.user.id]) await withRlsBypass((tx) => tx.orm.public.User.where({ id }).update({ verificationSentAt: null }));
     const concurrent = await Promise.all([call("/profile", a.token, { email: concurrentEmail }, "PATCH"), call("/profile", c.token, { email: concurrentEmail }, "PATCH")]);
-    equal(concurrent.map((response) => response.status).sort(), [200, 409], "concurrent edits enforce email uniqueness");
+    equal(concurrent.map((response) => response.status).sort(), [200, 200], "pending requests do not reserve emails before ownership verification");
+    const verified = await Promise.all([call("/auth/email-verification/verify", undefined, { token: await localVerificationToken(a.user.id) }), call("/auth/email-verification/verify", undefined, { token: await localVerificationToken(c.user.id) })]);
+    equal(verified.map((response) => response.status).sort(), [200, 409], "concurrent verification enforces global email uniqueness");
     console.log(`${checks} profile API checks passed.`);
     if (process.env.PROFILE_BROWSER_CHECK === "1") {
       const { runProfileBrowserCheck } = await import("./profile-browser-check.ts");
@@ -99,7 +106,8 @@ async function main() {
     }
   } finally {
     for (const tenantId of tenants) {
-      const photos = await withRlsBypass((tx) => tx.orm.public.User.where({ tenantId }).select("photoUrl").all());
+      const photos = await withRlsBypass((tx) => tx.orm.public.User.where({ tenantId }).select("id", "photoUrl").all());
+      emailUsers.push(...photos.map((user) => user.id));
       for (const user of photos) if (user.photoUrl) uploaded.push(user.photoUrl);
     }
     for (const url of new Set(uploaded)) {
@@ -119,6 +127,7 @@ async function main() {
       await tx.orm.public.User.where({ tenantId }).deleteAll();
       await tx.orm.public.Tenant.where({ id: tenantId }).delete();
     });
+    for (const file of await readdir(".mail").catch(() => [] as string[])) if (emailUsers.some((id) => file.startsWith(`${id}-`))) await unlink(`.mail/${file}`);
     await db.close();
   }
 }

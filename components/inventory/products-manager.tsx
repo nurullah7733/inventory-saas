@@ -25,6 +25,8 @@ import { zodResolver } from "@/lib/forms/zod-resolver.ts";
 import type { CategoryResponse } from "@/lib/inventory/categories.ts";
 import {
   productSchema,
+  type BulkProductAction,
+  type BulkProductsResponse,
   type ProductAttributes,
   type ProductListResponse,
   type ProductResponse,
@@ -106,6 +108,9 @@ export function ProductsManager() {
   const [formTarget, setFormTarget] = useState<ProductResponse | "new" | null>(null);
   const [deleting, setDeleting] = useState<ProductResponse | null>(null);
   const [restocking, setRestocking] = useState<ProductResponse | null>(null);
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<BulkProductAction | null>(null);
 
   const term = useDebouncedValue(search.trim(), 300);
   const categories = useCategories();
@@ -145,8 +150,46 @@ export function ProductsManager() {
     onSettled: invalidateAfterWrite,
   });
 
+  const bulk = useMutation({
+    mutationFn: (action: BulkProductAction) =>
+      apiRequest<BulkProductsResponse>("/products/bulk", {
+        method: "POST",
+        body: { ids: [...selectedIds], action },
+      }),
+    onSuccess: () => setSelectedIds(new Set()),
+    onSettled: () => {
+      setBulkAction(null);
+      invalidateAfterWrite();
+    },
+  });
+
   const products = list.data?.products ?? [];
   const filtered = term !== "" || categoryId !== "";
+
+  // The selection only ever covers the rows on screen, so page or filter
+  // changes would otherwise leave invisible products in the next bulk call.
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  const pageIds = products.map((product) => product.id);
+  const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+  const someSelected = pageIds.some((id) => selectedIds.has(id));
+  const bulkTargets = products.filter((product) => selectedIds.has(product.id));
+  const bulkPreview = bulkTargets.slice(0, 5);
+
+  function toggleProduct(id: string) {
+    setSelectedIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(pageIds));
+  }
 
   return (
     <div className="flex flex-col gap-content pb-dock sm:pb-0">
@@ -156,6 +199,7 @@ export function ProductsManager() {
           onChange={(value) => {
             setSearch(value);
             setPage(1);
+            clearSelection();
           }}
           label="Search by name or SKU"
           className="sm:min-w-56 sm:flex-1"
@@ -166,6 +210,7 @@ export function ProductsManager() {
           onChange={(event) => {
             setCategoryId(event.target.value);
             setPage(1);
+            clearSelection();
           }}
           className={`${inputClasses} sm:w-48`}
         >
@@ -182,12 +227,61 @@ export function ProductsManager() {
           onChange={(value) => {
             setStatus(value);
             setPage(1);
+            clearSelection();
           }}
           options={STATUS_FILTERS}
           label="Filter by status"
         />
+        {canEdit ? (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              setSelecting((value) => !value);
+              clearSelection();
+            }}
+          >
+            {selecting ? "Cancel select" : "Select"}
+          </Button>
+        ) : null}
         {canEdit ? <PrimaryAction onClick={() => setFormTarget("new")}>Add product</PrimaryAction> : null}
       </div>
+
+      {selecting && products.length > 0 ? (
+        <label className="flex min-h-11 items-center gap-item text-sm">
+          <input
+            ref={(element) => {
+              if (element) element.indeterminate = someSelected && !allSelected;
+            }}
+            type="checkbox"
+            className="h-5 w-5"
+            checked={allSelected}
+            onChange={toggleAll}
+          />
+          Select all on this page
+        </label>
+      ) : null}
+
+      {selecting && selectedIds.size > 0 ? (
+        <div className="ui-panel flex flex-wrap items-center gap-item">
+          <p className="flex-1 text-sm font-medium" aria-live="polite">
+            {selectedIds.size} selected
+          </p>
+          {status === "active" ? (
+            <Button type="button" variant="danger" onClick={() => setBulkAction("delete")}>
+              Delete
+            </Button>
+          ) : null}
+          {status === "deleted" ? (
+            <Button type="button" onClick={() => setBulkAction("restore")}>
+              Restore
+            </Button>
+          ) : null}
+          <Button type="button" variant="ghost" onClick={clearSelection}>
+            Clear
+          </Button>
+        </div>
+      ) : null}
 
       {tenant && canEdit ? (
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -222,6 +316,9 @@ export function ProductsManager() {
               currency={currency}
               lowStockThreshold={lowStockThreshold}
               canEdit={canEdit}
+              selecting={selecting}
+              selected={selectedIds.has(product.id)}
+              onToggle={() => toggleProduct(product.id)}
               onEdit={() => setFormTarget(product)}
               onDelete={() => setDeleting(product)}
               onRestock={() => setRestocking(product)}
@@ -243,7 +340,10 @@ export function ProductsManager() {
           pageSize={list.data.pageSize}
           total={list.data.total}
           busy={list.isFetching}
-          onPageChange={setPage}
+          onPageChange={(next) => {
+            setPage(next);
+            clearSelection();
+          }}
         />
       ) : null}
 
@@ -281,6 +381,69 @@ export function ProductsManager() {
           });
         }}
       />
+
+      <Sheet
+        open={bulkAction !== null}
+        onOpenChange={(open) => {
+          if (!open && !bulk.isPending) setBulkAction(null);
+        }}
+        title={
+          bulkAction === null
+            ? ""
+            : `${bulkAction === "delete" ? "Delete" : "Restore"} ${bulkTargets.length} ${bulkTargets.length === 1 ? "product" : "products"}?`
+        }
+        description={
+          bulkAction === "delete"
+            ? "They will be hidden from your product list, stock screens and alerts. Their sales and stock history are kept, and you can restore them from the Deleted filter."
+            : "They will reappear in your product list, pickers and alerts."
+        }
+      >
+        <div className="flex flex-col gap-content">
+          <ul className="flex flex-col gap-tight text-sm">
+            {bulkPreview.map((product) => (
+              <li key={product.id} className="truncate">
+                {product.name}
+                <span className="text-zinc-500 dark:text-zinc-400"> · {product.sku}</span>
+              </li>
+            ))}
+            {bulkTargets.length > bulkPreview.length ? (
+              <li className="text-zinc-500 dark:text-zinc-400">+{bulkTargets.length - bulkPreview.length} more</li>
+            ) : null}
+          </ul>
+          <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
+            <Button type="button" variant="ghost" disabled={bulk.isPending} onClick={() => setBulkAction(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant={bulkAction === "delete" ? "danger" : "primary"}
+              disabled={bulk.isPending || bulkTargets.length === 0}
+              onClick={() => {
+                if (!bulkAction) return;
+                const action = bulkAction;
+                const count = bulkTargets.length;
+                toast.promise(bulk.mutateAsync(action), {
+                  loading: action === "delete" ? "Deleting products…" : "Restoring products…",
+                  success: (result: BulkProductsResponse) => {
+                    const skippedNote = result.skipped.length > 0 ? `, ${result.skipped.length} skipped` : "";
+                    return `${result.affected} of ${count} products ${action === "delete" ? "deleted" : "restored"}${skippedNote}.`;
+                  },
+                  error: (error: unknown) =>
+                    errorMessage(error, action === "delete" ? "Could not delete." : "Could not restore."),
+                });
+              }}
+            >
+              {bulk.isPending
+                ? bulkAction === "delete"
+                  ? "Deleting…"
+                  : "Restoring…"
+                : bulkAction === "delete"
+                  ? "Delete"
+                  : "Restore"}
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </div>
   );
 }
@@ -290,6 +453,9 @@ function ProductRow({
   currency,
   lowStockThreshold,
   canEdit,
+  selecting,
+  selected,
+  onToggle,
   onEdit,
   onDelete,
   onRestock,
@@ -299,6 +465,9 @@ function ProductRow({
   currency: string;
   lowStockThreshold: number;
   canEdit: boolean;
+  selecting: boolean;
+  selected: boolean;
+  onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onRestock: () => void;
@@ -312,6 +481,15 @@ function ProductRow({
   return (
     <li className="flex flex-col gap-item rounded-xl border border-zinc-200 bg-white p-item shadow-sm sm:flex-row sm:items-center dark:border-zinc-800 dark:bg-zinc-900">
       <div className="flex min-w-0 flex-1 items-start gap-item">
+        {selecting ? (
+          <input
+            type="checkbox"
+            className="h-5 w-5"
+            checked={selected}
+            onChange={onToggle}
+            aria-label={`Select ${product.name}`}
+          />
+        ) : null}
         <Thumb src={product.imageUrl} name={product.name} />
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-small">

@@ -19,6 +19,8 @@ import { CommandPalette } from "./command-palette.tsx";
 import { NotificationMenu } from "./notification-menu.tsx";
 import { navigationLinks, isActiveRoute } from "@/lib/client/navigation.ts";
 import { canNavigate, canViewFinance } from "@/lib/dashboard/permissions.ts";
+import type { UserRole } from "@/lib/auth/roles.ts";
+import * as Dialog from "@radix-ui/react-dialog";
 
 function ProfileMenu({
   name,
@@ -243,39 +245,47 @@ function ProfileMenu({
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export interface ShellInitialSnapshot {
+  workspaceName: string;
+  logoUrl: string | null;
+  role: UserRole;
+}
+
+export function AppShell({
+  children,
+  initial,
+}: {
+  children: React.ReactNode;
+  /** Server-Component snapshot for the very first paint, before the browser
+   * session store has read localStorage. Null on signed-out renders. */
+  initial?: ShellInitialSnapshot | null;
+}) {
   const cache = useQueryClient();
   const { status, session } = useRequireSession();
   const pathname = usePathname();
   const signOut = useSignOut();
 
   const currentTenant = useCurrentTenant();
-  const dialog = useRef<HTMLDialogElement>(null);
   const [navigationOpen, setNavigationOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (!navigationOpen) return;
-    const panel = dialog.current;
-    if (!panel) return;
-    const opener = document.activeElement as HTMLElement | null;
-    panel.showModal();
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // A phone drawer becomes redundant as soon as the desktop sidebar exists.
     const desktop = window.matchMedia("(min-width: 1024px)");
     const closeOnDesktop = () => {
       if (desktop.matches) setNavigationOpen(false);
     };
     desktop.addEventListener("change", closeOnDesktop);
-    return () => {
-      desktop.removeEventListener("change", closeOnDesktop);
-      panel.close();
-      document.body.style.overflow = overflow;
-      opener?.focus();
-    };
+    return () => desktop.removeEventListener("change", closeOnDesktop);
   }, [navigationOpen]);
 
-  if (status !== "authenticated") {
+  // The server snapshot lets the shell paint the real workspace immediately;
+  // the moment the browser session resolves, the real session data takes over.
+  const viewerRole: UserRole | undefined = session?.user.role ?? initial?.role;
+  const optimistic = status === "loading" && initial != null;
+
+  if (status !== "authenticated" && !optimistic) {
     // `useRequireSession` is already redirecting; this is the frame in between.
     return (
       <div className="flex flex-1 items-center justify-center p-large text-sm text-zinc-500">
@@ -284,7 +294,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (session?.user.role === "super_admin") {
+  if (viewerRole === "super_admin") {
     return (
       <main className="mx-auto w-full max-w-4xl p-roomy">
         <h1 className="text-xl font-semibold">Platform account</h1>
@@ -324,12 +334,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const workspaceName =
     tenant?.name ??
+    initial?.workspaceName ??
     (currentTenant.isError ? "Workspace unavailable" : "Loading workspace…");
   const navigation = (
     <SidebarNavigation
       key={pathname}
       pathname={pathname}
-      role={session?.user.role}
+      role={viewerRole}
       onNavigate={() => setNavigationOpen(false)}
       onSignOut={() => {
         setNavigationOpen(false);
@@ -386,7 +397,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarNavigation
                 key={`${pathname}:${sidebarCollapsed}`}
                 pathname={pathname}
-                role={session?.user.role}
+                role={viewerRole}
                 collapsed={sidebarCollapsed}
                 onNavigate={() => setNavigationOpen(false)}
                 onSignOut={() => void signOut()}
@@ -443,7 +454,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </span>
                     </>
                   ) : (
-                    (navigationLinks(session?.user.role).find((item) =>
+                    (navigationLinks(viewerRole).find((item) =>
                       isActiveRoute(pathname, item.href),
                     )?.label ?? "Workspace")
                   )}
@@ -468,9 +479,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   role={
                     currentTenant.data?.viewer.role ?? session?.user.role ?? ""
                   }
-                  showBilling={canViewFinance(session?.user.role)}
+                  showBilling={canViewFinance(viewerRole)}
                   photoUrl={currentTenant.data ? currentTenant.data.viewer.photoUrl : session?.user.photoUrl ?? null}
-                  showUsers={canNavigate(session?.user.role, "users.manage")}
+                  showUsers={canNavigate(viewerRole, "users.manage")}
                   onSignOut={() => void signOut()}
                   onLock={session?.user.pinEnabled ? () => {
                     void cache.cancelQueries();
@@ -507,40 +518,28 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </main>
         </div>
       </div>
-      <dialog
-        ref={dialog}
-        id="mobile-navigation"
-        aria-label="Workspace navigation"
-        className="navigation-dialog"
-        onCancel={() => setNavigationOpen(false)}
-        onClose={() => setNavigationOpen(false)}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) {
-            const rect = event.currentTarget.getBoundingClientRect();
-            if (
-              event.clientX < rect.left ||
-              event.clientX > rect.right ||
-              event.clientY < rect.top ||
-              event.clientY > rect.bottom
-            )
-              setNavigationOpen(false);
-          }
-        }}
-      >
-        <div className="flex shrink-0 items-center justify-between gap-item border-b border-border p-content">
-          <div className="min-w-0">{brand}</div>
-          <Button
-            variant="ghost"
-            className="shrink-0 px-item"
-            aria-label="Close navigation"
-            onClick={() => setNavigationOpen(false)}
+      <Dialog.Root open={navigationOpen} onOpenChange={setNavigationOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-[rgb(25_18_39/45%)] backdrop-blur-[3px] motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 duration-200" />
+          <Dialog.Content
+            id="mobile-navigation"
+            aria-describedby={undefined}
+            className="fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(20rem,calc(100%-2rem))] max-w-none flex-col border-0 bg-surface text-foreground shadow-app outline-none motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:slide-in-from-left-4 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:slide-out-to-left-4 duration-200"
           >
-            <AppIcon name="close" />
-          </Button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto">{navigation}</div>
-        <SidebarPlanCard onNavigate={() => setNavigationOpen(false)} />
-      </dialog>
+            <Dialog.Title className="sr-only">Workspace navigation</Dialog.Title>
+            <div className="flex shrink-0 items-center justify-between gap-item border-b border-border p-content">
+              <div className="min-w-0">{brand}</div>
+              <Dialog.Close asChild>
+                <Button variant="ghost" className="shrink-0 px-item" aria-label="Close navigation">
+                  <AppIcon name="close" />
+                </Button>
+              </Dialog.Close>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">{navigation}</div>
+            <SidebarPlanCard onNavigate={() => setNavigationOpen(false)} />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

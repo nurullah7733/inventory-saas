@@ -15,6 +15,8 @@ export interface AuthUserPayload {
   id: string;
   name: string;
   email: string;
+  emailVerifiedAt?: string | null;
+  pendingEmail?: string | null;
   photoUrl?: string | null;
   role: UserRole;
   tenantId: string | null;

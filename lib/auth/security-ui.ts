@@ -7,5 +7,5 @@ export const pinEnableFormSchema = enablePinSchema.extend({ confirmPin: z.string
   .refine((values) => values.pin === values.confirmPin, { message: "PINs do not match.", path: ["confirmPin"] });
 export function safeAccountDestination(next: string | null, role?: string): string {
   if (role === "super_admin") return "/admin";
-  return next && /^\/(?!\/)/.test(next) && !/[\\\u0000-\u0020]/.test(next) && !/^\/(?:login|signup|unlock)(?:[/?#]|$)/.test(next) ? next : "/dashboard";
+  return next && /^\/(?!\/)/.test(next) && !/[\\\u0000-\u0020]/.test(next) && !/^\/(?:login|signup|unlock|forgot-password|reset-password)(?:[/?#]|$)/.test(next) ? next : "/dashboard";
 }

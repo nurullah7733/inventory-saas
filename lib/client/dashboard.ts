@@ -4,19 +4,24 @@ import { apiRequest } from "./api.ts";
 import { useSession } from "./use-session.ts";
 import { dashboardDay, type DashboardPeriod, type DashboardSummary } from "../dashboard/types.ts";
 import type { InsightsResponse, ChartWindow, SalesChartResponse } from "../dashboard/insights-types.ts";
+import {
+  DASHBOARD_QUERY_KEY,
+  dashboardSummaryKey,
+  dashboardInsightsKey,
+} from "../dashboard/dashboard-cache.ts";
 
-export const DASHBOARD_QUERY_KEY = ["dashboard"] as const;
+export { DASHBOARD_QUERY_KEY } from "../dashboard/dashboard-cache.ts";
 export function useDashboardSummary(period: DashboardPeriod | null) {
   const { session } = useSession();
-  return useQuery({ queryKey: ["dashboard", "summary", session?.user.id, period], queryFn: ({ signal }) => apiRequest<{ summary: DashboardSummary }>(`/dashboard/summary${period ? `?${new URLSearchParams({ ...period })}` : ""}`, { signal }), enabled: !!session && session.user.role !== "super_admin", staleTime: 30_000, refetchOnMount: "always" });
+  return useQuery({ queryKey: dashboardSummaryKey(session?.user.id, period), queryFn: ({ signal }) => apiRequest<{ summary: DashboardSummary }>(`/dashboard/summary${period ? `?${new URLSearchParams({ ...period })}` : ""}`, { signal }), enabled: !!session && session.user.role !== "super_admin", staleTime: 30_000, refetchOnMount: "always" });
 }
 export function useDashboardInsights(period: DashboardPeriod) {
   const { session } = useSession();
-  return useQuery({ queryKey: ["dashboard", "insights", session?.user.id, period], queryFn: ({ signal }) => apiRequest<InsightsResponse>(`/dashboard/insights?${new URLSearchParams({ ...period })}`, { signal }), enabled: !!session && session.user.role !== "super_admin", staleTime: 30_000 });
+  return useQuery({ queryKey: dashboardInsightsKey(session?.user.id, period), queryFn: ({ signal }) => apiRequest<InsightsResponse>(`/dashboard/insights?${new URLSearchParams({ ...period })}`, { signal }), enabled: !!session && session.user.role !== "super_admin", staleTime: 30_000 });
 }
 export function useSalesChart(period: DashboardPeriod, window: ChartWindow) {
   const { session } = useSession();
-  return useQuery({ queryKey: ["dashboard", "chart", session?.user.id, period, window], queryFn: ({ signal }) => apiRequest<SalesChartResponse>(`/dashboard/chart?${new URLSearchParams({ ...period, window })}`, { signal }), enabled: !!session && session.user.role !== "super_admin", staleTime: 30_000 });
+  return useQuery({ queryKey: [DASHBOARD_QUERY_KEY, "chart", session?.user.id, period, window], queryFn: ({ signal }) => apiRequest<SalesChartResponse>(`/dashboard/chart?${new URLSearchParams({ ...period, window })}`, { signal }), enabled: !!session && session.user.role !== "super_admin", staleTime: 30_000 });
 }
 export function useDashboardAlerts() {
   const { session } = useSession();

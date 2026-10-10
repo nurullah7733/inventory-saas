@@ -15,7 +15,8 @@ import {
   readClientContext,
 } from "@/lib/auth/payload.ts";
 import { changePasswordSchema } from "@/lib/auth/schemas.ts";
-import { issueSession, revokeAllUserSessions } from "@/lib/auth/session.ts";
+import { issueSession, revokeAllUserSessions, lockAccount } from "@/lib/auth/session.ts";
+import { setSessionCookie } from "@/lib/auth/cookies.ts";
 
 export const PUT = withAuth(
   async (request: Request, auth: AuthContext) => {
@@ -37,6 +38,7 @@ export const PUT = withAuth(
     const parsed = changePasswordSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
 
+    await lockAccount(auth.user.id);
     const user = await rlsDb().orm.public.User.select(
       "id",
       "tenantId",
@@ -62,7 +64,7 @@ export const PUT = withAuth(
     }
 
     const passwordHash = await hashPassword(parsed.data.newPassword);
-    await rlsDb().orm.public.User.where({ id: user.id }).update({ passwordHash });
+    await rlsDb().orm.public.User.where({ id: user.id }).update({ passwordHash, resetTokenHash: null, resetExpiresAt: null, resetEmail: null });
     await recordAudit({ tenantId: user.tenantId, userId: user.id,
       action: "user.password.update", entityType: "user", entityId: user.id,
       metadata: { revokeOtherSessions: parsed.data.revokeOtherSessions } });
@@ -111,11 +113,13 @@ export const PUT = withAuth(
       session,
     });
 
-    return apiSuccess({
+    const response = apiSuccess({
       passwordChanged: true,
       sessionsRevoked: true,
       tokens: payload.tokens,
     });
+    setSessionCookie(response, session.refreshToken);
+    return response;
   },
   { verifySession: true },
 );

@@ -4,7 +4,7 @@ import { storeSession, readSession, readAccessToken, subscribeToSession, updateS
 import { visibleNavigation } from "../lib/client/navigation.ts";
 
 assert.deepEqual(profileDetailsSchema.parse({ name: " Owner ", email: "OWNER@EXAMPLE.COM " }), { name: "Owner", email: "owner@example.com" });
-for (const patch of [{}, { name: " " }, { email: "invalid" }, { role: "shop_owner" }, { tenantId: "other" }, { isActive: true }, { passwordHash: "secret" }, { id: "other" }, { photoUrl: "javascript:alert(1)" }]) {
+for (const patch of [{}, { name: " " }, { email: "invalid" }, { emailVerifiedAt: new Date().toISOString() }, { pendingEmail: "bypass@example.com" }, { verificationTokenHash: "secret" }, { role: "shop_owner" }, { tenantId: "other" }, { isActive: true }, { passwordHash: "secret" }, { id: "other" }, { photoUrl: "javascript:alert(1)" }]) {
   assert.equal(profilePatchSchema.safeParse(patch).success, false, JSON.stringify(patch));
 }
 assert.equal(profilePatchSchema.safeParse({ photoUrl: null }).success, true);

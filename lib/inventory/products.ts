@@ -157,3 +157,30 @@ export interface ProductListResponse {
   pageSize: number;
   total: number;
 }
+
+/**
+ * Bulk actions operate on explicitly selected product ids in one bounded
+ * batch — soft-delete or restore. They never touch fields, so the only
+ * outcomes per id are "done", "skipped with a reason" or "not in this shop".
+ */
+export const BULK_PRODUCT_ACTIONS = ["delete", "restore"] as const;
+export type BulkProductAction = (typeof BULK_PRODUCT_ACTIONS)[number];
+
+export const BULK_PRODUCTS_MAX = 100;
+
+export const bulkProductsSchema = z.strictObject({
+  ids: z
+    .array(z.string().uuid("This is not a valid product."))
+    .min(1, "Select at least one product.")
+    .max(BULK_PRODUCTS_MAX, `Select at most ${BULK_PRODUCTS_MAX} products at a time.`),
+  action: z.enum(BULK_PRODUCT_ACTIONS),
+});
+
+export type BulkProductsInput = z.output<typeof bulkProductsSchema>;
+
+export type BulkSkipReason = "not_found" | "already_deleted" | "not_deleted" | "plan_limit";
+
+export interface BulkProductsResponse {
+  affected: number;
+  skipped: { id: string; name: string; reason: BulkSkipReason }[];
+}

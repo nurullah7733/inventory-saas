@@ -50,3 +50,6 @@ next-env.d.ts
 .cursor*
 .devin
 .commandcode
+
+# Local verification email outbox (contains single-use secrets)
+/.mail/

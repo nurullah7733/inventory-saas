@@ -12,6 +12,7 @@ import { profileDetailsSchema, type ProfilePatch, type ProfileResponse } from "@
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
 import { Button, Field, FormSection } from "@/components/ui/field.tsx";
 import { ImageUploadField } from "@/components/ui/image-upload.tsx";
+import { EmailVerification } from "@/components/auth/email-verification.tsx";
 
 const PROFILE_QUERY_KEY = ["profile"] as const;
 type Details = { name: string; email: string };
@@ -64,7 +65,7 @@ export function ProfileForm() {
     if (dirtyFields.name) patch.name = values.name;
     if (dirtyFields.email) patch.email = values.email;
     if (!Object.keys(patch).length) { toast.info("No profile changes to save."); return; }
-    toast.promise(save.mutateAsync(patch), { loading: "Saving profile...", success: "Profile saved.", error: (error) => error instanceof Error ? error.message : "Could not save profile." });
+    toast.promise(save.mutateAsync(patch), { loading: "Saving profile...", success: (result) => result.user.pendingEmail ? "Profile saved. Verify your new email to change your sign-in email." : "Profile saved.", error: (error) => error instanceof Error ? error.message : "Could not save profile." });
   });
 
   if (profile.isPending) return <div className="ui-panel text-sm text-muted" role="status">Loading profile...</div>;
@@ -73,6 +74,7 @@ export function ProfileForm() {
   const busy = uploading || save.isPending;
   return (
     <div className="ui-stack">
+      <EmailVerification compact />
       <FormSection title="Profile photo" description="Your photo appears in the account menu. Uploads are saved automatically.">
         <ImageUploadField label="Profile photo" purpose="profile" allowUrl={false} value={user.photoUrl ?? ""}
           disabled={save.isPending} onUploadingChange={setUploading}
@@ -86,7 +88,7 @@ export function ProfileForm() {
           <Field label="Name" required error={form.formState.errors.name?.message}>
             {(props) => <input {...props} {...form.register("name")} autoComplete="name" maxLength={120} disabled={busy} />}
           </Field>
-          <Field label="Email" required error={form.formState.errors.email?.message} hint="Use this email the next time you sign in.">
+          <Field label="Email" required error={form.formState.errors.email?.message} hint="Your current sign-in email stays active until you verify the new address.">
             {(props) => <input {...props} {...form.register("email")} type="email" autoComplete="email" maxLength={254} disabled={busy} />}
           </Field>
           <div className="sm:col-span-2 text-sm text-muted">

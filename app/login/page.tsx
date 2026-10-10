@@ -48,7 +48,7 @@ function LoginForm() {
       const destination = safeAccountDestination(next, payload.user.role);
 
       toast.success(`Welcome back, ${payload.user.name}.`);
-      router.replace(destination);
+      router.replace(payload.user.emailVerifiedAt === null ? "/verify-email" : destination);
     } catch (error) {
       const message =
         error instanceof ApiClientError
@@ -103,6 +103,7 @@ function LoginForm() {
         )}
       </Field>
 
+      <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline">Forgot password?</Link>
       <Button type="submit" disabled={submitting}>
         {submitting ? "Signing in…" : "Sign in"}
       </Button>

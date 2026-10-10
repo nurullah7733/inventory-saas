@@ -5,6 +5,7 @@ import {
   readAccessToken,
   readSession,
   storeSession,
+  updateSessionUser,
 } from "./session.ts";
 
 export class ApiClientError extends Error {
@@ -155,6 +156,10 @@ export async function apiRequest<T>(
   }
 
   if (!payload.ok) {
+    if (payload.error.code === "EMAIL_NOT_VERIFIED") {
+      const current = readSession();
+      if (current) updateSessionUser({ ...current.user, emailVerifiedAt: null });
+    }
     throw new ApiClientError(
       payload.error.code,
       payload.error.message,

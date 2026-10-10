@@ -7,6 +7,8 @@ import { numeric } from "../lib/numeric.ts";
 import { issueSession } from "../lib/auth/session.ts";
 import { signAccessToken } from "../lib/auth/jwt.ts";
 import type { UserRole } from "../lib/auth/roles.ts";
+import { readdir, unlink } from "node:fs/promises";
+import { localVerificationToken } from "./email-test-helpers.ts";
 
 const base = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 const tenants: string[] = [];
@@ -43,6 +45,7 @@ async function main() {
     equal(Object.keys(one).some((key) => /password|pin|token/i.test(key)), false, "response contains no credentials");
     const twoResponse = await call("/users", auth, input("Manager Two", "manager"));
     equal(twoResponse.status, 201, "owner creates manager"); const two = twoResponse.body.data.user;
+    for (const user of [one, two]) equal((await call("/auth/email-verification/verify", undefined, { token: await localVerificationToken(user.id) })).status, 200, "staff verifies email before role permission checks");
     const staffSession = await token(one.id, a.tenant.id, "staff");
     const managerSession = await token(two.id, a.tenant.id, "manager");
     equal((await call("/users", staffSession.token)).status, 403, "staff cannot list users");
@@ -99,7 +102,9 @@ async function main() {
       await runUsersBrowserCheck(base, { user: { ...a.owner, pinEnabled: false }, tenant: null, refreshToken: a.session.refreshToken, refreshExpiresAt: a.session.expiresAt });
     }
   } finally {
+    const mailUsers: string[] = [];
     for (const tenantId of tenants) await withRlsBypass(async (tx) => {
+      mailUsers.push(...(await tx.orm.public.User.select("id").where({ tenantId }).all()).map((user) => user.id));
       await tx.orm.public.AuditLog.where({ tenantId }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
       await tx.orm.public.Product.where({ tenantId }).deleteAll();
@@ -107,6 +112,7 @@ async function main() {
       await tx.orm.public.User.where({ tenantId }).deleteAll();
       await tx.orm.public.Tenant.where({ id: tenantId }).delete();
     });
+    for (const file of await readdir(".mail").catch(() => [] as string[])) if (mailUsers.some((id) => file.startsWith(`${id}-`))) await unlink(`.mail/${file}`);
   }
 }
 main().catch((error) => { console.error(error); process.exitCode = 1; }).finally(() => db.close());

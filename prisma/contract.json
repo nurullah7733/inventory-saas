@@ -16,6 +16,10 @@
       "model": "Customer",
       "namespace": "public"
     },
+    "email_verification_rates": {
+      "model": "EmailVerificationRate",
+      "namespace": "public"
+    },
     "expense_categories": {
       "model": "ExpenseCategory",
       "namespace": "public"
@@ -510,6 +514,47 @@
               },
               "namespaceId": "public",
               "table": "customers"
+            }
+          },
+          "EmailVerificationRate": {
+            "fields": {
+              "count": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "expiresAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "key": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "count": {
+                  "column": "count"
+                },
+                "expiresAt": {
+                  "column": "expires_at"
+                },
+                "key": {
+                  "column": "key"
+                }
+              },
+              "namespaceId": "public",
+              "table": "email_verification_rates"
             }
           },
           "Expense": {
@@ -2566,6 +2611,13 @@
                   "kind": "scalar"
                 }
               },
+              "emailVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -2601,6 +2653,13 @@
                   "kind": "scalar"
                 }
               },
+              "pendingEmail": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "photoUrl": {
                 "nullable": true,
                 "type": {
@@ -2629,6 +2688,27 @@
                   "kind": "scalar"
                 }
               },
+              "resetEmail": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "resetExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "resetTokenHash": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "role": {
                 "nullable": false,
                 "type": {
@@ -2651,6 +2731,41 @@
               },
               "updatedAt": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationExpiresAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationSendCount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationSentAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationTokenHash": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "verificationWindowAt": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
                   "kind": "scalar"
@@ -2682,6 +2797,9 @@
                 "email": {
                   "column": "email"
                 },
+                "emailVerifiedAt": {
+                  "column": "email_verified_at"
+                },
                 "id": {
                   "column": "id"
                 },
@@ -2697,6 +2815,9 @@
                 "passwordHash": {
                   "column": "password_hash"
                 },
+                "pendingEmail": {
+                  "column": "pending_email"
+                },
                 "photoUrl": {
                   "column": "photo_url"
                 },
@@ -2709,6 +2830,15 @@
                 "pinLockedUntil": {
                   "column": "pin_locked_until"
                 },
+                "resetEmail": {
+                  "column": "reset_email"
+                },
+                "resetExpiresAt": {
+                  "column": "reset_expires_at"
+                },
+                "resetTokenHash": {
+                  "column": "reset_token_hash"
+                },
                 "role": {
                   "column": "role"
                 },
@@ -2717,6 +2847,21 @@
                 },
                 "updatedAt": {
                   "column": "updated_at"
+                },
+                "verificationExpiresAt": {
+                  "column": "verification_expires_at"
+                },
+                "verificationSendCount": {
+                  "column": "verification_send_count"
+                },
+                "verificationSentAt": {
+                  "column": "verification_sent_at"
+                },
+                "verificationTokenHash": {
+                  "column": "verification_token_hash"
+                },
+                "verificationWindowAt": {
+                  "column": "verification_window_at"
                 }
               },
               "namespaceId": "public",
@@ -3141,6 +3286,18 @@
       "public": {
         "entries": {
           "policy": {
+            "email_verification_rates_private": {
+              "kind": "policy",
+              "name": "email_verification_rates_private_1b02389a",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "email_verification_rates_private",
+              "roles": [],
+              "tableName": "email_verification_rates",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on'",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on'"
+            },
             "tenant_isolation_audit_logs": {
               "kind": "policy",
               "name": "tenant_isolation_audit_logs_ffe271ab",
@@ -3409,6 +3566,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "customers"
+            },
+            "email_verification_rates": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "email_verification_rates"
             },
             "expense_categories": {
               "kind": "rls",
@@ -3851,6 +4013,37 @@
                   ]
                 }
               ]
+            },
+            "email_verification_rates": {
+              "columns": {
+                "count": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "expires_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "key": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "key"
+                ]
+              },
+              "uniques": []
             },
             "expense_categories": {
               "columns": {
@@ -6087,6 +6280,15 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "email_verified_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
@@ -6116,6 +6318,11 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "pending_email": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "photo_url": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -6140,6 +6347,21 @@
                   "nativeType": "timestamptz",
                   "nullable": true
                 },
+                "reset_email": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "reset_expires_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "reset_token_hash": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "role": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -6160,6 +6382,35 @@
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "verification_expires_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "verification_send_count": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 0
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "verification_sent_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "verification_token_hash": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "verification_window_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -6227,6 +6478,16 @@
                 {
                   "columns": [
                     "email"
+                  ]
+                },
+                {
+                  "columns": [
+                    "verification_token_hash"
+                  ]
+                },
+                {
+                  "columns": [
+                    "reset_token_hash"
                   ]
                 }
               ]
@@ -6790,7 +7051,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "67f9d5cf657bf732c84c7c5cfbc348c3b50137d5a172a186ccadacabba12cda9"
+    "storageHash": "e487653eb58d18fd41c16a71cfae7034be0d9a606ca7ef5a86ce451e78bbac64"
   },
   "execution": {
     "executionHash": "e3e50dea5cb86e50bff6ea408baa6b9bd84f9c200164b3dee03d14f952da61f7",

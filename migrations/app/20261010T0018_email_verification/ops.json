@@ -1,0 +1,459 @@
+[
+  {
+    "id": "table.email_verification_rates",
+    "label": "Create table \"email_verification_rates\"",
+    "summary": "Creates table \"email_verification_rates\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "email_verification_rates"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"email_verification_rates\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"email_verification_rates\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"email_verification_rates\"",
+        "sql": "CREATE TABLE \"public\".\"email_verification_rates\" (\n  \"count\" int4 DEFAULT 0 NOT NULL,\n  \"expires_at\" timestamptz NOT NULL,\n  \"key\" text NOT NULL,\n  PRIMARY KEY (\"key\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"email_verification_rates\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"email_verification_rates\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.email_verified_at",
+    "label": "Add column \"email_verified_at\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "email_verified_at",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"email_verified_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "email_verified_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"email_verified_at\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"email_verified_at\" timestamptz DEFAULT (now())"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"email_verified_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "email_verified_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.pending_email",
+    "label": "Add column \"pending_email\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pending_email",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pending_email\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "pending_email"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pending_email\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"pending_email\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pending_email\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "pending_email"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.verification_expires_at",
+    "label": "Add column \"verification_expires_at\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "verification_expires_at",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"verification_expires_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_expires_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"verification_expires_at\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"verification_expires_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"verification_expires_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_expires_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.verification_send_count",
+    "label": "Add column \"verification_send_count\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "verification_send_count",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"verification_send_count\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_send_count"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"verification_send_count\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"verification_send_count\" int4 DEFAULT 0 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"verification_send_count\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_send_count"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.verification_sent_at",
+    "label": "Add column \"verification_sent_at\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "verification_sent_at",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"verification_sent_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_sent_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"verification_sent_at\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"verification_sent_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"verification_sent_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_sent_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.verification_token_hash",
+    "label": "Add column \"verification_token_hash\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "verification_token_hash",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"verification_token_hash\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_token_hash"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"verification_token_hash\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"verification_token_hash\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"verification_token_hash\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_token_hash"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.users.verification_window_at",
+    "label": "Add column \"verification_window_at\" to \"users\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "verification_window_at",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"verification_window_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_window_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"verification_window_at\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD COLUMN \"verification_window_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"verification_window_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "users",
+          "verification_window_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.users.users_verification_token_hash_key",
+    "label": "Add unique constraint on \"users\" (verification_token_hash)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "users_verification_token_hash_key",
+        "table": "users"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"users_verification_token_hash_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_verification_token_hash_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"users_verification_token_hash_key\"",
+        "sql": "ALTER TABLE \"public\".\"users\" ADD CONSTRAINT \"users_verification_token_hash_key\" UNIQUE (\"verification_token_hash\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"users_verification_token_hash_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "users_verification_token_hash_key",
+          "public",
+          "\"public\".\"users\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.email_verification_rates",
+    "label": "Enable row-level security on \"email_verification_rates\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "email_verification_rates"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"email_verification_rates\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "email_verification_rates"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"email_verification_rates\"",
+        "sql": "ALTER TABLE \"public\".\"email_verification_rates\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"email_verification_rates\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "email_verification_rates"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.email_verification_rates.email_verification_rates_private_1b02389a",
+    "label": "Create RLS policy \"email_verification_rates_private_1b02389a\" on \"email_verification_rates\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "email_verification_rates_private_1b02389a",
+        "table": "email_verification_rates"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"email_verification_rates_private_1b02389a\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "email_verification_rates",
+          "email_verification_rates_private_1b02389a"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"email_verification_rates_private_1b02389a\"",
+        "sql": "CREATE POLICY \"email_verification_rates_private_1b02389a\" ON \"public\".\"email_verification_rates\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on') WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on')",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"email_verification_rates_private_1b02389a\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "email_verification_rates",
+          "email_verification_rates_private_1b02389a"
+        ]
+      }
+    ]
+  }
+]

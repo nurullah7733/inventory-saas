@@ -31,8 +31,8 @@ export default function SignupPage() {
     try {
       await signUp({ businessName: values.businessName, name: values.name,
         email: values.email, phone: values.phone.trim() || undefined, password: values.password });
-      toast.success("Your shop account is ready. Welcome!");
-      router.replace("/dashboard");
+      toast.success("Account created. Check your email to verify your account.");
+      router.replace("/verify-email");
     } catch (error) {
       const message = error instanceof ApiClientError ? error.message : "Could not create your account. Please try again.";
       if (error instanceof ApiClientError && error.code === "EMAIL_TAKEN") {

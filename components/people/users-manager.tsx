@@ -78,18 +78,18 @@ function UserForm({ user, shop, done }: { user: StaffUser | null; shop: string; 
   const save = useMutation({
     mutationFn: (values: Values) => {
       const body = user ? Object.fromEntries(Object.keys(dirtyFields).filter((key) => key !== "password").map((key) => [key, values[key as keyof Values]])) : values;
-      return apiRequest<{ user: StaffUser }>(user ? `/users/${user.id}` : "/users", { method: user ? "PATCH" : "POST", body });
+      return apiRequest<{ user: StaffUser; emailVerificationPending?: boolean }>(user ? `/users/${user.id}` : "/users", { method: user ? "PATCH" : "POST", body });
     },
     onSuccess: done,
     onError: (error) => { if (error instanceof ApiClientError && error.details) for (const [key, messages] of Object.entries(error.details)) if (key in form.getValues()) form.setError(key as keyof Values, { message: messages[0] }); },
   });
   return <form className="ui-stack" onSubmit={form.handleSubmit((values) => {
     if (user && !Object.keys(dirtyFields).length) return;
-    toast.promise(save.mutateAsync(values), { loading: "Saving user...", success: user ? "User updated." : "User created.", error: (error) => error instanceof Error ? error.message : "Could not save user." });
+    toast.promise(save.mutateAsync(values), { loading: "Saving user...", success: (result) => result.emailVerificationPending ? "User updated. Their current email stays active until they verify the new address." : user ? "User updated." : "User created. A verification email has been sent.", error: (error) => error instanceof Error ? error.message : "Could not save user." });
   })}>
     <fieldset disabled={save.isPending} className="ui-stack min-w-0">
       <Field label="Name" required error={errors.name?.message}>{(props) => <input {...props} autoComplete="off" {...form.register("name")} />}</Field>
-      <Field label="Email" required error={errors.email?.message}>{(props) => <input {...props} type="email" autoComplete="off" {...form.register("email")} />}</Field>
+      <Field label="Email" required error={errors.email?.message} hint="Email changes take effect after the user verifies the new address.">{(props) => <input {...props} type="email" autoComplete="off" {...form.register("email")} />}</Field>
       {!user && <Field label="Initial password" required error={errors.password?.message} hint="Share this password with the user so they can sign in.">{(props) => <input {...props} type="password" autoComplete="new-password" {...form.register("password")} />}</Field>}
       <Field label="Role" error={errors.role?.message} hint={user ? "Changing the role signs out all existing sessions." : undefined}>{(props) => <select {...props} {...form.register("role")}><option value="staff">Staff</option><option value="manager">Manager</option></select>}</Field>
       <Field label="Assigned shop">{(props) => <input {...props} value={shop} readOnly />}</Field>

@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "./api.ts";
 import { useSession } from "./use-session.ts";
+import { CURRENT_TENANT_QUERY_KEY, type CurrentTenantResponse } from "../tenant/current-tenant-cache.ts";
 
 /**
  * The signed-in shop, from `/tenant/current` — the brief's rule is that the
@@ -11,28 +12,8 @@ import { useSession } from "./use-session.ts";
  * the currency symbol or the viewer's role; TanStack Query dedupes the fetch.
  */
 
-export const CURRENT_TENANT_QUERY_KEY = ["currentTenant"] as const;
-
-export interface CurrentTenantResponse {
-  tenant: {
-    id: string;
-    name: string;
-    logoUrl: string | null;
-    description: string | null;
-    email: string;
-    phone: string | null;
-    address: string | null;
-    currencySymbol: string;
-    vatPercentage: string;
-    lowStockThreshold: number;
-    subscriptionPlan: string;
-    subscriptionStatus: string;
-    trialEndsAt: string | null;
-    subscriptionEndsAt: string | null;
-  };
-  usage: { products: number; maxProducts: number; staff: number; maxStaff: number };
-  viewer: { id: string; name: string; email: string; photoUrl: string | null; role: string };
-}
+export { CURRENT_TENANT_QUERY_KEY } from "../tenant/current-tenant-cache.ts";
+export type { CurrentTenantResponse } from "../tenant/current-tenant-cache.ts";
 
 export function useCurrentTenant() {
   const { status, session } = useSession();

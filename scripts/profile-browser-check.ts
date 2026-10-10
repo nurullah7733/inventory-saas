@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { StoredSession } from "../lib/client/session.ts";
+import { localVerificationToken } from "./email-test-helpers.ts";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 export async function runProfileBrowserCheck(base: string, session: StoredSession) {
@@ -71,7 +72,10 @@ export async function runProfileBrowserCheck(base: string, session: StoredSessio
       await evaluate(`(()=>{const input=document.querySelector('input[name="${key}"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));})()`);
     }
     await evaluate("Array.from(document.querySelectorAll('button')).find(button=>button.textContent==='Save profile')?.click()");
-    await until(`document.querySelector('button[aria-label="Account menu for ${name}"]') && JSON.parse(localStorage.getItem('inventory-saas.session')).user.email === '${email}'`, "Header/session did not update");
+    await until(`document.querySelector('button[aria-label="Account menu for ${name}"]') && JSON.parse(localStorage.getItem('inventory-saas.session')).user.pendingEmail === '${email}'`, "Header/pending email did not update");
+    const token = await localVerificationToken(session.user.id);
+    const verification = await fetch(`${base}/api/v1/auth/email-verification/verify`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) });
+    assert.equal(verification.status, 200, "Browser profile email verification failed");
     await cdp("Page.reload");
     await until(`document.querySelector('input[name=email]')?.value === '${email}' && document.querySelector('button[aria-label="Account menu for ${name}"]')`, "Profile did not persist after refresh");
     // Upload through the browser's own file input, then wait for auto-save.

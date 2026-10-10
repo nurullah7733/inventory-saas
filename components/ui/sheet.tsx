@@ -1,18 +1,29 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Button } from "./field.tsx";
 
 /**
  * Bottom sheet on a phone, centred dialog from `sm` up — the brief's pattern
  * for forms on a narrow viewport.
  *
- * Shaped like shadcn's `Sheet` / `Dialog` (open + onOpenChange, title,
- * description) so it can be swapped for the Radix-based component later, the
- * same way `field.tsx` can. What it does now: Escape and backdrop close it,
- * the page behind stops scrolling, focus moves into the panel on open and
- * back to whatever opened it on close.
+ * Built on Radix's dialog primitive (the shadcn `Sheet`/`Dialog` layer the
+ * brief asks for): portal to the document body, a real focus trap that
+ * returns focus to the opener, Escape and backdrop dismissal, page
+ * scroll-lock, and enter/exit transitions — all the behaviour the previous
+ * hand-rolled version could only approximate. The props are unchanged, so
+ * every consumer keeps working; the spacing tokens, dark-mode classes and the
+ * mobile bottom-sheet layout are carried over one-for-one.
  */
+const overlayClasses =
+  "fixed inset-0 z-40 bg-zinc-950/40 motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 duration-200";
+
+const contentClasses =
+  "fixed inset-0 z-40 flex items-end justify-center sm:items-center sm:p-content";
+
+const panelClasses = (size: "md" | "lg") =>
+  `relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-surface p-dialog pb-[max(var(--space-dialog),env(safe-area-inset-bottom))] shadow-xl outline-none ${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-4 sm:motion-safe:data-[state=open]:slide-in-from-bottom-0 sm:motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-4 sm:motion-safe:data-[state=closed]:slide-out-to-bottom-0 sm:motion-safe:data-[state=closed]:zoom-out-95 duration-200`;
+
 export function Sheet({
   open,
   onOpenChange,
@@ -29,77 +40,33 @@ export function Sheet({
   size?: "md" | "lg";
   children: React.ReactNode;
 }) {
-  const titleId = useId();
-  const descriptionId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const opener = document.activeElement as HTMLElement | null;
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
-
-    // Prefer the first form control; fall back to the panel itself so a
-    // confirm dialog still takes focus away from the page behind it.
-    const panel = panelRef.current;
-    const first = panel?.querySelector<HTMLElement>(
-      "input:not([disabled]), textarea:not([disabled]), select:not([disabled])",
-    );
-    (first ?? panel)?.focus();
-
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onOpenChange(false);
-    }
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
-      opener?.focus?.();
-    };
-  }, [open, onOpenChange]);
-
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center sm:p-content">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 bg-zinc-950/40"
-        onClick={() => onOpenChange(false)}
-      />
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
-        tabIndex={-1}
-        className={`relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-surface p-dialog pb-[max(var(--space-dialog),env(safe-area-inset-bottom))] shadow-xl outline-none ${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl`}
-      >
-        {/* Grab handle — a visual cue that this is a sheet on touch screens. */}
-        <div
-          aria-hidden="true"
-          className="mx-auto mb-item h-1.5 w-10 rounded-full bg-border sm:hidden"
-        />
-        <h2
-          id={titleId}
-          className="text-base font-semibold text-foreground"
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className={overlayClasses} />
+        <Dialog.Content
+          aria-describedby={undefined}
+          className={contentClasses}
         >
-          {title}
-        </h2>
-        {description ? (
-          <p
-            id={descriptionId}
-            className="mt-tight text-sm text-muted"
-          >
-            {description}
-          </p>
-        ) : null}
-        <div className="mt-content">{children}</div>
-      </div>
-    </div>
+          <div className={panelClasses(size)}>
+            {/* Grab handle — a visual cue that this is a sheet on touch screens. */}
+            <div
+              aria-hidden="true"
+              className="mx-auto mb-item h-1.5 w-10 rounded-full bg-border sm:hidden"
+            />
+            <Dialog.Title className="text-base font-semibold text-foreground">
+              {title}
+            </Dialog.Title>
+            {description ? (
+              <Dialog.Description className="mt-tight text-sm text-muted">
+                {description}
+              </Dialog.Description>
+            ) : null}
+            <div className="mt-content">{children}</div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 

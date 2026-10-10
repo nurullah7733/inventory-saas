@@ -109,6 +109,13 @@ Open http://localhost:3000, or the port shown in the terminal.
 
 ## Validation
 
+Email verification setup and the unverified-account policy are documented in
+[docs/email-verification.md](docs/email-verification.md). Local development writes
+verification messages to the private `.mail/` folder. To send actual emails,
+including on Vercel, set `EMAIL_TRANSPORT=resend`, `RESEND_API_KEY`, `EMAIL_FROM`
+(a verified sender), and your HTTPS `APP_URL`. Vercel Blob handles image storage;
+email delivery requires its own configuration.
+
 ```bash
 npm run lint
 npx tsc --noEmit

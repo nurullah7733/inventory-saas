@@ -14,7 +14,7 @@ import {
   subscribeToSession,
   type StoredSession,
 } from "./session.ts";
-export type SessionStatus = "loading" | "authenticated" | "locked" | "unauthenticated";
+export type SessionStatus = "loading" | "unverified" | "authenticated" | "locked" | "unauthenticated";
 
 function subscribe(onChange: () => void): () => void {
   return subscribeToSession(() => onChange());
@@ -41,7 +41,7 @@ export function useSession(): {
 
   if (!hydrated) return { status: "loading", session: null };
   return {
-    status: session ? session.locked ? "locked" : "authenticated" : "unauthenticated",
+    status: session ? session.locked ? "locked" : session.user.emailVerifiedAt === null ? "unverified" : "authenticated" : "unauthenticated",
     session,
   };
 }
@@ -56,6 +56,7 @@ export function useRequireSession(): ReturnType<typeof useSession> {
       clearSession();
       router.replace("/login");
     }
+    if (state.status === "unverified") router.replace("/verify-email");
     if (state.status === "locked") router.replace(`/unlock?next=${encodeURIComponent(window.location.pathname)}`);
   }, [state.status, router]);
 

@@ -1,4 +1,4 @@
-import { rlsDb } from "@/lib/db/rls.ts";
+import { rlsDb, rawSql } from "@/lib/db/rls.ts";
 import { recordAudit } from "@/lib/audit/log.ts";
 import {
   AUTH_RATE_LIMITS,
@@ -21,6 +21,7 @@ import {
 import { isUserRole } from "@/lib/auth/roles.ts";
 import { loginSchema } from "@/lib/auth/schemas.ts";
 import { issueSession } from "@/lib/auth/session.ts";
+import { setSessionCookie } from "@/lib/auth/cookies.ts";
 
 export const POST = withPublicRoute(async (request: Request) => {
   const ip = clientIp(request.headers);
@@ -48,12 +49,16 @@ export const POST = withPublicRoute(async (request: Request) => {
     );
   }
 
+  // Read credentials after acquiring the reset/password-change account lock.
+  await rlsDb().query(rawSql`SELECT id FROM public.users WHERE email = ${email} FOR UPDATE`.returnsRow({ id: "pg/uuid@1" }).build());
   const user = await rlsDb().orm.public.User.select(
     "id",
     "tenantId",
     "name",
     "email",
     "photoUrl",
+    "emailVerifiedAt",
+    "pendingEmail",
     "passwordHash",
     "pinHash",
     "role",
@@ -142,6 +147,8 @@ export const POST = withPublicRoute(async (request: Request) => {
       name: user.name,
       email: user.email,
       photoUrl: user.photoUrl,
+      emailVerifiedAt: user.emailVerifiedAt,
+      pendingEmail: user.pendingEmail,
       role: user.role,
       tenantId: user.tenantId,
       pinEnabled: user.pinHash !== null,
@@ -161,5 +168,9 @@ export const POST = withPublicRoute(async (request: Request) => {
 
   await recordAudit({ tenantId: user.tenantId, userId: user.id,
     action: "auth.login", entityType: "user", entityId: user.id });
-  return apiSuccess(payload);
+  const response = apiSuccess(payload);
+  // Mirror the refresh token for Server-Component first-paint reads; the API
+  // itself keeps authenticating with the bearer token only.
+  setSessionCookie(response, session.refreshToken);
+  return response;
 });

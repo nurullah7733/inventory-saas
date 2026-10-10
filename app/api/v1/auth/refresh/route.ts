@@ -19,6 +19,7 @@ import {
   rotateSession,
 } from "@/lib/auth/session.ts";
 import { hashRefreshToken } from "@/lib/auth/tokens.ts";
+import { setSessionCookie } from "@/lib/auth/cookies.ts";
 
 export const POST = withPublicRoute(async (request: Request) => {
   const limit = consume(
@@ -66,6 +67,8 @@ export const POST = withPublicRoute(async (request: Request) => {
     "name",
     "email",
     "photoUrl",
+    "emailVerifiedAt",
+    "pendingEmail",
     "pinHash",
     "role",
     "isActive",
@@ -112,6 +115,8 @@ export const POST = withPublicRoute(async (request: Request) => {
       name: user.name,
       email: user.email,
       photoUrl: user.photoUrl,
+      emailVerifiedAt: user.emailVerifiedAt,
+      pendingEmail: user.pendingEmail,
       role: user.role,
       tenantId: user.tenantId,
       pinEnabled: user.pinHash !== null,
@@ -129,5 +134,8 @@ export const POST = withPublicRoute(async (request: Request) => {
     session,
   });
 
-  return apiSuccess(payload);
+  const response = apiSuccess(payload);
+  // The rotation replaced the refresh token, so the RSC mirror follows.
+  setSessionCookie(response, session.refreshToken);
+  return response;
 });

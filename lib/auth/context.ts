@@ -11,6 +11,7 @@ export interface AuthUser {
   tenantId: string | null;
   name: string;
   email: string;
+  emailVerifiedAt?: string | null;
   photoUrl: string | null;
   role: UserRole;
 }
@@ -78,6 +79,7 @@ export async function authenticate(
     "name",
     "email",
     "photoUrl",
+    "emailVerifiedAt",
     "role",
     "isActive",
   )
@@ -158,6 +160,7 @@ export async function authenticate(
         name: row.name,
         email: row.email,
         photoUrl: row.photoUrl,
+        emailVerifiedAt: row.emailVerifiedAt,
         role: row.role,
       },
       tenant,

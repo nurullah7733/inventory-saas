@@ -33,6 +33,9 @@ const API_PREFIX = "/api/v1";
  * accident.
  */
 const PUBLIC_API_ROUTES = new Set([
+  `${API_PREFIX}/auth/forgot-password`,
+  `${API_PREFIX}/auth/reset-password`,
+  `${API_PREFIX}/auth/email-verification/verify`,
   `${API_PREFIX}/auth/login`,
   `${API_PREFIX}/auth/signup`,
   `${API_PREFIX}/auth/logout`,

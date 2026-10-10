@@ -1,0 +1,30 @@
+import assert from "node:assert/strict";
+import { forgotPasswordSchema, resetPasswordSchema, resetPasswordFormSchema } from "../lib/auth/password-reset-schema.ts";
+import { verificationHash, verificationTokenValid } from "../lib/auth/email-verification-token.ts";
+import { safeAccountDestination } from "../lib/auth/security-ui.ts";
+
+let checks = 0;
+function equal(actual: unknown, expected: unknown, name: string) { assert.deepEqual(actual, expected, name); checks++; }
+const token = "ab".repeat(32), password = "New-password-123";
+equal(forgotPasswordSchema.parse({ email: " Owner@Example.com " }).email, "owner@example.com", "email normalized");
+equal(forgotPasswordSchema.safeParse({ email: "invalid" }).success, false, "invalid email");
+equal(forgotPasswordSchema.safeParse({ email: "owner@example.com", tenantId: "forged" }).success, false, "tenant injection rejected");
+equal(resetPasswordSchema.safeParse({ token, newPassword: password }).success, true, "valid reset");
+for (const bad of ["", "a".repeat(63), "G".repeat(64), "a".repeat(65)]) equal(resetPasswordSchema.safeParse({ token: bad, newPassword: password }).success, false, "invalid token syntax");
+equal(resetPasswordSchema.safeParse({ token, newPassword: "short" }).success, false, "short password");
+equal(resetPasswordSchema.safeParse({ token, newPassword: "a".repeat(73) }).success, false, "long password");
+equal(resetPasswordSchema.safeParse({ token, newPassword: "é".repeat(37) }).success, false, "bcrypt UTF-8 limit");
+equal(resetPasswordSchema.safeParse({ token, newPassword: "é".repeat(36) }).success, true, "72 byte password accepted");
+equal(resetPasswordSchema.safeParse({ token, newPassword: password, role: "owner" }).success, false, "privilege injection rejected");
+equal(resetPasswordFormSchema.safeParse({ token, newPassword: password, confirmPassword: "different" }).success, false, "confirmation mismatch");
+equal(resetPasswordFormSchema.safeParse({ token, newPassword: password, confirmPassword: password }).success, true, "matching confirmation");
+const now = Date.now(), hash = verificationHash(token);
+equal(hash === token, false, "raw secret not stored");
+equal(verificationTokenValid(hash, new Date(now + 1).toISOString(), token, now), true, "valid before expiry");
+equal(verificationTokenValid(hash, new Date(now).toISOString(), token, now), false, "expiry boundary");
+equal(verificationTokenValid(hash, new Date(now - 1).toISOString(), token, now), false, "expired link");
+equal(verificationTokenValid(null, null, token, now), false, "consumed link");
+equal(verificationTokenValid(hash, new Date(now + 1000).toISOString(), "cd".repeat(32), now), false, "wrong secret");
+equal(safeAccountDestination("/reset-password#token=secret"), "/dashboard", "no reset redirect loop");
+equal(safeAccountDestination("/forgot-password"), "/dashboard", "no recovery redirect loop");
+console.log(`${checks} password reset unit checks passed.`);

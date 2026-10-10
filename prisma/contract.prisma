@@ -134,7 +134,18 @@ model User {
   name         String
   email        String  @unique
   photoUrl     String? @map("photo_url")
+  // Existing accounts are trusted on migration; public account creation explicitly supplies null.
+  emailVerifiedAt TimestamptzString? @default(now()) @map("email_verified_at")
+  pendingEmail String? @map("pending_email")
+  verificationTokenHash String? @unique @map("verification_token_hash")
+  verificationExpiresAt TimestamptzString? @map("verification_expires_at")
+  verificationSentAt TimestamptzString? @map("verification_sent_at")
+  verificationWindowAt TimestamptzString? @map("verification_window_at")
+  verificationSendCount Int @default(0) @map("verification_send_count")
   passwordHash String  @map("password_hash")
+  resetTokenHash String? @unique @map("reset_token_hash")
+  resetExpiresAt TimestamptzString? @map("reset_expires_at")
+  resetEmail String? @map("reset_email")
 
   pinHash           String?            @map("pin_hash")
   pinFailedAttempts Int                @default(0) @map("pin_failed_attempts")
@@ -165,6 +176,14 @@ model User {
 /// sessions. Rotation is enforced on every refresh: the presented row is
 /// revoked and a fresh one issued, so a stolen-and-replayed token shows up as
 /// a reuse of an already-revoked row.
+model EmailVerificationRate {
+  key String @id
+  count Int @default(0)
+  expiresAt TimestamptzString @map("expires_at")
+  @@map("email_verification_rates")
+  @@rls
+}
+
 model RefreshSession {
   id       Uuid    @id @default(uuid())
   userId   Uuid    @map("user_id")
@@ -642,6 +661,12 @@ policy_all tenant_isolation_users {
   target    = User
   using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
   withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all email_verification_rates_private {
+  target = EmailVerificationRate
+  using = "nullif(current_setting('app.bypass_rls', true), '') = 'on'"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on'"
 }
 
 policy_all tenant_isolation_refresh_sessions {

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -144,7 +145,4 @@
   .ui-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-item); }
   .ui-field-grid { display: grid; gap: var(--space-content); }
   .ui-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--panel-radius); background: var(--surface); padding: var(--space-panel); box-shadow: var(--panel-shadow); }
-  .navigation-dialog { margin: 0; height: 100dvh; max-height: 100dvh; width: min(20rem, calc(100% - 2rem)); max-width: none; border: 0; padding: 0; background: var(--surface); color: var(--foreground); }
-  .navigation-dialog::backdrop { background: rgb(25 18 39 / 45%); backdrop-filter: blur(3px); }
-  .navigation-dialog[open] { display: flex; flex-direction: column; }
 }

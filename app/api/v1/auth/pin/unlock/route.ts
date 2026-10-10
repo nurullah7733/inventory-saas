@@ -20,6 +20,7 @@ import {
 import { isUserRole } from "@/lib/auth/roles.ts";
 import { pinUnlockSchema } from "@/lib/auth/schemas.ts";
 import { findActiveSession, rotateSession } from "@/lib/auth/session.ts";
+import { setSessionCookie } from "@/lib/auth/cookies.ts";
 
 export const POST = withPublicRoute(async (request: Request) => {
   const limit = consume(
@@ -55,6 +56,8 @@ export const POST = withPublicRoute(async (request: Request) => {
     "name",
     "email",
     "photoUrl",
+    "emailVerifiedAt",
+    "pendingEmail",
     "role",
     "isActive",
     "pinHash",
@@ -130,6 +133,8 @@ export const POST = withPublicRoute(async (request: Request) => {
       name: user.name,
       email: user.email,
       photoUrl: user.photoUrl,
+      emailVerifiedAt: user.emailVerifiedAt,
+      pendingEmail: user.pendingEmail,
       role: user.role,
       tenantId: user.tenantId,
       pinEnabled: true,
@@ -147,5 +152,7 @@ export const POST = withPublicRoute(async (request: Request) => {
     session,
   });
 
-  return apiSuccess(payload);
+  const response = apiSuccess(payload);
+  setSessionCookie(response, session.refreshToken);
+  return response;
 });

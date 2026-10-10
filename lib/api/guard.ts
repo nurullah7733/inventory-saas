@@ -90,6 +90,11 @@ function roleAllowed(
   return !roles || roles.includes(role);
 }
 
+const UNVERIFIED_ROUTES = new Set(["/api/v1/profile", "/api/v1/auth/me", "/api/v1/auth/password", "/api/v1/auth/pin", "/api/v1/auth/sessions", "/api/v1/auth/email-verification/resend"]);
+function verificationRequired(request: Request, auth: AuthContext): boolean {
+  return auth.user.emailVerifiedAt === null && !UNVERIFIED_ROUTES.has(new URL(request.url).pathname);
+}
+
 const BILLING_BLOCKED: ReadonlySet<string> = new Set(["past_due", "cancelled"]);
 
 export function withAuth<Ctx = unknown>(
@@ -114,6 +119,7 @@ export function withAuth<Ctx = unknown>(
           verifySession: options.verifySession,
         });
         if (!result.ok) return failureResponse(result.failure);
+        if (verificationRequired(request, result.context)) return apiError("EMAIL_NOT_VERIFIED", "Verify your email before accessing your workspace.", 403);
 
         if (!roleAllowed(result.context.user.role, options.roles)) {
           return apiError(
@@ -150,6 +156,7 @@ export function withTenantAuth<Ctx = unknown>(
           verifySession: options.verifySession,
         });
         if (!result.ok) return failureResponse(result.failure);
+        if (verificationRequired(request, result.context)) return apiError("EMAIL_NOT_VERIFIED", "Verify your email before accessing your workspace.", 403);
 
         if (!roleAllowed(result.context.user.role, options.roles)) {
           return apiError(
