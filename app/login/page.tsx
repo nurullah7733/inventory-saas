@@ -9,6 +9,7 @@ import { ApiClientError } from "@/lib/client/api.ts";
 import { useSignIn } from "@/lib/client/use-session.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
 import { loginSchema } from "@/lib/auth/schemas.ts";
+import { safeAccountDestination } from "@/lib/auth/security-ui.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 
 /**
@@ -44,10 +45,7 @@ function LoginForm() {
       // A super_admin has no shop of their own, so the tenant settings screen
       // is not theirs to open — the platform panel is a separate area.
       const next = searchParams.get("next");
-      const destination =
-        payload.user.role === "super_admin"
-          ? "/admin"
-          : (next?.startsWith("/") ? next : "/dashboard");
+      const destination = safeAccountDestination(next, payload.user.role);
 
       toast.success(`Welcome back, ${payload.user.name}.`);
       router.replace(destination);

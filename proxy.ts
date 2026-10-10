@@ -118,6 +118,13 @@ export function proxy(request: NextRequest): NextResponse {
 
   const hasSessionHint =
     request.cookies.get(SESSION_HINT_COOKIE)?.value === "1";
+  const locked = hasSessionHint && request.cookies.get("session_locked")?.value === "1";
+  if (locked && (AUTH_PAGES.includes(pathname) || PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix)))) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/unlock";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   if (
     !hasSessionHint &&

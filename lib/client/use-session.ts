@@ -14,7 +14,7 @@ import {
   subscribeToSession,
   type StoredSession,
 } from "./session.ts";
-export type SessionStatus = "loading" | "authenticated" | "unauthenticated";
+export type SessionStatus = "loading" | "authenticated" | "locked" | "unauthenticated";
 
 function subscribe(onChange: () => void): () => void {
   return subscribeToSession(() => onChange());
@@ -41,7 +41,7 @@ export function useSession(): {
 
   if (!hydrated) return { status: "loading", session: null };
   return {
-    status: session ? "authenticated" : "unauthenticated",
+    status: session ? session.locked ? "locked" : "authenticated" : "unauthenticated",
     session,
   };
 }
@@ -53,8 +53,10 @@ export function useRequireSession(): ReturnType<typeof useSession> {
 
   useEffect(() => {
     if (state.status === "unauthenticated") {
+      clearSession();
       router.replace("/login");
     }
+    if (state.status === "locked") router.replace(`/unlock?next=${encodeURIComponent(window.location.pathname)}`);
   }, [state.status, router]);
 
   return state;

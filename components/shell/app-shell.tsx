@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { lockSession } from "@/lib/client/session.ts";
 import { useCurrentTenant } from "@/lib/client/current-tenant.ts";
 import { useRequireSession, useSignOut } from "@/lib/client/use-session.ts";
 import { Button } from "@/components/ui/field.tsx";
@@ -25,6 +27,7 @@ function ProfileMenu({
   showBilling,
   showUsers,
   onSignOut,
+  onLock,
 }: {
   name: string;
   role: string;
@@ -32,6 +35,7 @@ function ProfileMenu({
   showBilling: boolean;
   showUsers: boolean;
   onSignOut: () => void;
+  onLock?: () => void;
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
@@ -210,6 +214,13 @@ function ProfileMenu({
               </Link>
             </li>
           )}
+          {onLock && <li role="none">
+            <button type="button" role="menuitem" tabIndex={-1}
+              className="flex min-h-11 w-full items-center gap-item rounded-lg px-item text-xs text-foreground transition hover:bg-surface-muted"
+              onClick={() => { setOpen(false); onLock(); }}>
+              <AppIcon name="lock" />Lock screen
+            </button>
+          </li>}
           <li role="none" className="mt-tight border-t border-border pt-tight">
             <button
               ref={signOutItem}
@@ -233,6 +244,7 @@ function ProfileMenu({
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const cache = useQueryClient();
   const { status, session } = useRequireSession();
   const pathname = usePathname();
   const signOut = useSignOut();
@@ -460,6 +472,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   photoUrl={currentTenant.data ? currentTenant.data.viewer.photoUrl : session?.user.photoUrl ?? null}
                   showUsers={canNavigate(session?.user.role, "users.manage")}
                   onSignOut={() => void signOut()}
+                  onLock={session?.user.pinEnabled ? () => {
+                    void cache.cancelQueries();
+                    lockSession();
+                  } : undefined}
                 />
               </div>
             </div>

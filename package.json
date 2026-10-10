@@ -42,7 +42,9 @@
     "users:test": "node --experimental-strip-types scripts/users-test.ts",
     "users:smoke": "node --experimental-strip-types scripts/users-smoke-test.ts",
     "profile:test": "node --experimental-strip-types scripts/profile-test.ts",
-    "profile:smoke": "node --experimental-strip-types scripts/profile-smoke-test.ts"
+    "profile:smoke": "node --experimental-strip-types scripts/profile-smoke-test.ts",
+    "security:test": "node --experimental-strip-types scripts/security-test.ts",
+    "security:smoke": "node --experimental-strip-types scripts/security-smoke-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",

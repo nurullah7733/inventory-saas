@@ -35,9 +35,12 @@ export class ApiClientError extends Error {
  */
 let refreshInFlight: Promise<string | null> | null = null;
 
+/** A PIN unlock must use the refresh token after any already-running rotation. */
+export async function awaitPendingSessionRefresh(): Promise<void> { await refreshInFlight; }
+
 async function requestFreshAccessToken(): Promise<string | null> {
   const session = readSession();
-  if (!session) return null;
+  if (!session || session.locked) return null;
 
   const response = await fetch("/api/v1/auth/refresh", {
     method: "POST",
@@ -49,17 +52,21 @@ async function requestFreshAccessToken(): Promise<string | null> {
     .json()
     .catch(() => null)) as ApiResponseBody<AuthSessionPayload> | null;
 
+  const current = readSession();
+  // A late refresh must not clear or overwrite a newer password/login session.
+  if (current?.refreshToken !== session.refreshToken) return readAccessToken();
   if (!response.ok || !body?.ok) {
     // The refresh token is spent, revoked or expired. Nothing to recover.
     clearSession();
     return null;
   }
 
-  storeSession(body.data);
+  storeSession(body.data, { locked: current.locked });
   return readAccessToken();
 }
 
 async function accessTokenForRequest(): Promise<string | null> {
+  if (readSession()?.locked) throw new ApiClientError("UNAUTHENTICATED", "Unlock with your PIN or sign in with your password.", 401);
   const current = readAccessToken();
   if (current) return current;
 
@@ -105,19 +112,27 @@ export async function apiRequest<T>(
   let response: Response;
   try {
     const token = anonymous ? null : await accessTokenForRequest();
+    if (!anonymous && readSession()?.locked) throw new ApiClientError("UNAUTHENTICATED", "Unlock with your PIN or sign in with your password.", 401);
     response = await send(token);
 
     // The access token was accepted by our own clock but refused by the
     // server's — a clock skew, or a session revoked from another device. One
     // retry with a genuinely fresh token, then give up.
     if (response.status === 401 && !anonymous) {
-      const refreshed = await (refreshInFlight ??=
-        requestFreshAccessToken().finally(() => {
-          refreshInFlight = null;
-        }));
-      if (refreshed) response = await send(refreshed);
+      const failure = await response.clone().json().catch(() => null) as ApiResponseBody<unknown> | null;
+      // Credential confirmation failures must not rotate tokens or resubmit
+      // password/PIN mutations. Only an authentication failure needs refresh.
+      if (failure && !failure.ok && failure.error.code === "UNAUTHENTICATED") {
+        const current = readAccessToken();
+        const refreshed = current && current !== token ? current : await (refreshInFlight ??=
+          requestFreshAccessToken().finally(() => {
+            refreshInFlight = null;
+          }));
+        if (refreshed) response = await send(refreshed);
+      }
     }
   } catch (error) {
+    if (error instanceof ApiClientError) throw error;
     if (error instanceof DOMException && error.name === "AbortError")
       throw error;
     throw new ApiClientError(
