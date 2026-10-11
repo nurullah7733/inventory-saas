@@ -85,6 +85,7 @@ interface Fixture {
   categoryId: string;
   archivedCategoryId: string;
   colorId: string;
+  brandId: string;
 }
 
 async function mintToken(userId: string, tenantId: string, role: UserRole): Promise<string> {
@@ -136,6 +137,10 @@ async function createTenant(label: string, stamp: number): Promise<Fixture> {
       tenantId: tenant.id,
       name: "Black",
     });
+    const brand = await tx.orm.public.Brand.select("id").create({
+      tenantId: tenant.id,
+      name: "Acme",
+    });
 
     return {
       tenantId: tenant.id,
@@ -143,6 +148,7 @@ async function createTenant(label: string, stamp: number): Promise<Fixture> {
       categoryId: category.id,
       archivedCategoryId: archived.id,
       colorId: color.id,
+      brandId: brand.id,
     };
   });
 
@@ -152,6 +158,7 @@ async function createTenant(label: string, stamp: number): Promise<Fixture> {
     categoryId: created.categoryId,
     archivedCategoryId: created.archivedCategoryId,
     colorId: created.colorId,
+    brandId: created.brandId,
     ownerToken: await mintToken(users.shop_owner!, tenantId, "shop_owner"),
     managerToken: await mintToken(users.manager!, tenantId, "manager"),
     staffToken: await mintToken(users.staff!, tenantId, "staff"),
@@ -212,7 +219,7 @@ async function productChecks(a: Fixture, b: Fixture): Promise<string> {
       categoryId: a.categoryId,
       colorId: a.colorId,
       expiryDate: isoDate(400),
-      brand: "Acme",
+      brandId: a.brandId,
       costPrice: 1000,
       sellPrice: "1450.5",
       attributes: { warranty_months: 6, material: "Leather" },
@@ -222,7 +229,7 @@ async function productChecks(a: Fixture, b: Fixture): Promise<string> {
   check(created.status === 201, "owner can add a product");
   check(product?.name === "Runner Pro" && product?.sku === "RN-001", "name is trimmed and the SKU upper-cased");
   check(product?.costPrice === "1000.00" && product?.sellPrice === "1450.50", "prices come back as exact 2-decimal strings");
-  check(product?.category?.name === "Sneakers" && product?.color?.name === "Black", "category and color come back with their names");
+  check(product?.category?.name === "Sneakers" && product?.color?.name === "Black" && product?.brand?.name === "Acme", "category, color and brand come back with their names");
   check(product?.stockQty === 0 && product?.attributes?.warranty_months === 6, "stock starts at 0; attributes are stored");
   const productId: string = product?.id;
 

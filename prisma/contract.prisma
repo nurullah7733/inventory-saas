@@ -236,6 +236,22 @@ model Subscription {
 
 // --- Inventory master data --------------------------------------------------
 
+model Brand {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  name      String
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, createdAt])
+  @@map("brands")
+  @@rls
+}
+
 model Category {
   id        Uuid              @id @default(uuid())
   tenantId  Uuid              @map("tenant_id")
@@ -349,7 +365,8 @@ model Product {
   weightId   Uuid?             @map("weight_id")
   weight     VariantWeight?    @relation(fields: [weightId], references: [id], onDelete: Restrict)
   expiryDate DateString?       @map("expiry_date")
-  brand      String?
+  brandId    Uuid?             @map("brand_id")
+  brand      Brand?            @relation(fields: [brandId], references: [id], onDelete: Restrict)
   costPrice  Numeric(10, 2)    @map("cost_price")
   sellPrice  Numeric(10, 2)    @map("sell_price")
   stockQty   Int               @default(0) @map("stock_qty")
@@ -683,6 +700,12 @@ policy_all tenant_isolation_subscriptions {
 
 policy_all tenant_isolation_categories {
   target    = Category
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_brands {
+  target    = Brand
   using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
   withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
 }

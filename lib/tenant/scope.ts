@@ -9,6 +9,7 @@ export interface TenantScope {
   owns(row: { tenantId: string | null } | null | undefined): boolean;
 
   // --- Inventory ---
+  readonly Brand: ReturnType<typeof brandFor>;
   readonly Category: ReturnType<typeof categoryFor>;
   readonly VariantColor: ReturnType<typeof variantColorFor>;
   readonly VariantSize: ReturnType<typeof variantSizeFor>;
@@ -64,6 +65,8 @@ function ormFor(tenantId: string) {
   return orm();
 }
 
+const brandFor = (tenantId: string) =>
+  ormFor(tenantId).Brand.where({ tenantId });
 const categoryFor = (tenantId: string) =>
   ormFor(tenantId).Category.where({ tenantId });
 const variantColorFor = (tenantId: string) =>
@@ -115,6 +118,9 @@ export function tenantScope(tenantId: string): TenantScope {
       return !!row && row.tenantId === tenantId;
     },
 
+    get Brand() {
+      return brandFor(tenantId);
+    },
     get Category() {
       return categoryFor(tenantId);
     },
@@ -176,6 +182,7 @@ export function tenantScope(tenantId: string): TenantScope {
 }
 
 export const TENANT_SCOPED_TABLES = [
+  "brands",
   "categories",
   "variant_colors",
   "variant_sizes",

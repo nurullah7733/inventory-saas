@@ -22,6 +22,7 @@ import { errorMessage, formatCalendarDate, formatMoney } from "@/lib/client/form
 import { useDebouncedValue } from "@/lib/client/use-debounced-value.ts";
 import { daysBetween, localToday } from "@/lib/dates.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
+import type { BrandResponse } from "@/lib/inventory/brands.ts";
 import type { CategoryResponse } from "@/lib/inventory/categories.ts";
 import {
   productSchema,
@@ -51,6 +52,7 @@ import {
   Thumb,
 } from "@/components/ui/list-controls.tsx";
 import { ConfirmSheet, Sheet } from "@/components/ui/sheet.tsx";
+import { BRANDS_QUERY_KEY } from "./brands-manager.tsx";
 import { CATEGORIES_QUERY_KEY } from "./categories-manager.tsx";
 import { AddStockSheet } from "./stock-manager.tsx";
 import { variantsQueryKey } from "./variant-options-manager.tsx";
@@ -83,6 +85,14 @@ function useCategories() {
     queryKey: CATEGORIES_QUERY_KEY,
     queryFn: () => apiRequest<{ categories: CategoryResponse[] }>("/categories?status=all"),
     select: (data) => data.categories,
+  });
+}
+
+function useBrands() {
+  return useQuery({
+    queryKey: BRANDS_QUERY_KEY,
+    queryFn: () => apiRequest<{ brands: BrandResponse[] }>("/brands?status=all"),
+    select: (data) => data.brands,
   });
 }
 
@@ -499,7 +509,7 @@ function ProductRow({
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             {product.sku}
             {product.category ? ` · ${product.category.name}` : ""}
-            {product.brand ? ` · ${product.brand}` : ""}
+            {product.brand ? ` · ${product.brand.name}` : ""}
           </p>
           {variants.length > 0 ? (
             <p className="mt-micro text-xs text-zinc-600 dark:text-zinc-400">{variants.join(" · ")}</p>
@@ -582,7 +592,7 @@ interface AttributeRow {
 interface ProductForm {
   name: string;
   sku: string;
-  brand: string;
+  brandId: string;
   categoryId: string;
   unitId: string;
   colorId: string;
@@ -647,7 +657,7 @@ function toFormValues(product: ProductResponse | null): ProductForm {
   return {
     name: product?.name ?? "",
     sku: product?.sku ?? "",
-    brand: product?.brand ?? "",
+    brandId: product?.brand?.id ?? "",
     categoryId: product?.category?.id ?? "",
     unitId: product?.unit?.id ?? "",
     colorId: product?.color?.id ?? "",
@@ -664,7 +674,7 @@ function toFormValues(product: ProductResponse | null): ProductForm {
 const SERVER_FIELDS = [
   "name",
   "sku",
-  "brand",
+  "brandId",
   "categoryId",
   "unitId",
   "colorId",
@@ -726,6 +736,7 @@ function ProductFormBody({
   onSaved: () => void;
 }) {
   const categories = useCategories();
+  const brands = useBrands();
 
   const form = useForm<ProductForm>({
     resolver: zodResolver<ProductForm>(productFormSchema),
@@ -770,6 +781,12 @@ function ProductFormBody({
     (category) => category.isActive || category.id === editing?.category?.id,
   );
 
+  // Archived brands are hidden from the choice — except the one this
+  // product already has, so opening the form does not silently clear it.
+  const brandOptions = (brands.data ?? []).filter(
+    (brand) => brand.isActive || brand.id === editing?.brand?.id,
+  );
+
   const errors = form.formState.errors;
 
   return (
@@ -810,8 +827,18 @@ function ProductFormBody({
             </select>
           )}
         </Field>
-        <Field label="Brand" error={errors.brand?.message}>
-          {(props) => <input {...props} type="text" maxLength={80} autoComplete="off" {...form.register("brand")} />}
+        <Field label="Brand" error={errors.brandId?.message}>
+          {(props) => (
+            <select {...props} {...form.register("brandId")}>
+              <option value="">No brand</option>
+              {brandOptions.map((brand) => (
+                <option key={brand.id} value={brand.id}>
+                  {brand.name}
+                  {brand.isActive ? "" : " (archived)"}
+                </option>
+              ))}
+            </select>
+          )}
         </Field>
       </FormSection>
 

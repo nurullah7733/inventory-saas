@@ -2,6 +2,7 @@ import type { SVGProps } from "react";
 
 const paths = {
   dashboard: "M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z",
+  brand: "M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-1.5l-3 4.5-3-4.5H6a3 3 0 0 1-3-3V6z M7 9h10",
   sales: "M6 3h12v18l-3-2-3 2-3-2-3 2z M9 7h6 M9 11h6 M9 15h3",
   inventory: "m3 7 9-4 9 4v10l-9 4-9-4z M3 7l9 4 9-4 M12 11v10 M7 5l9 4",
   categories: "M3 4h7l3 3h8v13H3z M3 9h18",

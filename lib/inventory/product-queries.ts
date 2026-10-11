@@ -17,7 +17,6 @@ export const PRODUCT_COLUMNS = [
   "id",
   "name",
   "sku",
-  "brand",
   "expiryDate",
   "costPrice",
   "sellPrice",
@@ -39,6 +38,7 @@ export function selectProducts(collection: ProductCollection) {
   return collection
     .select(...PRODUCT_COLUMNS)
     .include("category", (c) => c.select("id", "name"))
+    .include("brand", (b) => b.select("id", "name"))
     .include("unit", (u) => u.select("id", "name"))
     .include("color", (c) => c.select("id", "name"))
     .include("size", (s) => s.select("id", "name"))
@@ -58,7 +58,7 @@ export function toProductResponse(row: ProductRow): ProductResponse {
     id: row.id,
     name: row.name,
     sku: row.sku,
-    brand: row.brand,
+    brand: ref(row.brand),
     category: ref(row.category),
     unit: ref(row.unit),
     color: ref(row.color),
@@ -167,7 +167,10 @@ export async function generateSku(scope: TenantScope): Promise<string> {
 export async function validateProductRefs(
   scope: TenantScope,
   refs: Partial<Record<ProductRefField, string | null>>,
-  options: { previousCategoryId?: string | null } = {},
+  options: {
+    previousCategoryId?: string | null;
+    previousBrandId?: string | null;
+  } = {},
 ): Promise<Record<string, string[]> | null> {
   const errors: Record<string, string[]> = {};
 
@@ -181,6 +184,9 @@ export async function validateProductRefs(
       switch (field) {
         case "categoryId":
           found = await scope.Category.select("id", "isActive").where({ id }).first();
+          break;
+        case "brandId":
+          found = await scope.Brand.select("id", "isActive").where({ id }).first();
           break;
         case "unitId":
           found = await scope.VariantUnit.select("id").where({ id }).first();
@@ -204,6 +210,12 @@ export async function validateProductRefs(
         id !== options.previousCategoryId
       ) {
         errors[field] = ["This category is archived. Restore it or choose another one."];
+      } else if (
+        field === "brandId" &&
+        found.isActive === false &&
+        id !== options.previousBrandId
+      ) {
+        errors[field] = ["This brand is archived. Restore it or choose another one."];
       }
     },
   );

@@ -40,7 +40,7 @@ function editableSnapshot(product: ProductResponse): Record<string, unknown> {
   return {
     name: product.name,
     sku: product.sku,
-    brand: product.brand,
+    brandId: product.brand?.id ?? null,
     categoryId: product.category?.id ?? null,
     unitId: product.unit?.id ?? null,
     colorId: product.color?.id ?? null,
@@ -110,6 +110,7 @@ export const PATCH = withTenantAuth(
 
     const refErrors = await validateProductRefs(auth.scope, patch, {
       previousCategoryId: current.category?.id ?? null,
+      previousBrandId: current.brand?.id ?? null,
     });
     if (refErrors) {
       return apiError("VALIDATION_ERROR", "The submitted data is invalid.", 422, refErrors);

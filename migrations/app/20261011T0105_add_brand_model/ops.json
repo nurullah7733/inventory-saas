@@ -1,0 +1,532 @@
+[
+  {
+    "id": "table.brands",
+    "label": "Create table \"brands\"",
+    "summary": "Creates table \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"brands\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"brands\"",
+        "sql": "CREATE TABLE \"public\".\"brands\" (\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"is_active\" bool DEFAULT true NOT NULL,\n  \"name\" text NOT NULL,\n  \"tenant_id\" uuid NOT NULL,\n  \"updated_at\" timestamptz NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"brands\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.products.brand_id",
+    "label": "Add column \"brand_id\" to \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "brand_id",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"brand_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "brand_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"brand_id\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ADD COLUMN \"brand_id\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"brand_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "brand_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.backfill_brands_from_products",
+    "label": "Backfill Brand rows from existing product.brand values",
+    "operationClass": "data",
+    "target": {
+      "id": "data.backfill_brands_from_products",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "brands"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create Brand rows for each distinct product.brand and link products",
+        "sql": "WITH distinct_brands AS (\n  SELECT DISTINCT \"tenant_id\", \"brand\" AS \"name\"\n  FROM \"public\".\"products\"\n  WHERE \"brand\" IS NOT NULL AND \"brand\" <> ''\n),\ninserted AS (\n  INSERT INTO \"public\".\"brands\" (\"id\", \"tenant_id\", \"name\", \"is_active\", \"created_at\", \"updated_at\")\n  SELECT gen_random_uuid(), \"tenant_id\", \"name\", true, now(), now()\n  FROM distinct_brands\n  RETURNING \"id\", \"tenant_id\", \"name\"\n)\nUPDATE \"public\".\"products\" p\nSET \"brand_id\" = i.\"id\"\nFROM inserted i\nWHERE p.\"tenant_id\" = i.\"tenant_id\" AND p.\"brand\" = i.\"name\""
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "dropColumn.products.brand",
+    "label": "Drop column \"brand\" from \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "brand",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"brand\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "brand"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"brand\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP COLUMN \"brand\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"brand\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "brand"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.brands.brands_tenant_id_name_key",
+    "label": "Add unique constraint on \"brands\" (tenant_id, name)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "brands_tenant_id_name_key",
+        "table": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"brands_tenant_id_name_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "brands_tenant_id_name_key",
+          "public",
+          "\"public\".\"brands\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"brands_tenant_id_name_key\"",
+        "sql": "ALTER TABLE \"public\".\"brands\" ADD CONSTRAINT \"brands_tenant_id_name_key\" UNIQUE (\"tenant_id\", \"name\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"brands_tenant_id_name_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "brands_tenant_id_name_key",
+          "public",
+          "\"public\".\"brands\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.brands.brands_tenant_id_created_at_idx_282da036",
+    "label": "Create index \"brands_tenant_id_created_at_idx_282da036\" on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "brands_tenant_id_created_at_idx_282da036",
+        "table": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"brands_tenant_id_created_at_idx_282da036\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands_tenant_id_created_at_idx_282da036\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"brands_tenant_id_created_at_idx_282da036\"",
+        "sql": "CREATE INDEX \"brands_tenant_id_created_at_idx_282da036\" ON \"public\".\"brands\" (\"tenant_id\", \"created_at\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"brands_tenant_id_created_at_idx_282da036\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands_tenant_id_created_at_idx_282da036\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.brands.brands_tenant_id_id_idx_621bc114",
+    "label": "Create index \"brands_tenant_id_id_idx_621bc114\" on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "brands_tenant_id_id_idx_621bc114",
+        "table": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"brands_tenant_id_id_idx_621bc114\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands_tenant_id_id_idx_621bc114\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"brands_tenant_id_id_idx_621bc114\"",
+        "sql": "CREATE INDEX \"brands_tenant_id_id_idx_621bc114\" ON \"public\".\"brands\" (\"tenant_id\", \"id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"brands_tenant_id_id_idx_621bc114\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands_tenant_id_id_idx_621bc114\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.brands.brands_tenant_id_idx_41c0d441",
+    "label": "Create index \"brands_tenant_id_idx_41c0d441\" on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "brands_tenant_id_idx_41c0d441",
+        "table": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"brands_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"brands_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"brands_tenant_id_idx_41c0d441\" ON \"public\".\"brands\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"brands_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"brands_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.products.products_brand_id_idx_59ec1fe6",
+    "label": "Create index \"products_brand_id_idx_59ec1fe6\" on \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "products_brand_id_idx_59ec1fe6",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"products_brand_id_idx_59ec1fe6\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_brand_id_idx_59ec1fe6\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"products_brand_id_idx_59ec1fe6\"",
+        "sql": "CREATE INDEX \"products_brand_id_idx_59ec1fe6\" ON \"public\".\"products\" (\"brand_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"products_brand_id_idx_59ec1fe6\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_brand_id_idx_59ec1fe6\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.brands.brands_tenant_id_fkey",
+    "label": "Add foreign key \"brands_tenant_id_fkey\" on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "brands_tenant_id_fkey",
+        "table": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"brands_tenant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "brands_tenant_id_fkey",
+          "public",
+          "\"public\".\"brands\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"brands_tenant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"brands\"\nADD CONSTRAINT \"brands_tenant_id_fkey\"\nFOREIGN KEY (\"tenant_id\")\nREFERENCES \"public\".\"tenants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"brands_tenant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "brands_tenant_id_fkey",
+          "public",
+          "\"public\".\"brands\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.products.products_brand_id_fkey",
+    "label": "Add foreign key \"products_brand_id_fkey\" on \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "products_brand_id_fkey",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"products_brand_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_brand_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"products_brand_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"products\"\nADD CONSTRAINT \"products_brand_id_fkey\"\nFOREIGN KEY (\"brand_id\")\nREFERENCES \"public\".\"brands\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"products_brand_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_brand_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.brands",
+    "label": "Enable row-level security on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"brands\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "brands"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"brands\"",
+        "sql": "ALTER TABLE \"public\".\"brands\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"brands\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "brands"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.force.public.brands",
+    "label": "Force row-level security on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.brands",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "brands",
+        "table": "brands"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"brands\"",
+        "sql": "ALTER TABLE \"public\".\"brands\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rlsPolicy.public.brands.tenant_isolation_brands_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_brands_ffe271ab\" on \"brands\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_brands_ffe271ab",
+        "table": "brands"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_brands_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "brands",
+          "tenant_isolation_brands_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_brands_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_brands_ffe271ab\" ON \"public\".\"brands\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_brands_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "brands",
+          "tenant_isolation_brands_ffe271ab"
+        ]
+      }
+    ]
+  }
+]

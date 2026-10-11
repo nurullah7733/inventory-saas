@@ -14,6 +14,7 @@ export const NAVIGATION: readonly NavigationItem[] = [
     { label: "Variant options", icon: "inventory", href: "/inventory/variants" },
   ] },
   { label: "Categories", icon: "categories", href: "/inventory/categories" },
+  { label: "Brands", icon: "brand", href: "/inventory/brands" },
   { label: "Stock", icon: "stock", children: [
     { label: "Stock", icon: "stock", href: "/inventory/stock" },
     { label: "Low stock", icon: "stock", href: "/inventory/low-stock", badgeKey: "lowStock" },

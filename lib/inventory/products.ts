@@ -4,7 +4,6 @@ import {
   money,
   optionalDate,
   optionalRef,
-  optionalText,
 } from "./fields.ts";
 
 const productName = z
@@ -65,7 +64,7 @@ const productFields = {
   sizeId: optionalRef("size"),
   weightId: optionalRef("weight"),
   expiryDate: optionalDate("Expiry date"),
-  brand: optionalText(80, "Brand"),
+  brandId: optionalRef("brand"),
   costPrice: money("Cost price"),
   sellPrice: money("Sale price"),
   attributes,
@@ -81,7 +80,7 @@ export const productSchema = z.strictObject({
   sizeId: productFields.sizeId.optional().default(null),
   weightId: productFields.weightId.optional().default(null),
   expiryDate: productFields.expiryDate.optional().default(null),
-  brand: productFields.brand.optional().default(null),
+  brandId: productFields.brandId.optional().default(null),
   costPrice: productFields.costPrice,
   sellPrice: productFields.sellPrice,
   attributes: productFields.attributes.optional().default(null),
@@ -113,6 +112,7 @@ export type ProductPatch = z.output<typeof productPatchSchema>;
 /** The reference fields a product can point at, and the label for each. */
 export const PRODUCT_REFS = {
   categoryId: "category",
+  brandId: "brand",
   unitId: "unit",
   colorId: "color",
   sizeId: "size",
@@ -133,7 +133,7 @@ export interface ProductResponse {
   id: string;
   name: string;
   sku: string;
-  brand: string | null;
+  brand: NamedRef | null;
   category: NamedRef | null;
   unit: NamedRef | null;
   color: NamedRef | null;

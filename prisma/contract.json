@@ -8,6 +8,10 @@
       "model": "AuditLog",
       "namespace": "public"
     },
+    "brands": {
+      "model": "Brand",
+      "namespace": "public"
+    },
     "categories": {
       "model": "Category",
       "namespace": "public"
@@ -320,6 +324,93 @@
               },
               "namespaceId": "public",
               "table": "audit_logs"
+            }
+          },
+          "Brand": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "name": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "tenant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isActive": {
+                  "column": "is_active"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "tenantId": {
+                  "column": "tenant_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "brands"
             }
           },
           "Category": {
@@ -804,10 +895,10 @@
                   "kind": "scalar"
                 }
               },
-              "brand": {
+              "brandId": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/text@1",
+                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               },
@@ -940,6 +1031,21 @@
               }
             },
             "relations": {
+              "brand": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "brandId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Brand",
+                  "namespace": "public"
+                }
+              },
               "category": {
                 "cardinality": "N:1",
                 "on": {
@@ -1036,8 +1142,8 @@
                 "attributes": {
                   "column": "attributes"
                 },
-                "brand": {
-                  "column": "brand"
+                "brandId": {
+                  "column": "brand_id"
                 },
                 "categoryId": {
                   "column": "category_id"
@@ -3310,6 +3416,18 @@
               "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
               "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
             },
+            "tenant_isolation_brands": {
+              "kind": "policy",
+              "name": "tenant_isolation_brands_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_brands",
+              "roles": [],
+              "tableName": "brands",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
             "tenant_isolation_categories": {
               "kind": "policy",
               "name": "tenant_isolation_categories_ffe271ab",
@@ -3557,6 +3675,11 @@
               "namespaceId": "public",
               "tableName": "audit_logs"
             },
+            "brands": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "brands"
+            },
             "categories": {
               "kind": "rls",
               "namespaceId": "public",
@@ -3799,6 +3922,108 @@
                 ]
               },
               "uniques": []
+            },
+            "brands": {
+              "columns": {
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "name": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "tenant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "tenant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "brands"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenants"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "tenant_id",
+                    "created_at"
+                  ],
+                  "name": "brands_tenant_id_created_at_idx_282da036",
+                  "prefix": "brands_tenant_id_created_at_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "id"
+                  ],
+                  "name": "brands_tenant_id_id_idx_621bc114",
+                  "prefix": "brands_tenant_id_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "brands_tenant_id_idx_41c0d441",
+                  "prefix": "brands_tenant_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "tenant_id",
+                    "name"
+                  ]
+                }
+              ]
             },
             "categories": {
               "columns": {
@@ -4333,9 +4558,9 @@
                   "nativeType": "jsonb",
                   "nullable": true
                 },
-                "brand": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
+                "brand_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
                   "nullable": true
                 },
                 "category_id": {
@@ -4546,9 +4771,34 @@
                     "namespaceId": "public",
                     "tableName": "variant_weights"
                   }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "brand_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "products"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "brands"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "brand_id"
+                  ],
+                  "name": "products_brand_id_idx_59ec1fe6",
+                  "prefix": "products_brand_id_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "category_id"
@@ -7051,10 +7301,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e487653eb58d18fd41c16a71cfae7034be0d9a606ca7ef5a86ce451e78bbac64"
+    "storageHash": "285afc5b467419ea5697fc72de01e47123c1c72ffe36b954c4b6828bf03519ef"
   },
   "execution": {
-    "executionHash": "e3e50dea5cb86e50bff6ea408baa6b9bd84f9c200164b3dee03d14f952da61f7",
+    "executionHash": "5d88cd1337a58cd4e77393f5d808cc72c2db9fb752995e2795914f771a7e7ea7",
     "mutations": {
       "defaults": [
         {
@@ -7066,6 +7316,32 @@
             "column": "id",
             "namespace": "public",
             "table": "audit_logs"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "brands"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updated_at",
+            "namespace": "public",
+            "table": "brands"
           }
         },
         {
