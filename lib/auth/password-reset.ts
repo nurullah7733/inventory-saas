@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { rlsDb, rawSql } from "../db/rls.ts";
 import { ApiProblem } from "../api/response.ts";
 import { deliverEmail } from "../email/delivery.ts";
+import { passwordResetTemplate } from "../email/templates.ts";
 import { verificationHash, verificationTokenValid } from "./email-verification-token.ts";
 import { hashPassword } from "./password.ts";
 import { revokeAllUserSessions } from "./session.ts";
@@ -34,7 +35,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
   if (!["http:", "https:"].includes(base.protocol) || (process.env.NODE_ENV === "production" && base.protocol !== "https:")) return;
   const url = new URL("/reset-password", base); url.hash = `token=${token}`;
   try {
-    await deliverEmail({ to: [user.email], subject: "Reset your password", text: `Reset your password within 30 minutes: ${url.href}\nIf you did not request this, ignore this email. Your password has not changed.` }, `reset-${user.id}-${Date.now()}`);
+    await deliverEmail(passwordResetTemplate(user.email, url.href), `reset-${user.id}-${Date.now()}`);
   } catch (error) {
     if (error instanceof ApiProblem && error.code === "EMAIL_UNAVAILABLE") {
       // Never disclose account eligibility through provider-error responses.

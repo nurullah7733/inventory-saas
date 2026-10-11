@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ApiProblem } from "../api/response.ts";
 
-export interface EmailMessage { to: string[]; subject: string; text: string }
+export interface EmailMessage { to: string[]; subject: string; text: string; html?: string }
 
 /** Reusable transactional email transport; file output is never allowed in production. */
 export async function deliverEmail(message: EmailMessage, fileId: string) {

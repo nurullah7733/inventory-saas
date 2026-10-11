@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { deliverEmail } from "../email/delivery.ts";
+import { emailVerificationTemplate } from "../email/templates.ts";
 import { ApiProblem } from "../api/response.ts";
 import { rawSql, rlsDb, withRlsBypass } from "../db/rls.ts";
 import { recordAudit } from "../audit/log.ts";
@@ -32,8 +33,7 @@ export async function sendVerification(userId: string, email?: string) {
   const url = new URL("/verify-email", base);
   // A fragment avoids putting the secret in server/proxy request logs.
   url.hash = `token=${token}`;
-  const message = { to: [target], subject: "Verify your email", text: `Verify your email within 30 minutes: ${url.href}\nIf you did not request this, ignore this email.` };
-  await deliverEmail(message, `${userId}-${now}`);
+  await deliverEmail(emailVerificationTemplate(target, url.href), `${userId}-${now}`);
   await rlsDb().orm.public.User.where({ id: userId }).update({ pendingEmail: target === user.email ? null : target, verificationTokenHash: verificationHash(token), verificationExpiresAt: new Date(now + 1800000).toISOString(), verificationSentAt: new Date(now).toISOString(), verificationWindowAt: fresh ? new Date(now).toISOString() : user.verificationWindowAt, verificationSendCount: fresh ? 1 : user.verificationSendCount + 1 });
   await recordAudit({ tenantId: user.tenantId, userId: currentAuditActor()?.id ?? userId, action: "email.verification_sent", entityType: "user", entityId: userId, metadata: { email: target } });
 }
