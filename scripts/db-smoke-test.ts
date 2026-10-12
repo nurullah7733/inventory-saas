@@ -42,7 +42,7 @@ async function main() {
       sku: `SMOKE-${stamp}`,
       costPrice: numeric("1200.00"),
       sellPrice: numeric("1800.00"),
-      stockQty: 10,
+      stockQty: numeric<12, 3>(10),
       attributes: { warranty_months: 6 },
     });
 

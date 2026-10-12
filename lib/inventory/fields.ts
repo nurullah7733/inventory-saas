@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MONEY_PATTERN, normalizeMoney } from "../numeric.ts";
+import { MONEY_PATTERN, normalizeMoney, QUANTITY_PATTERN } from "../numeric.ts";
 import { isCalendarDate } from "../dates.ts";
 import { isUuid } from "./master-data.ts";
 
@@ -60,6 +60,47 @@ export function quantity(label: string, max = 1_000_000) {
     .int(`${label} must be a whole number.`)
     .min(1, `${label} must be at least 1.`)
     .max(max, `${label} must be at most ${max.toLocaleString("en-US")}.`);
+}
+
+/**
+ * A stock quantity that MAY be fractional — whether it actually may be is
+ * decided per unit after the product is resolved (see
+ * `quantityErrorForUnit`). Accepts "2.5" and 2.5, at most 3 decimals,
+ * between `min` (default 0) and `max`.
+ */
+export function decimalQuantity(
+  label: string,
+  options: { min?: number; max?: number } = {},
+) {
+  const min = options.min ?? 0;
+  const max = options.max ?? 1_000_000;
+  return z
+    .union([z.string(), z.number()], { error: `${label} is required.` })
+    .transform((value) => String(value).trim())
+    .refine((value) => value !== "" && QUANTITY_PATTERN.test(value), `${label} must be a number with at most 3 decimal places.`)
+    .refine((value) => Number(value) >= min, `${label} must be at least ${min}.`)
+    .refine((value) => Number(value) <= max, `${label} must be at most ${max.toLocaleString("en-US")}.`)
+    .transform((value) => Number(value));
+}
+
+/**
+ * The unit check behind "decimals only for measured units": the zod schema
+ * parses permissively (it cannot know the unit yet); once the product's unit
+ * is resolved, a non-integer quantity for a non-measured unit is refused. A
+ * product with NO unit at all is treated as non-measured — conservative by
+ * default, same as before decimals existed.
+ */
+export function quantityErrorForUnit(
+  unit: { name: string; measured: boolean } | null | undefined,
+  quantity: number,
+  label = "Quantity",
+): string | null {
+  if ((!unit || !unit.measured) && !Number.isInteger(quantity)) {
+    return unit
+      ? `${label} must be a whole number for ${unit.name}.`
+      : `${label} must be a whole number.`;
+  }
+  return null;
 }
 
 /** `YYYY-MM-DD` or none. */

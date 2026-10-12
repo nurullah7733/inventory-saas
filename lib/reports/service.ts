@@ -64,7 +64,7 @@ export async function getReport(
       .all();
     data.returns = returned.map((r) => ({
       saleItemId: r.saleItemId,
-      quantity: r.quantity,
+      quantity: Number(r.quantity),
       refundAmount: String(r.refundAmount),
       createdAt: r.createdAt,
     }));
@@ -75,12 +75,13 @@ export async function getReport(
           .all()
       : [];
     const lineMap = new Map(
-      lines.map((r) => [r.id, { ...r, unitCost: String(r.unitCost) }]),
+      lines.map((r) => [r.id, { ...r, quantity: Number(r.quantity), unitCost: String(r.unitCost) }]),
     );
     for (const r of returned)
       if (r.saleItem)
         lineMap.set(r.saleItem.id, {
           ...r.saleItem,
+          quantity: Number(r.saleItem.quantity),
           unitCost: String(r.saleItem.unitCost),
         });
     data.items = [...lineMap.values()];
@@ -126,6 +127,7 @@ export async function getReport(
       .all();
     data.movements = rows.map((r) => ({
       ...r,
+      quantity: Number(r.quantity),
       unitCost: r.unitCost === null ? null : String(r.unitCost),
     }));
     if (kind === "payable") {
@@ -147,6 +149,7 @@ export async function getReport(
       ).all();
       data.products = products.map((r) => ({
         ...r,
+        stockQty: Number(r.stockQty),
         costPrice: String(r.costPrice),
       }));
     }

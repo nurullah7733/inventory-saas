@@ -19,6 +19,9 @@ export interface InvoiceSummary {
 export interface InvoiceItem {
   id: string;
   productId: string;
+  variantId: string;
+  /** "37 / Red" / "Default" — which variant the line sold. */
+  variantLabel: string;
   name: string;
   sku: string;
   quantity: number;

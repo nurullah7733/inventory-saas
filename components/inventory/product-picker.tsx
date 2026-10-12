@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { apiRequest } from "@/lib/client/api.ts";
 import { useDebouncedValue } from "@/lib/client/use-debounced-value.ts";
-import type { ProductListResponse, ProductResponse } from "@/lib/inventory/products.ts";
+import type { ProductEnvelope, ProductListResponse, ProductResponse } from "@/lib/inventory/products.ts";
 import { Button } from "@/components/ui/field.tsx";
 import { inputClasses, Thumb } from "@/components/ui/list-controls.tsx";
 
@@ -22,6 +22,22 @@ export type PickedProduct = Pick<
   ProductResponse,
   "id" | "name" | "sku" | "stockQty" | "costPrice" | "imageUrl"
 > & { unit: { name: string } | null };
+
+export type PickedVariant = Pick<
+  ProductResponse["variants"][number],
+  "id" | "label" | "sku" | "stockQty" | "sellPrice" | "costPrice"
+>;
+
+/** A product's active variants, for the variant select that follows a pick. */
+export function useProductVariants(productId: string | null) {
+  return useQuery({
+    queryKey: ["inventory", "products", "detail", productId],
+    queryFn: () => apiRequest<ProductEnvelope>(`/products/${productId}`),
+    select: (data) => data.product.variants.filter((variant) => variant.isActive),
+    enabled: productId !== null,
+    staleTime: 10_000,
+  });
+}
 
 export function ProductPicker({
   value,

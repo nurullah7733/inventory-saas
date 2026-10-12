@@ -12,6 +12,7 @@ import {
   countProductsUsing,
   findVariantNameClash,
   findVariantOption,
+  rebuildVariantLabels,
   VARIANT_ENTITY,
   variantCollection,
 } from "@/lib/inventory/variant-queries.ts";
@@ -103,32 +104,69 @@ export const PATCH = withTenantAuth(
 
     const parsed = variantOptionSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
-    const { name } = parsed.data;
+    const { name, measured } = parsed.data;
+    if (measured !== undefined && kind !== "units") {
+      return apiError(
+        "VALIDATION_ERROR",
+        "Only units can be marked as measured.",
+        422,
+        { measured: ["Only units can be marked as measured."] },
+      );
+    }
 
     const current = await findVariantOption(auth.scope, kind, id);
     if (!current) return notFound(kind);
 
+    const currentMeasured = (current as { measured?: boolean }).measured;
+    const changed: string[] = [];
+    if (name !== undefined && name !== current.name) changed.push("name");
+    if (measured !== undefined && measured !== currentMeasured) changed.push("measured");
+
     const productCount = await countProductsUsing(auth.scope, kind, id);
 
-    if (current.name === name) {
+    if (changed.length === 0) {
       return apiSuccess({ option: { ...current, productCount }, changed: [] });
     }
 
     // A case-only rename ("black" → "Black") clashes with nothing but itself.
-    const clash = await findVariantNameClash(auth.scope, kind, name, id);
-    if (clash) return duplicateName(kind, clash.name);
+    if (changed.includes("name")) {
+      const clash = await findVariantNameClash(auth.scope, kind, name!, id);
+      if (clash) return duplicateName(kind, clash.name);
+    }
 
     let updated;
     try {
       updated = await variantCollection(auth.scope, kind)
         .where({ id })
         .select("id", "name", "createdAt")
-        .update({ name });
+        .update({
+          ...(changed.includes("name") ? { name: name! } : {}),
+          ...(changed.includes("measured") ? { measured: measured! } : {}),
+        });
     } catch (error) {
-      if (isUniqueViolation(error)) return duplicateName(kind, name);
+      if (isUniqueViolation(error)) return duplicateName(kind, name ?? "");
       throw error;
     }
     if (!updated) return notFound(kind);
+
+    // Variant labels embed the option name ("37 / Red") — refresh them in the
+    // same transaction, or every list and SKU preview would show stale combos.
+    let relabeled: number | undefined;
+    if (changed.includes("name") && kind !== "units") {
+      try {
+        relabeled = await rebuildVariantLabels(auth.scope, kind, id);
+      } catch (error) {
+        if (isUniqueViolation(error)) {
+          return apiError(
+            "CONFLICT",
+            `Renaming to "${name}" would give two variants of a product the same label. Choose another name or merge those variants first.`,
+            409,
+            { name: ["This rename collides with an existing variant label."] },
+          );
+        }
+        throw error;
+      }
+    }
 
     await recordAudit({
       tenantId: auth.tenantId,
@@ -137,15 +175,21 @@ export const PATCH = withTenantAuth(
       entityType: VARIANT_ENTITY[kind],
       entityId: id,
       metadata: {
-        changed: ["name"],
-        before: { name: current.name },
-        after: { name: updated.name },
+        changed,
+        before: { name: current.name, measured: currentMeasured ?? null },
+        after: { name: updated.name, measured: changed.includes("measured") ? (measured ?? null) : (currentMeasured ?? null) },
+        variantsRelabeled: relabeled ?? null,
       },
     });
 
     return apiSuccess({
-      option: { ...updated, productCount },
-      changed: ["name"],
+      option: {
+        ...updated,
+        ...(kind === "units" ? { measured: changed.includes("measured") ? measured : currentMeasured } : {}),
+        productCount,
+      },
+      changed,
+      variantsRelabeled: relabeled,
     });
   },
   { roles: MASTER_DATA_WRITE_ROLES },

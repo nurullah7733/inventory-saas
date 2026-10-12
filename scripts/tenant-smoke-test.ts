@@ -113,6 +113,7 @@ async function createTenant(
         sku: `${label}-${stamp}-${index}`,
         costPrice: numeric("10.00"),
         sellPrice: numeric("20.00"),
+        stockQty: numeric<12, 3>(0),
       });
     }
 
@@ -287,6 +288,7 @@ async function main(): Promise<void> {
         sku: `cross-${stamp}`,
         costPrice: numeric("1.00"),
         sellPrice: numeric("2.00"),
+        stockQty: numeric<12, 3>(0),
       }),
     );
   } catch {

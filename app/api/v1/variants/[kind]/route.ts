@@ -62,6 +62,11 @@ export const POST = withTenantAuth(
     const parsed = variantOptionSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
     const { name } = parsed.data;
+    if (!name) {
+      return apiError("VALIDATION_ERROR", "A name is required to add an option.", 422, {
+        name: ["Name is required."],
+      });
+    }
 
     const clash = await findVariantNameClash(auth.scope, kind, name);
     if (clash) return duplicateName(kind, clash.name);
@@ -70,7 +75,7 @@ export const POST = withTenantAuth(
     try {
       created = await variantCollection(auth.scope, kind)
         .select("id", "name", "createdAt")
-        .create(auth.scope.own({ name }));
+        .create(auth.scope.own(kind === "units" ? { name, measured: parsed.data.measured ?? false } : { name }));
     } catch (error) {
       if (isUniqueViolation(error)) return duplicateName(kind, name);
       throw error;
@@ -82,11 +87,11 @@ export const POST = withTenantAuth(
       action: `${VARIANT_ENTITY[kind]}.create`,
       entityType: VARIANT_ENTITY[kind],
       entityId: created.id,
-      metadata: { name: created.name },
+      metadata: { name: created.name, ...(kind === "units" ? { measured: parsed.data.measured ?? false } : {}) },
     });
 
     return apiSuccess(
-      { option: { ...created, productCount: 0 } },
+      { option: { ...created, productCount: 0, ...(kind === "units" ? { measured: parsed.data.measured ?? false } : {}) } },
       201,
     );
   },

@@ -27,23 +27,26 @@ async function fixture(populate: boolean) {
     if (populate) {
       const supplier = await tx.orm.public.Supplier.select("id").create(own({ name: "Dashboard supplier" }));
       const products = [];
-      for (const [name, isDeleted] of [["Best shoe", true], ["Other shoe", false], ["Older shoe", false]] as const)
-        products.push(await tx.orm.public.Product.select("id").create(own({ name, sku: name, isDeleted, stockQty: 0, costPrice: numeric("10.25"), sellPrice: numeric("50.00") })));
+      for (const [name, isDeleted] of [["Best shoe", true], ["Other shoe", false], ["Older shoe", false]] as const) {
+        const product = await tx.orm.public.Product.select("id").create(own({ name, sku: name, isDeleted, stockQty: numeric<12, 3>(0), costPrice: numeric("10.25"), sellPrice: numeric("50.00") }));
+        const variant = await tx.orm.public.ProductVariant.select("id").create(own({ productId: product.id, sku: name, label: "Default", stockQty: numeric<12, 3>(0), costPrice: numeric("10.25"), sellPrice: numeric("50.00") }));
+        products.push({ id: product.id, variantId: variant.id });
+      }
       const sale = await tx.orm.public.Sale.select("id").create(own({ invoiceNo: "DASH-1", status: "completed", subtotal: numeric("200.00"), discount: numeric("0.00"), vatAmount: numeric("20.00"), totalAmount: numeric("220.00"), paidAmount: numeric("220.00"), soldBy: owner.user.id, createdAt: timestamp }));
       const lines = [];
       for (const [index, quantity] of [[0, 3], [1, 1]] as const)
-        lines.push(await tx.orm.public.SaleItem.select("id").create(own({ saleId: sale.id, productId: products[index].id, quantity, unitPrice: numeric("50.00"), unitCost: numeric("10.25"), subtotal: numeric(String(quantity * 50)), createdAt: timestamp })));
-      await tx.orm.public.SaleReturn.create(own({ saleItemId: lines[0].id, quantity: 1, refundAmount: numeric("55.00"), createdBy: owner.user.id, createdAt: timestamp }));
+        lines.push(await tx.orm.public.SaleItem.select("id").create(own({ saleId: sale.id, productId: products[index].id, variantId: products[index].variantId, quantity: numeric<12, 3>(quantity), unitPrice: numeric("50.00"), unitCost: numeric("10.25"), subtotal: numeric(String(quantity * 50)), createdAt: timestamp })));
+      await tx.orm.public.SaleReturn.create(own({ saleItemId: lines[0].id, quantity: numeric<12, 3>(1), refundAmount: numeric("55.00"), createdBy: owner.user.id, createdAt: timestamp }));
       const olderDate = `${addDays(today, -100)}T00:00:00+06:00`;
       const oldSale = await tx.orm.public.Sale.select("id").create(own({ invoiceNo: "DASH-OLD", status: "completed", subtotal: numeric("50.00"), discount: numeric("0.00"), vatAmount: numeric("0.00"), totalAmount: numeric("50.00"), paidAmount: numeric("50.00"), soldBy: owner.user.id, createdAt: olderDate }));
-      const oldLine = await tx.orm.public.SaleItem.select("id").create(own({ saleId: oldSale.id, productId: products[2].id, quantity: 1, unitPrice: numeric("50.00"), unitCost: numeric("10.25"), subtotal: numeric("50.00") }));
-      await tx.orm.public.SaleReturn.create(own({ saleItemId: oldLine.id, quantity: 1, refundAmount: numeric("50.00"), createdBy: owner.user.id, createdAt: timestamp }));
+      const oldLine = await tx.orm.public.SaleItem.select("id").create(own({ saleId: oldSale.id, productId: products[2].id, variantId: products[2].variantId, quantity: numeric<12, 3>(1), unitPrice: numeric("50.00"), unitCost: numeric("10.25"), subtotal: numeric("50.00") }));
+      await tx.orm.public.SaleReturn.create(own({ saleItemId: oldLine.id, quantity: numeric<12, 3>(1), refundAmount: numeric("50.00"), createdBy: owner.user.id, createdAt: timestamp }));
       const draft = await tx.orm.public.Sale.select("id").create(own({ invoiceNo: "DASH-DRAFT", status: "draft", subtotal: numeric("999.00"), discount: numeric("0.00"), vatAmount: numeric("0.00"), totalAmount: numeric("999.00"), paidAmount: numeric("0.00"), soldBy: owner.user.id, createdAt: timestamp }));
-      await tx.orm.public.SaleItem.create(own({ saleId: draft.id, productId: products[1].id, quantity: 100, unitPrice: numeric("9.99"), unitCost: numeric("1.00"), subtotal: numeric("999.00") }));
-      const purchase = await tx.orm.public.StockMovement.select("id").create(own({ productId: products[1].id, supplierId: supplier.id, type: "in", quantity: 10, unitCost: numeric("10.25"), createdBy: owner.user.id, createdAt: timestamp }));
-      await tx.orm.public.StockMovement.create(own({ productId: products[1].id, supplierId: supplier.id, sourceMovementId: purchase.id, type: "purchase_return", quantity: -2, unitCost: numeric("10.25"), createdBy: owner.user.id, createdAt: timestamp }));
-      await tx.orm.public.StockMovement.create(own({ productId: products[1].id, supplierId: null, type: "in", quantity: 1, unitCost: numeric("2.01"), createdBy: owner.user.id, createdAt: timestamp }));
-      await tx.orm.public.StockMovement.create(own({ productId: products[1].id, supplierId: null, type: "return", quantity: 2, unitCost: numeric("99.00"), createdBy: owner.user.id, createdAt: timestamp }));
+      await tx.orm.public.SaleItem.create(own({ saleId: draft.id, productId: products[1].id, variantId: products[1].variantId, quantity: numeric<12, 3>(100), unitPrice: numeric("9.99"), unitCost: numeric("1.00"), subtotal: numeric("999.00") }));
+      const purchase = await tx.orm.public.StockMovement.select("id").create(own({ productId: products[1].id, variantId: products[1].variantId, supplierId: supplier.id, type: "in", quantity: numeric<12, 3>(10), unitCost: numeric("10.25"), createdBy: owner.user.id, createdAt: timestamp }));
+      await tx.orm.public.StockMovement.create(own({ productId: products[1].id, variantId: products[1].variantId, supplierId: supplier.id, sourceMovementId: purchase.id, type: "purchase_return", quantity: numeric<12, 3>(-2), unitCost: numeric("10.25"), createdBy: owner.user.id, createdAt: timestamp }));
+      await tx.orm.public.StockMovement.create(own({ productId: products[1].id, variantId: products[1].variantId, supplierId: null, type: "in", quantity: numeric<12, 3>(1), unitCost: numeric("2.01"), createdBy: owner.user.id, createdAt: timestamp }));
+      await tx.orm.public.StockMovement.create(own({ productId: products[1].id, variantId: products[1].variantId, supplierId: null, type: "return", quantity: numeric<12, 3>(2), unitCost: numeric("99.00"), createdBy: owner.user.id, createdAt: timestamp }));
     }
     return { tenantId: tenant.id, owner, staff };
   });
@@ -119,7 +122,8 @@ async function main() {
       await tx.orm.public.Sale.where({ tenantId }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId, type: "purchase_return" }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
-      await tx.orm.public.Product.where({ tenantId }).deleteAll();
+      await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
+await tx.orm.public.Product.where({ tenantId }).deleteAll();
       await tx.orm.public.Supplier.where({ tenantId }).deleteAll();
       await tx.orm.public.RefreshSession.where({ tenantId }).deleteAll();
       await tx.orm.public.User.where({ tenantId }).deleteAll();

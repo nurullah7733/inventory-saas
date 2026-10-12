@@ -32,6 +32,10 @@
       "model": "Expense",
       "namespace": "public"
     },
+    "product_variants": {
+      "model": "ProductVariant",
+      "namespace": "public"
+    },
     "products": {
       "model": "Product",
       "namespace": "public"
@@ -909,13 +913,6 @@
                   "kind": "scalar"
                 }
               },
-              "colorId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
-                }
-              },
               "costPrice": {
                 "nullable": false,
                 "type": {
@@ -969,6 +966,13 @@
                   "kind": "scalar"
                 }
               },
+              "reorderLevel": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "sellPrice": {
                 "nullable": false,
                 "type": {
@@ -978,13 +982,6 @@
                     "precision": 10,
                     "scale": 2
                   }
-                }
-              },
-              "sizeId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/uuid@1",
-                  "kind": "scalar"
                 }
               },
               "sku": {
@@ -997,8 +994,12 @@
               "stockQty": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 }
               },
               "tenantId": {
@@ -1019,13 +1020,6 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
-                  "kind": "scalar"
-                }
-              },
-              "weightId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/uuid@1",
                   "kind": "scalar"
                 }
               }
@@ -1061,6 +1055,231 @@
                   "namespace": "public"
                 }
               },
+              "tenant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
+              },
+              "unit": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "unitId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "VariantUnit",
+                  "namespace": "public"
+                }
+              },
+              "variants": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "productId"
+                  ]
+                },
+                "to": {
+                  "model": "ProductVariant",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "attributes": {
+                  "column": "attributes"
+                },
+                "brandId": {
+                  "column": "brand_id"
+                },
+                "categoryId": {
+                  "column": "category_id"
+                },
+                "costPrice": {
+                  "column": "cost_price"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "expiryDate": {
+                  "column": "expiry_date"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "imageUrl": {
+                  "column": "image_url"
+                },
+                "isDeleted": {
+                  "column": "is_deleted"
+                },
+                "name": {
+                  "column": "name"
+                },
+                "reorderLevel": {
+                  "column": "reorder_level"
+                },
+                "sellPrice": {
+                  "column": "sell_price"
+                },
+                "sku": {
+                  "column": "sku"
+                },
+                "stockQty": {
+                  "column": "stock_qty"
+                },
+                "tenantId": {
+                  "column": "tenant_id"
+                },
+                "unitId": {
+                  "column": "unit_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                }
+              },
+              "namespaceId": "public",
+              "table": "products"
+            }
+          },
+          "ProductVariant": {
+            "fields": {
+              "barcode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "colorId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "costPrice": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "label": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "productId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sellPrice": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                }
+              },
+              "sizeId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "sku": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "stockQty": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
+                }
+              },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "weightId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
               "color": {
                 "cardinality": "N:1",
                 "on": {
@@ -1073,6 +1292,21 @@
                 },
                 "to": {
                   "model": "VariantColor",
+                  "namespace": "public"
+                }
+              },
+              "product": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "productId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Product",
                   "namespace": "public"
                 }
               },
@@ -1106,21 +1340,6 @@
                   "namespace": "public"
                 }
               },
-              "unit": {
-                "cardinality": "N:1",
-                "on": {
-                  "localFields": [
-                    "unitId"
-                  ],
-                  "targetFields": [
-                    "id"
-                  ]
-                },
-                "to": {
-                  "model": "VariantUnit",
-                  "namespace": "public"
-                }
-              },
               "weight": {
                 "cardinality": "N:1",
                 "on": {
@@ -1139,14 +1358,8 @@
             },
             "storage": {
               "fields": {
-                "attributes": {
-                  "column": "attributes"
-                },
-                "brandId": {
-                  "column": "brand_id"
-                },
-                "categoryId": {
-                  "column": "category_id"
+                "barcode": {
+                  "column": "barcode"
                 },
                 "colorId": {
                   "column": "color_id"
@@ -1157,20 +1370,17 @@
                 "createdAt": {
                   "column": "created_at"
                 },
-                "expiryDate": {
-                  "column": "expiry_date"
-                },
                 "id": {
                   "column": "id"
                 },
-                "imageUrl": {
-                  "column": "image_url"
+                "isActive": {
+                  "column": "is_active"
                 },
-                "isDeleted": {
-                  "column": "is_deleted"
+                "label": {
+                  "column": "label"
                 },
-                "name": {
-                  "column": "name"
+                "productId": {
+                  "column": "product_id"
                 },
                 "sellPrice": {
                   "column": "sell_price"
@@ -1187,9 +1397,6 @@
                 "tenantId": {
                   "column": "tenant_id"
                 },
-                "unitId": {
-                  "column": "unit_id"
-                },
                 "updatedAt": {
                   "column": "updated_at"
                 },
@@ -1198,7 +1405,7 @@
                 }
               },
               "namespaceId": "public",
-              "table": "products"
+              "table": "product_variants"
             }
           },
           "RefreshSession": {
@@ -1602,8 +1809,12 @@
               "quantity": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 }
               },
               "saleId": {
@@ -1652,6 +1863,13 @@
                     "scale": 2
                   }
                 }
+              },
+              "variantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
               }
             },
             "relations": {
@@ -1699,6 +1917,21 @@
                   "model": "Tenant",
                   "namespace": "public"
                 }
+              },
+              "variant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "variantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ProductVariant",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -1729,6 +1962,9 @@
                 },
                 "unitPrice": {
                   "column": "unit_price"
+                },
+                "variantId": {
+                  "column": "variant_id"
                 }
               },
               "namespaceId": "public",
@@ -1761,8 +1997,12 @@
               "quantity": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 }
               },
               "reason": {
@@ -1916,8 +2156,12 @@
               "quantity": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 }
               },
               "sourceMovementId": {
@@ -1963,6 +2207,13 @@
                     "precision": 10,
                     "scale": 2
                   }
+                }
+              },
+              "variantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
                 }
               }
             },
@@ -2041,6 +2292,21 @@
                   "model": "Tenant",
                   "namespace": "public"
                 }
+              },
+              "variant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "variantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ProductVariant",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -2077,6 +2343,9 @@
                 },
                 "unitCost": {
                   "column": "unit_cost"
+                },
+                "variantId": {
+                  "column": "variant_id"
                 }
               },
               "namespaceId": "public",
@@ -3124,6 +3393,13 @@
                   "kind": "scalar"
                 }
               },
+              "measured": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "name": {
                 "nullable": false,
                 "type": {
@@ -3163,6 +3439,9 @@
                 },
                 "id": {
                   "column": "id"
+                },
+                "measured": {
+                  "column": "measured"
                 },
                 "name": {
                   "column": "name"
@@ -3286,8 +3565,12 @@
               "quantity": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/int4@1",
-                  "kind": "scalar"
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 }
               },
               "reason": {
@@ -3298,6 +3581,13 @@
                 }
               },
               "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "variantId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
@@ -3350,6 +3640,21 @@
                   "model": "Tenant",
                   "namespace": "public"
                 }
+              },
+              "variant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "variantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ProductVariant",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -3377,6 +3682,9 @@
                 },
                 "tenantId": {
                   "column": "tenant_id"
+                },
+                "variantId": {
+                  "column": "variant_id"
                 }
               },
               "namespaceId": "public",
@@ -3473,6 +3781,18 @@
               "prefix": "tenant_isolation_expenses",
               "roles": [],
               "tableName": "expenses",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_product_variants": {
+              "kind": "policy",
+              "name": "tenant_isolation_product_variants_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_product_variants",
+              "roles": [],
+              "tableName": "product_variants",
               "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
               "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
             },
@@ -3704,6 +4024,11 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "expenses"
+            },
+            "product_variants": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "product_variants"
             },
             "products": {
               "kind": "rls",
@@ -4551,6 +4876,286 @@
               },
               "uniques": []
             },
+            "product_variants": {
+              "columns": {
+                "barcode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "color_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
+                },
+                "cost_price": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "is_active": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "label": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "product_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "sell_price": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "size_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
+                },
+                "sku": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "stock_qty": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
+                },
+                "tenant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "weight_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "tenant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenants"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "product_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "products"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "size_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "variant_sizes"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "color_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "variant_colors"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "weight_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "variant_weights"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "color_id"
+                  ],
+                  "name": "product_variants_color_id_idx_34d8d0d9",
+                  "prefix": "product_variants_color_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "product_id"
+                  ],
+                  "name": "product_variants_product_id_idx_22a2b7d2",
+                  "prefix": "product_variants_product_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "size_id"
+                  ],
+                  "name": "product_variants_size_id_idx_6a72a89a",
+                  "prefix": "product_variants_size_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "id"
+                  ],
+                  "name": "product_variants_tenant_id_id_idx_621bc114",
+                  "prefix": "product_variants_tenant_id_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "product_variants_tenant_id_idx_41c0d441",
+                  "prefix": "product_variants_tenant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "is_active"
+                  ],
+                  "name": "product_variants_tenant_id_is_active_idx_930fdf5b",
+                  "prefix": "product_variants_tenant_id_is_active_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "product_id"
+                  ],
+                  "name": "product_variants_tenant_id_product_id_idx_724dd954",
+                  "prefix": "product_variants_tenant_id_product_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "weight_id"
+                  ],
+                  "name": "product_variants_weight_id_idx_7c4ea817",
+                  "prefix": "product_variants_weight_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "tenant_id",
+                    "sku"
+                  ]
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "barcode"
+                  ]
+                },
+                {
+                  "columns": [
+                    "product_id",
+                    "label"
+                  ]
+                }
+              ]
+            },
             "products": {
               "columns": {
                 "attributes": {
@@ -4564,11 +5169,6 @@
                   "nullable": true
                 },
                 "category_id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
-                  "nullable": true
-                },
-                "color_id": {
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
                   "nullable": true
@@ -4620,6 +5220,11 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "reorder_level": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "sell_price": {
                   "codecId": "pg/numeric@1",
                   "nativeType": "numeric",
@@ -4629,24 +5234,19 @@
                     "scale": 2
                   }
                 },
-                "size_id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
-                  "nullable": true
-                },
                 "sku": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
                 },
                 "stock_qty": {
-                  "codecId": "pg/int4@1",
-                  "default": {
-                    "kind": "literal",
-                    "value": 0
-                  },
-                  "nativeType": "int4",
-                  "nullable": false
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 },
                 "tenant_id": {
                   "codecId": "pg/uuid@1",
@@ -4662,11 +5262,6 @@
                   "codecId": "pg/timestamptz-string@1",
                   "nativeType": "timestamptz",
                   "nullable": false
-                },
-                "weight_id": {
-                  "codecId": "pg/uuid@1",
-                  "nativeType": "uuid",
-                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -4725,57 +5320,6 @@
                   "onDelete": "restrict",
                   "source": {
                     "columns": [
-                      "color_id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "products"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "variant_colors"
-                  }
-                },
-                {
-                  "onDelete": "restrict",
-                  "source": {
-                    "columns": [
-                      "size_id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "products"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "variant_sizes"
-                  }
-                },
-                {
-                  "onDelete": "restrict",
-                  "source": {
-                    "columns": [
-                      "weight_id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "products"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "variant_weights"
-                  }
-                },
-                {
-                  "onDelete": "restrict",
-                  "source": {
-                    "columns": [
                       "brand_id"
                     ],
                     "namespaceId": "public",
@@ -4805,22 +5349,6 @@
                   ],
                   "name": "products_category_id_idx_da7213d4",
                   "prefix": "products_category_id_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "color_id"
-                  ],
-                  "name": "products_color_id_idx_34d8d0d9",
-                  "prefix": "products_color_id_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "size_id"
-                  ],
-                  "name": "products_size_id_idx_6a72a89a",
-                  "prefix": "products_size_id_idx",
                   "unique": false
                 },
                 {
@@ -4873,14 +5401,6 @@
                   ],
                   "name": "products_unit_id_idx_2ad34a08",
                   "prefix": "products_unit_id_idx",
-                  "unique": false
-                },
-                {
-                  "columns": [
-                    "weight_id"
-                  ],
-                  "name": "products_weight_id_idx_7c4ea817",
-                  "prefix": "products_weight_id_idx",
                   "unique": false
                 }
               ],
@@ -5067,9 +5587,13 @@
                   "nullable": false
                 },
                 "quantity": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": false
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 },
                 "reason": {
                   "codecId": "pg/text@1",
@@ -5231,9 +5755,13 @@
                   "nullable": false
                 },
                 "quantity": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": false
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 },
                 "sale_id": {
                   "codecId": "pg/uuid@1",
@@ -5271,6 +5799,11 @@
                     "precision": 10,
                     "scale": 2
                   }
+                },
+                "variant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
                 }
               },
               "foreignKeys": [
@@ -5323,6 +5856,23 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "products"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "variant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "sale_items"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
                   }
                 }
               ],
@@ -5385,6 +5935,23 @@
                   ],
                   "name": "sale_items_tenant_id_sale_id_idx_608cb4cd",
                   "prefix": "sale_items_tenant_id_sale_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "variant_id"
+                  ],
+                  "name": "sale_items_tenant_id_variant_id_idx_cef0b336",
+                  "prefix": "sale_items_tenant_id_variant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "variant_id"
+                  ],
+                  "name": "sale_items_variant_id_idx_4a7fac73",
+                  "prefix": "sale_items_variant_id_idx",
                   "unique": false
                 }
               ],
@@ -5683,9 +6250,13 @@
                   "nullable": false
                 },
                 "quantity": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": false
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 },
                 "source_movement_id": {
                   "codecId": "pg/uuid@1",
@@ -5721,6 +6292,11 @@
                     "precision": 10,
                     "scale": 2
                   }
+                },
+                "variant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
                 }
               },
               "foreignKeys": [
@@ -5756,6 +6332,23 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "products"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "variant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "stock_movements"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
                   }
                 },
                 {
@@ -5886,6 +6479,23 @@
                   ],
                   "name": "stock_movements_tenant_id_supplier_id_idx_c237d355",
                   "prefix": "stock_movements_tenant_id_supplier_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "variant_id"
+                  ],
+                  "name": "stock_movements_tenant_id_variant_id_idx_cef0b336",
+                  "prefix": "stock_movements_tenant_id_variant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "variant_id"
+                  ],
+                  "name": "stock_movements_variant_id_idx_4a7fac73",
+                  "prefix": "stock_movements_variant_id_idx",
                   "unique": false
                 },
                 {
@@ -6934,6 +7544,15 @@
                   "nativeType": "uuid",
                   "nullable": false
                 },
+                "measured": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
                 "name": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -7130,9 +7749,13 @@
                   "nullable": false
                 },
                 "quantity": {
-                  "codecId": "pg/int4@1",
-                  "nativeType": "int4",
-                  "nullable": false
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 12,
+                    "scale": 3
+                  }
                 },
                 "reason": {
                   "codecId": "pg/text@1",
@@ -7140,6 +7763,11 @@
                   "nullable": true
                 },
                 "tenant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "variant_id": {
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
                   "nullable": false
@@ -7178,6 +7806,23 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "products"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "variant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "wastage"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
                   }
                 },
                 {
@@ -7240,6 +7885,23 @@
                   "name": "wastage_tenant_id_idx_41c0d441",
                   "prefix": "wastage_tenant_id_idx",
                   "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "variant_id"
+                  ],
+                  "name": "wastage_tenant_id_variant_id_idx_cef0b336",
+                  "prefix": "wastage_tenant_id_variant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "variant_id"
+                  ],
+                  "name": "wastage_variant_id_idx_4a7fac73",
+                  "prefix": "wastage_variant_id_idx",
+                  "unique": false
                 }
               ],
               "primaryKey": {
@@ -7301,10 +7963,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "285afc5b467419ea5697fc72de01e47123c1c72ffe36b954c4b6828bf03519ef"
+    "storageHash": "1d881a839b5f90e6a79f87fff477b7275be59769550f1acf1ea97adab9aaa424"
   },
   "execution": {
-    "executionHash": "5d88cd1337a58cd4e77393f5d808cc72c2db9fb752995e2795914f771a7e7ea7",
+    "executionHash": "d09d06d6618b7cda5b499a9aa286ef637e3de35622590f540510f694b1da1b9a",
     "mutations": {
       "defaults": [
         {
@@ -7431,6 +8093,32 @@
             "column": "id",
             "namespace": "public",
             "table": "expenses"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "product_variants"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updated_at",
+            "namespace": "public",
+            "table": "product_variants"
           }
         },
         {

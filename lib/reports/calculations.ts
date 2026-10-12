@@ -1,4 +1,4 @@
-import { fromCents, toCents } from "../numeric.ts";
+import { fromCents, moneyTimesQuantity, toCents } from "../numeric.ts";
 import type { Report, ReportFilter, ReportKind, Cell } from "./types.ts";
 import { REPORT_LABELS } from "./types.ts";
 
@@ -42,7 +42,7 @@ export function buildReport(kind: ReportKind, filter: ReportFilter, data: Report
     };
     let sales = zero, vat = zero, refunds = zero, cogs = zero, expense = zero, wastage = zero;
     const costs = new Map<string, bigint>();
-    for (const i of data.items) costs.set(i.saleId, (costs.get(i.saleId) ?? zero) + toCents(i.unitCost) * BigInt(i.quantity));
+    for (const i of data.items) costs.set(i.saleId, (costs.get(i.saleId) ?? zero) + toCents(moneyTimesQuantity(i.unitCost, i.quantity)));
     for (const s of selected) {
       const total = toCents(s.totalAmount), cost = costs.get(s.id) ?? zero;
       sales += total; vat += toCents(s.vatAmount); cogs += cost;
@@ -50,7 +50,7 @@ export function buildReport(kind: ReportKind, filter: ReportFilter, data: Report
     }
     for (const r of returned) {
       const i = items.get(r.saleItemId); if (!i) continue;
-      const credit = toCents(r.refundAmount), cost = toCents(i.unitCost) * BigInt(r.quantity);
+      const credit = toCents(r.refundAmount), cost = toCents(moneyTimesQuantity(i.unitCost, r.quantity));
       refunds += credit; cogs -= cost;
       const d = day(reportDay(r.createdAt)); d.sales -= credit; d.cogs -= cost;
     }
@@ -94,7 +94,7 @@ export function buildReport(kind: ReportKind, filter: ReportFilter, data: Report
     const balances = new Map(data.suppliers.map((s) => [s.id, { ...s, opening: zero, purchase: zero, returned: zero, paid: zero }]));
     for (const m of data.movements.filter((m) => ["in", "purchase_return"].includes(m.type) && m.supplierId && reportDay(m.createdAt) <= to)) {
       const b = balances.get(m.supplierId!); if (!b) continue;
-      const amount = toCents(m.unitCost ?? "0") * BigInt(m.quantity);
+      const amount = toCents(moneyTimesQuantity(m.unitCost ?? "0", m.quantity));
       if (reportDay(m.createdAt) < from) b.opening += amount;
       else if (m.type === "purchase_return") b.returned -= amount;
       else b.purchase += amount;
@@ -117,9 +117,9 @@ export function buildReport(kind: ReportKind, filter: ReportFilter, data: Report
     const products = data.products.filter((p) => !p.isDeleted).sort((a, b) => a.stockQty-b.stockQty || a.name.localeCompare(b.name));
     metric("Products", products.length); metric("Low stock", products.filter((p) => p.stockQty <= business.lowStockThreshold).length);
     metric("On-hand units", products.reduce((s, p) => s+p.stockQty, 0));
-    cash("Value at current cost", products.reduce((s, p) => s + toCents(p.costPrice) * BigInt(p.stockQty), zero));
+    cash("Value at current cost", products.reduce((s, p) => s + toCents(moneyTimesQuantity(p.costPrice, p.stockQty)), zero));
     report.notes.push("On-hand is the current snapshot, valued at current product cost. Date range filters the movement log only. Signed movement quantities add or remove stock; archived products remain in history.");
-    report.tables.push({ title: "Current on-hand", columns: ["Product", "SKU", "Quantity", "Unit cost", "Stock value", "Low stock"], rows: products.map((p) => [p.name, p.sku, p.stockQty, p.costPrice, fromCents(toCents(p.costPrice)*BigInt(p.stockQty)), p.stockQty <= business.lowStockThreshold ? "Yes" : "No"]) });
+    report.tables.push({ title: "Current on-hand", columns: ["Product", "SKU", "Quantity", "Unit cost", "Stock value", "Low stock"], rows: products.map((p) => [p.name, p.sku, p.stockQty, p.costPrice, moneyTimesQuantity(p.costPrice, p.stockQty), p.stockQty <= business.lowStockThreshold ? "Yes" : "No"]) });
     report.tables.push({ title: "Stock movements", columns: ["Date", "Product", "Type", "Signed quantity", "Unit cost", "Note"], rows: data.movements.filter((m) => inRange(reportDay(m.createdAt))).sort((a,b) => b.createdAt.localeCompare(a.createdAt)).map((m) => [reportDay(m.createdAt), names.get(m.productId) ?? "Product", m.type, m.quantity, m.unitCost ?? "", m.note ?? ""]) });
   } else {
     const selected = data.expenses.filter((e) => inRange(e.expenseDate)).sort((a,b) => b.expenseDate.localeCompare(a.expenseDate));

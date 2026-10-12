@@ -27,8 +27,11 @@ async function fixture() {
     const customer = await tx.orm.public.Customer.create({ tenantId: tenant.id, name: "Test buyer" });
     const products = [];
     for (let index = 0; index < 2; index++) {
-      products.push(await tx.orm.public.Product.create({ tenantId: tenant.id, name: `Test item ${index}`, sku: `TEST-${index}`, stockQty: 10,
-        costPrice: numeric("40.00"), sellPrice: numeric("100.00") }));
+      const product = await tx.orm.public.Product.create({ tenantId: tenant.id, name: `Test item ${index}`, sku: `TEST-${index}`, stockQty: numeric<12, 3>("10"),
+        costPrice: numeric("40.00"), sellPrice: numeric("100.00") });
+      const variant = await tx.orm.public.ProductVariant.create({ tenantId: tenant.id, productId: product.id, sku: `TEST-${index}`, label: "Default", stockQty: numeric<12, 3>("10"),
+        costPrice: numeric("40.00"), sellPrice: numeric("100.00") });
+      products.push({ ...product, variantId: variant.id });
     }
     products.sort((a, b) => a.id.localeCompare(b.id));
     return { tenantId: tenant.id, userId: user.id, customerId: customer.id, products };
@@ -43,7 +46,7 @@ async function main() {
   const a = await fixture();
   const b = await fixture();
   const productId = a.products[0].id;
-  const stock = async () => withRlsBypass(async (tx) => (await tx.orm.public.Product.where({ id: productId, tenantId: a.tenantId }).select("stockQty").first())!.stockQty);
+  const stock = async () => withRlsBypass(async (tx) => Number((await tx.orm.public.Product.where({ id: productId, tenantId: a.tenantId }).select("stockQty").first())!.stockQty));
   const input = { customerId: a.customerId, status: "draft", items: [{ productId, quantity: 3, unitPrice: "100.00" }], discount: "30.00", paidAmount: "0.00", paymentMethod: "cash" };
   check((await call("/invoices")).status === 401, "bearer token is required");
   const created = await call<{ invoice: InvoiceDetail }>("/invoices", a.token, "POST", input);
@@ -115,6 +118,8 @@ async function cleanup() {
         rawSql`DELETE FROM public.stock_movements WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.sale_items WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.sales WHERE tenant_id = ${tenantId}::uuid`,
+        rawSql`DELETE FROM public.wastage WHERE tenant_id = ${tenantId}::uuid`,
+        rawSql`DELETE FROM public.product_variants WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.products WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.customers WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.refresh_sessions WHERE tenant_id = ${tenantId}::uuid`,

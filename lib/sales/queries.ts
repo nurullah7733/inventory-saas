@@ -40,8 +40,9 @@ export async function getInvoice(scope: TenantScope, id: string): Promise<Invoic
   const row = await selectInvoices(scope.Sale.where({ id })).first();
   if (!row) return null;
   const lines = await scope.SaleItem.where({ saleId: id })
-    .select("id", "productId", "quantity", "unitPrice", "unitCost", "subtotal")
+    .select("id", "productId", "variantId", "quantity", "unitPrice", "unitCost", "subtotal")
     .include("product", (p) => p.select("name", "sku"))
+    .include("variant", (v) => v.select("label"))
     .orderBy((i) => i.id.asc()).all();
   const ids = lines.map((line) => line.id);
   const returns = ids.length ? await scope.SaleReturn.where((r) => r.saleItemId.in(ids))
@@ -50,11 +51,12 @@ export async function getInvoice(scope: TenantScope, id: string): Promise<Invoic
   return {
     ...(await summaries(scope, [row]))[0],
     items: lines.map((line) => {
-      const returnedQuantity = returns.filter((r) => r.saleItemId === line.id).reduce((sum, r) => sum + r.quantity, 0);
+      const returnedQuantity = returns.filter((r) => r.saleItemId === line.id).reduce((sum, r) => sum + Number(r.quantity), 0);
       return {
-        id: line.id, productId: line.productId, name: line.product?.name ?? "Product", sku: line.product?.sku ?? "",
-        quantity: line.quantity, unitPrice: String(line.unitPrice), unitCost: String(line.unitCost), subtotal: String(line.subtotal),
-        returnedQuantity, returnableQuantity: row.status === "completed" ? line.quantity - returnedQuantity : 0,
+        id: line.id, productId: line.productId, variantId: line.variantId,
+        variantLabel: line.variant?.label ?? "Default", name: line.product?.name ?? "Product", sku: line.product?.sku ?? "",
+        quantity: Number(line.quantity), unitPrice: String(line.unitPrice), unitCost: String(line.unitCost), subtotal: String(line.subtotal),
+        returnedQuantity, returnableQuantity: row.status === "completed" ? Number(line.quantity) - returnedQuantity : 0,
         lineCredit: fromCents(credits.get(line.id) ?? BigInt(0)),
       };
     }),
@@ -82,7 +84,7 @@ export async function getReturn(scope: TenantScope, id: string): Promise<ReturnE
   const sale = await scope.Sale.where({ id: item.saleId }).select("invoiceNo").first();
   const product = await scope.Product.where({ id: item.productId }).select("name").first();
   return { id: row.id, saleId: item.saleId, invoiceNo: sale?.invoiceNo ?? "", saleItemId: row.saleItemId,
-    productName: product?.name ?? "Product", quantity: row.quantity, reason: row.reason,
+    productName: product?.name ?? "Product", quantity: Number(row.quantity), reason: row.reason,
     refundAmount: fromCents(toCents(String(row.refundAmount))), createdAt: row.createdAt };
 }
 
@@ -99,7 +101,7 @@ export async function listReturns(scope: TenantScope, page: { offset: number; pa
   const names = new Map(items.map((item) => [item.id, item.product?.name ?? "Product"]));
   const returns: ReturnEntry[] = rows.map((row) => ({
     id: row.id, saleItemId: row.saleItemId, saleId: row.saleItem?.saleId ?? "", invoiceNo: row.saleItem?.sale?.invoiceNo ?? "",
-    productName: names.get(row.saleItemId) ?? "Product", quantity: row.quantity, reason: row.reason,
+    productName: names.get(row.saleItemId) ?? "Product", quantity: Number(row.quantity), reason: row.reason,
     refundAmount: String(row.refundAmount), createdAt: row.createdAt,
   }));
   return { returns, total: count.total };

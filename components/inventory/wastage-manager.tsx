@@ -15,13 +15,13 @@ import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
 import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
 import { errorMessage, formatDateTime, formatMoney, plural } from "@/lib/client/format.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
-import { optionalText, quantity } from "@/lib/inventory/fields.ts";
+import { decimalQuantity, optionalText } from "@/lib/inventory/fields.ts";
 import {
   WASTAGE_REASONS,
   type WastageListResponse,
   type WastageResponse,
 } from "@/lib/inventory/stock.ts";
-import { fromCents, MONEY_PATTERN, toCents } from "@/lib/numeric.ts";
+import { moneyTimesQuantity, MONEY_PATTERN, QUANTITY_PATTERN } from "@/lib/numeric.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 import {
   EmptyState,
@@ -31,7 +31,7 @@ import {
   PrimaryAction,
 } from "@/components/ui/list-controls.tsx";
 import { Sheet } from "@/components/ui/sheet.tsx";
-import { ProductPicker, type PickedProduct } from "./product-picker.tsx";
+import { ProductPicker, useProductVariants, type PickedProduct } from "./product-picker.tsx";
 
 /**
  * Wastage screen: damaged / expired stock written off, newest first, with the
@@ -114,6 +114,7 @@ function WastageRow({ row, currency }: { row: WastageResponse; currency: string 
         </p>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {row.product?.sku}
+          {row.variant && row.variant.name !== "Default" ? ` · ${row.variant.name}` : ""}
           {row.reason ? ` · ${row.reason}` : ""}
         </p>
       </div>
@@ -132,7 +133,7 @@ function WastageRow({ row, currency }: { row: WastageResponse; currency: string 
 }
 
 const wastageFormSchema = z.object({
-  quantity: quantity("Quantity"),
+  quantity: decimalQuantity("Quantity", { min: 1 }),
   reason: optionalText(200, "Reason"),
 });
 
@@ -143,7 +144,7 @@ interface WastageForm {
 
 interface WastageResult {
   wastage: WastageResponse;
-  product: { id: string; stockQty: number };
+  product: { id: string; variantId: string; stockQty: number };
 }
 
 const WASTAGE_MUTATION = ["inventory", "wastage-create"] as const;
@@ -193,6 +194,15 @@ function WastageForm({
 
   const [product, setProduct] = useState<PickedProduct | null>(initialProduct);
   const [productError, setProductError] = useState<string | undefined>();
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [variantError, setVariantError] = useState<string | undefined>();
+
+  const variants = useProductVariants(product?.id ?? null);
+  const activeVariants = variants.data ?? [];
+  const needsVariant = activeVariants.length > 1;
+  const chosenVariant = activeVariants.find((variant) => variant.id === variantId) ?? null;
+  const stockQty = chosenVariant?.stockQty ?? product?.stockQty ?? 0;
+  const costPrice = chosenVariant?.costPrice ?? product?.costPrice ?? "";
 
   const form = useForm<WastageForm>({
     resolver: zodResolver<WastageForm>(wastageFormSchema),
@@ -211,6 +221,7 @@ function WastageForm({
     onError: (error) => {
       if (error instanceof ApiClientError && error.details) {
         if (error.details.productId) setProductError(error.details.productId[0]);
+        if (error.details.variantId) setVariantError(error.details.variantId[0]);
         for (const field of ["quantity", "reason"] as const) {
           const message = error.details[field]?.[0];
           if (message) form.setError(field, { type: "server", message });
@@ -224,11 +235,15 @@ function WastageForm({
       setProductError("Choose a product.");
       return;
     }
-    if (Number(values.quantity) > product.stockQty) {
-      form.setError("quantity", { type: "manual", message: `Only ${product.stockQty} in stock.` });
+    if (needsVariant && variantId === null) {
+      setVariantError("This product has several sizes or colors — choose one.");
       return;
     }
-    toast.promise(save.mutateAsync({ productId: product.id, ...values }), {
+    if (Number(values.quantity) > stockQty) {
+      form.setError("quantity", { type: "manual", message: `Only ${stockQty} in stock.` });
+      return;
+    }
+    toast.promise(save.mutateAsync({ productId: product.id, variantId, ...values }), {
       loading: "Recording wastage…",
       success: (result: WastageResult) =>
         `Wrote off ${result.wastage.quantity} × ${product.name} (loss ${formatMoney(result.wastage.lossAmount, currency)}).`,
@@ -238,8 +253,8 @@ function WastageForm({
 
   // Preview of what the server will compute: quantity × current cost price.
   const estimate =
-    product && /^\d+$/.test(qty ?? "") && MONEY_PATTERN.test(product.costPrice)
-      ? fromCents(toCents(product.costPrice) * BigInt(qty))
+    product && QUANTITY_PATTERN.test(qty ?? "") && MONEY_PATTERN.test(costPrice)
+      ? moneyTimesQuantity(costPrice, qty)
       : null;
 
   const errors = form.formState.errors;
@@ -253,21 +268,45 @@ function WastageForm({
         onChange={(picked) => {
           setProduct(picked);
           setProductError(undefined);
+          setVariantId(null);
+          setVariantError(undefined);
         }}
       />
+
+      {product && needsVariant ? (
+        <Field label="Variant" error={variantError} hint="Which size or color is written off." required>
+          {(props) => (
+            <select
+              {...props}
+              value={variantId ?? ""}
+              onChange={(event) => {
+                setVariantId(event.target.value || null);
+                setVariantError(undefined);
+              }}
+            >
+              <option value="">Choose a variant…</option>
+              {activeVariants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.label} · {variant.stockQty} in stock
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+      ) : null}
 
       <Field
         label="Quantity"
         error={errors.quantity?.message}
         hint={
           product
-            ? `${product.stockQty} in stock${estimate ? ` · loss ≈ ${formatMoney(estimate, currency)}` : ""}`
+            ? `${stockQty} in stock${estimate ? ` · loss ≈ ${formatMoney(estimate, currency)}` : ""}`
             : undefined
         }
         required
       >
         {(props) => (
-          <input {...props} type="text" inputMode="numeric" autoComplete="off" placeholder="0" {...form.register("quantity")} />
+          <input {...props} type="text" inputMode="decimal" autoComplete="off" placeholder="0" {...form.register("quantity")} />
         )}
       </Field>
 

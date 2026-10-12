@@ -71,8 +71,9 @@ async function main() {
     const login = await call("/auth/login", undefined, { email: one.email, password: "Strong-staff-password" });
     equal(login.status, 200, "created account can sign in");
     await withRlsBypass(async (tx) => {
-      const product = await tx.orm.public.Product.select("id").create({ tenantId: a.tenant.id, name: "History product", sku: randomUUID(), costPrice: numeric("1.00"), sellPrice: numeric("2.00") });
-      await tx.orm.public.StockMovement.create({ tenantId: a.tenant.id, productId: product.id, type: "adjustment", quantity: 0, createdBy: one.id });
+      const product = await tx.orm.public.Product.select("id").create({ tenantId: a.tenant.id, name: "History product", sku: randomUUID(), costPrice: numeric("1.00"), sellPrice: numeric("2.00"), stockQty: numeric<12, 3>(0) });
+      const variant = await tx.orm.public.ProductVariant.select("id").create({ tenantId: a.tenant.id, productId: product.id, sku: randomUUID(), label: "Default", costPrice: numeric("1.00"), sellPrice: numeric("2.00"), stockQty: numeric<12, 3>(0) });
+      await tx.orm.public.StockMovement.create({ tenantId: a.tenant.id, productId: product.id, variantId: variant.id, type: "adjustment", quantity: numeric<12, 3>(0), createdBy: one.id });
     });
     const deactivated = await call(`/users/${one.id}`, auth, { isActive: false }, "PATCH");
     equal(deactivated.status, 200, "owner deactivates staff");
@@ -107,7 +108,8 @@ async function main() {
       mailUsers.push(...(await tx.orm.public.User.select("id").where({ tenantId }).all()).map((user) => user.id));
       await tx.orm.public.AuditLog.where({ tenantId }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
-      await tx.orm.public.Product.where({ tenantId }).deleteAll();
+      await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
+await tx.orm.public.Product.where({ tenantId }).deleteAll();
       await tx.orm.public.RefreshSession.where({ tenantId }).deleteAll();
       await tx.orm.public.User.where({ tenantId }).deleteAll();
       await tx.orm.public.Tenant.where({ id: tenantId }).delete();

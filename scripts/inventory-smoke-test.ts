@@ -284,16 +284,27 @@ async function variantChecks(a: Fixture, b: Fixture): Promise<void> {
 
   console.log("\nvariant options — delete rules");
 
-  const product = await withRlsBypass((tx) =>
-    tx.orm.public.Product.select("id").create({
+  const product = await withRlsBypass(async (tx) => {
+    const created = await tx.orm.public.Product.select("id").create({
       tenantId: a.tenantId,
       name: "Smoke Sneaker",
       sku: `SMOKE-${Date.now()}`,
+      costPrice: numeric("10.00"),
+      sellPrice: numeric("15.00"),
+      stockQty: numeric<12, 3>(0),
+    });
+    await tx.orm.public.ProductVariant.select("id").create({
+      tenantId: a.tenantId,
+      productId: created.id,
+      sku: `SMOKE-V-${Date.now()}`,
+      label: "Default",
       colorId: blackId,
       costPrice: numeric("10.00"),
       sellPrice: numeric("15.00"),
-    }),
-  );
+      stockQty: numeric<12, 3>(0),
+    });
+    return created;
+  });
 
   const listed = await call("/variants/colors", { token: a.ownerToken });
   check(
@@ -323,9 +334,10 @@ async function variantChecks(a: Fixture, b: Fixture): Promise<void> {
     "a soft-deleted product still blocks the delete",
   );
 
-  await withRlsBypass((tx) =>
-    tx.orm.public.Product.where({ id: product.id }).delete(),
-  );
+  await withRlsBypass(async (tx) => {
+    await tx.orm.public.ProductVariant.where({ productId: product.id }).delete();
+    await tx.orm.public.Product.where({ id: product.id }).delete();
+  });
 
   const staffDelete = await call(`/variants/colors/${blackId}`, {
     method: "DELETE",
@@ -474,6 +486,7 @@ async function categoryChecks(a: Fixture, b: Fixture): Promise<void> {
       categoryId: sneakersId,
       costPrice: numeric("10.00"),
       sellPrice: numeric("15.00"),
+      stockQty: numeric<12, 3>(0),
     }),
   );
 

@@ -22,14 +22,24 @@ export const VARIANT_KIND_LABELS: Record<
   units: { plural: "Units", singular: "Unit", placeholder: "e.g. pcs, kg, box" },
 };
 
-/** One schema for create and rename — a variant option is only a name. */
+/**
+ * One schema for create and rename — a variant option is only a name, except
+ * units carry a `measured` flag: measured units (kg, l, ...) track stock in
+ * decimals, everything else stays whole-number.
+ */
 export const variantOptionSchema = z.strictObject({
   name: z
     .string({ error: "Name is required." })
     .trim()
     .min(1, "Name is required.")
-    .max(60, "Name must be at most 60 characters."),
-});
+    .max(60, "Name must be at most 60 characters.")
+    .optional(),
+  measured: z.boolean({ error: "measured must be true or false." }).optional(),
+})
+  .refine(
+    (value) => value.name !== undefined || value.measured !== undefined,
+    "Send a name or a measured flag to update.",
+  );
 
 export type VariantOptionInput = z.input<typeof variantOptionSchema>;
 
@@ -41,5 +51,7 @@ export interface VariantOptionResponse {
    * means delete will be refused, so the UI can say so before the user tries.
    */
   productCount: number;
+  /** Units only: true when stock for this unit may be fractional. */
+  measured?: boolean;
   createdAt: string;
 }

@@ -91,7 +91,7 @@ export async function getSalesChart(auth: TenantRequestContext, period: Dashboar
   const monthly = window === "12m";
   const rows = await auth.db.query(rawSql`WITH events AS (
     SELECT created_at AS occurred, total_amount AS sales, 0::numeric AS purchases, 0::numeric AS returns FROM public.sales WHERE tenant_id = ${tenant}::uuid AND status = 'completed' AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz
-    UNION ALL SELECT created_at, 0, quantity::numeric * COALESCE(unit_cost, 0), 0 FROM public.stock_movements WHERE tenant_id = ${tenant}::uuid AND type = 'in' AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz
+    UNION ALL SELECT created_at, 0, ROUND(quantity::numeric * COALESCE(unit_cost, 0), 2), 0 FROM public.stock_movements WHERE tenant_id = ${tenant}::uuid AND type = 'in' AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz
     UNION ALL SELECT r.created_at, 0, 0, r.refund_amount FROM public.returns r JOIN public.sale_items i ON i.id = r.sale_item_id AND i.tenant_id = ${tenant}::uuid JOIN public.sales s ON s.id = i.sale_id AND s.tenant_id = ${tenant}::uuid AND s.status = 'completed' WHERE r.tenant_id = ${tenant}::uuid AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz
   ) SELECT to_char(occurred AT TIME ZONE 'Asia/Dhaka', CASE WHEN ${monthly} THEN 'YYYY-MM' ELSE 'YYYY-MM-DD' END) AS date, SUM(sales)::text AS sales, SUM(purchases)::text AS purchases, SUM(returns)::text AS "salesReturns" FROM events GROUP BY 1 ORDER BY 1`.returnsRow({ date: "pg/text@1", sales: "pg/text@1", purchases: "pg/text@1", salesReturns: "pg/text@1" }).build());
   const byDate = new Map(rows.map((row) => [row.date, row]));

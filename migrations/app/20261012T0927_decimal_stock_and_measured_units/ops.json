@@ -1,0 +1,551 @@
+[
+  {
+    "id": "dropDefault.product_variants.stock_qty",
+    "label": "Drop default on \"product_variants\".\"stock_qty\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "stock_qty",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"stock_qty\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants",
+          "stock_qty"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop default on \"stock_qty\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" ALTER COLUMN \"stock_qty\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"stock_qty\" has no default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants",
+          "stock_qty"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropDefault.products.stock_qty",
+    "label": "Drop default on \"products\".\"stock_qty\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "stock_qty",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"stock_qty\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "stock_qty"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop default on \"stock_qty\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ALTER COLUMN \"stock_qty\" DROP DEFAULT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"stock_qty\" has no default",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"column_default\" IS NULL)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "stock_qty"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.variant_units.measured",
+    "label": "Add column \"measured\" to \"variant_units\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "measured",
+        "table": "variant_units"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"measured\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_units",
+          "measured"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"measured\"",
+        "sql": "ALTER TABLE \"public\".\"variant_units\" ADD COLUMN \"measured\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"measured\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "variant_units",
+          "measured"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.backfill_measured_units",
+    "label": "Mark obvious measured units (kg, g, l, ml, liter, litre, ton) as measured",
+    "operationClass": "data",
+    "target": {
+      "id": "data.backfill_measured_units",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "variant_units"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Set measured = true for continuous units of measure",
+        "sql": "UPDATE \"public\".\"variant_units\"\nSET \"measured\" = true\nWHERE lower(\"name\") IN ('kg', 'g', 'l', 'ml', 'liter', 'litre', 'ton')"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "data.typechange.product_variants.stock_qty",
+    "label": "No row rewrite needed: int → numeric(12,3) is lossless",
+    "operationClass": "data",
+    "target": {
+      "id": "data.typechange.product_variants.stock_qty",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "product_variants"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "no-op",
+        "sql": "SELECT 1 WHERE FALSE"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterType.product_variants.stock_qty",
+    "label": "Alter type of \"product_variants\".\"stock_qty\" to numeric(12,3)",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "stock_qty",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"stock_qty\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants",
+          "stock_qty"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"stock_qty\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" ALTER COLUMN \"stock_qty\" TYPE numeric(12,3) USING \"stock_qty\"::numeric(12,3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"stock_qty\" has type \"numeric(12,3)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants",
+          "stock_qty",
+          "numeric(12,3)"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "data.typechange.products.stock_qty",
+    "label": "No row rewrite needed: int → numeric(12,3) is lossless",
+    "operationClass": "data",
+    "target": {
+      "id": "data.typechange.products.stock_qty",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "products"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "no-op",
+        "sql": "SELECT 1 WHERE FALSE"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterType.products.stock_qty",
+    "label": "Alter type of \"products\".\"stock_qty\" to numeric(12,3)",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "stock_qty",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"stock_qty\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "stock_qty"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"stock_qty\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ALTER COLUMN \"stock_qty\" TYPE numeric(12,3) USING \"stock_qty\"::numeric(12,3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"stock_qty\" has type \"numeric(12,3)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "stock_qty",
+          "numeric(12,3)"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "data.typechange.returns.quantity",
+    "label": "No row rewrite needed: int → numeric(12,3) is lossless",
+    "operationClass": "data",
+    "target": {
+      "id": "data.typechange.returns.quantity",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "returns"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "no-op",
+        "sql": "SELECT 1 WHERE FALSE"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterType.returns.quantity",
+    "label": "Alter type of \"returns\".\"quantity\" to numeric(12,3)",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "quantity",
+        "table": "returns"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"quantity\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "returns",
+          "quantity"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"quantity\"",
+        "sql": "ALTER TABLE \"public\".\"returns\" ALTER COLUMN \"quantity\" TYPE numeric(12,3) USING \"quantity\"::numeric(12,3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"quantity\" has type \"numeric(12,3)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "returns",
+          "quantity",
+          "numeric(12,3)"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "data.typechange.sale_items.quantity",
+    "label": "No row rewrite needed: int → numeric(12,3) is lossless",
+    "operationClass": "data",
+    "target": {
+      "id": "data.typechange.sale_items.quantity",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "sale_items"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "no-op",
+        "sql": "SELECT 1 WHERE FALSE"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterType.sale_items.quantity",
+    "label": "Alter type of \"sale_items\".\"quantity\" to numeric(12,3)",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "quantity",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"quantity\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "quantity"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"quantity\"",
+        "sql": "ALTER TABLE \"public\".\"sale_items\" ALTER COLUMN \"quantity\" TYPE numeric(12,3) USING \"quantity\"::numeric(12,3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"quantity\" has type \"numeric(12,3)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "quantity",
+          "numeric(12,3)"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "data.typechange.stock_movements.quantity",
+    "label": "No row rewrite needed: int → numeric(12,3) is lossless",
+    "operationClass": "data",
+    "target": {
+      "id": "data.typechange.stock_movements.quantity",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "stock_movements"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "no-op",
+        "sql": "SELECT 1 WHERE FALSE"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterType.stock_movements.quantity",
+    "label": "Alter type of \"stock_movements\".\"quantity\" to numeric(12,3)",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "quantity",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"quantity\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "quantity"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"quantity\"",
+        "sql": "ALTER TABLE \"public\".\"stock_movements\" ALTER COLUMN \"quantity\" TYPE numeric(12,3) USING \"quantity\"::numeric(12,3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"quantity\" has type \"numeric(12,3)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "quantity",
+          "numeric(12,3)"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  },
+  {
+    "id": "data.typechange.wastage.quantity",
+    "label": "No row rewrite needed: int → numeric(12,3) is lossless",
+    "operationClass": "data",
+    "target": {
+      "id": "data.typechange.wastage.quantity",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "wastage"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "no-op",
+        "sql": "SELECT 1 WHERE FALSE"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterType.wastage.quantity",
+    "label": "Alter type of \"wastage\".\"quantity\" to numeric(12,3)",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "quantity",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"quantity\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "quantity"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "alter type of \"quantity\"",
+        "sql": "ALTER TABLE \"public\".\"wastage\" ALTER COLUMN \"quantity\" TYPE numeric(12,3) USING \"quantity\"::numeric(12,3)"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"quantity\" has type \"numeric(12,3)\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_attribute\" AS \"a\" INNER JOIN \"pg_class\" AS \"c\" ON \"c\".\"oid\" = \"a\".\"attrelid\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"a\".\"attname\" = $3 AND (format_type(\"a\".\"atttypid\", \"a\".\"atttypmod\")) = $4 AND NOT (\"a\".\"attisdropped\"))) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "quantity",
+          "numeric(12,3)"
+        ]
+      }
+    ],
+    "meta": {
+      "warning": "TABLE_REWRITE"
+    }
+  }
+]

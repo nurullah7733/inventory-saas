@@ -184,13 +184,14 @@ async function main(): Promise<void> {
   console.log("fixtures");
   const a = await createTenant("a", stamp);
   const b = await createTenant("b", stamp);
-  console.log("  ok   two shops, each with an owner, a manager, staff, categories and a color");
+  console.log("  ok   two shops, each with an owner, a manager, staff, categories, a color and a brand");
 
   try {
     const productId = await productChecks(a, b);
     const supplierId = await supplierChecks(a, b);
     await stockChecks(a, b, productId, supplierId);
     await wastageChecks(a, b);
+    await variantChecks(a, b);
     await alertChecks(a);
     await uploadChecks(a);
     await auditChecks(a);
@@ -217,7 +218,6 @@ async function productChecks(a: Fixture, b: Fixture): Promise<string> {
       name: "  Runner Pro  ",
       sku: "rn-001",
       categoryId: a.categoryId,
-      colorId: a.colorId,
       expiryDate: isoDate(400),
       brandId: a.brandId,
       costPrice: 1000,
@@ -229,8 +229,15 @@ async function productChecks(a: Fixture, b: Fixture): Promise<string> {
   check(created.status === 201, "owner can add a product");
   check(product?.name === "Runner Pro" && product?.sku === "RN-001", "name is trimmed and the SKU upper-cased");
   check(product?.costPrice === "1000.00" && product?.sellPrice === "1450.50", "prices come back as exact 2-decimal strings");
-  check(product?.category?.name === "Sneakers" && product?.color?.name === "Black" && product?.brand?.name === "Acme", "category, color and brand come back with their names");
+  check(product?.category?.name === "Sneakers" && product?.brand?.name === "Acme", "category and brand come back with their names");
   check(product?.stockQty === 0 && product?.attributes?.warranty_months === 6, "stock starts at 0; attributes are stored");
+  check(
+    product?.variantCount === 1 &&
+      product?.variants?.length === 1 &&
+      product?.variants?.[0]?.label === "Default" &&
+      product?.variants?.[0]?.sku === "RN-001",
+    "a plain product gets exactly one Default variant with the product's SKU",
+  );
   const productId: string = product?.id;
 
   const generated = await call("/products", {
@@ -262,13 +269,11 @@ async function productChecks(a: Fixture, b: Fixture): Promise<string> {
   const foreignRef = await call("/products", {
     method: "POST",
     token: a.ownerToken,
-    body: { name: "Sneaky", categoryId: b.categoryId, colorId: b.colorId, costPrice: 1, sellPrice: 1 },
+    body: { name: "Sneaky", categoryId: b.categoryId, costPrice: 1, sellPrice: 1 },
   });
   check(
-    foreignRef.status === 422 &&
-      Boolean(foreignRef.body.error?.details?.categoryId) &&
-      Boolean(foreignRef.body.error?.details?.colorId),
-    "another shop's category and color ids are refused",
+    foreignRef.status === 422 && Boolean(foreignRef.body.error?.details?.categoryId),
+    "another shop's category id is refused",
   );
 
   const archived = await call("/products", {
@@ -638,9 +643,431 @@ async function wastageChecks(a: Fixture, b: Fixture): Promise<void> {
     return rows;
   });
   check(
-    ledger.some((m) => m.type === "wastage" && m.quantity === -2) &&
-      ledger.reduce((sum, m) => sum + m.quantity, 0) === milk?.stockQty,
+    ledger.some((m) => m.type === "wastage" && Number(m.quantity) === -2) &&
+      ledger.reduce((sum, m) => sum + Number(m.quantity), 0) === milk?.stockQty,
     "wastage writes a negative movement, and the ledger sums to stock_qty",
+  );
+}
+
+async function variantChecks(a: Fixture, b: Fixture): Promise<void> {
+  console.log("\nvariants — Ladies Heel");
+
+  const sizeIds: Record<string, string> = {};
+  for (const name of ["37", "38", "39"]) {
+    const created = await call("/variants/sizes", {
+      method: "POST",
+      token: a.ownerToken,
+      body: { name },
+    });
+    check(created.status === 201, `owner can add size ${name} without leaving the modal`);
+    sizeIds[name] = created.body.data?.option?.id;
+  }
+  const colorIds: Record<string, string> = {};
+  for (const name of ["Red", "Gray", "White"]) {
+    const created = await call("/variants/colors", {
+      method: "POST",
+      token: a.ownerToken,
+      body: { name },
+    });
+    check(created.status === 201, `owner can add color ${name} without leaving the modal`);
+    colorIds[name] = created.body.data?.option?.id;
+  }
+
+  // Sizes 37/38/39 × colors Red/Gray/White, quantity 1 on the diagonal only:
+  // 9 possible combinations but exactly 3 variants and 3 stock entries.
+  const diagonal: Record<string, Record<string, number>> = {
+    "37": { Red: 1, Gray: 0, White: 0 },
+    "38": { Red: 0, Gray: 1, White: 0 },
+    "39": { Red: 0, Gray: 0, White: 1 },
+  };
+  const rows = Object.entries(diagonal).flatMap(([size, byColor]) =>
+    Object.entries(byColor).map(([color, quantity]) => ({
+      sizeId: sizeIds[size],
+      colorId: colorIds[color],
+      quantity,
+    })),
+  );
+
+  const heel = await call("/products", {
+    method: "POST",
+    token: a.ownerToken,
+    body: {
+      name: "Ladies Heel",
+      sku: "LH",
+      costPrice: "500",
+      sellPrice: "900",
+      variants: { hasVariants: true, rows },
+      openingStock: { dateReceived: isoDate(0), note: "First delivery" },
+    },
+  });
+  check(heel.status === 201, "a variant product is created in one request");
+  const heelProduct = heel.body.data?.product;
+  check(heelProduct?.variantCount === 3, "only the combinations with a quantity become variants");
+  const heelVariants = heelProduct?.variants ?? [];
+  check(
+    heelVariants.map((v: { sku: string }) => v.sku).join() === "LH-37-RED,LH-38-GRA,LH-39-WHI",
+    "variant SKUs are PREFIX-SIZE-COLOR3 and unique",
+  );
+  check(heelProduct?.stockQty === 3, "the product total equals the diagonal quantities");
+  check(
+    heelVariants.every((v: { stockQty: number }) => v.stockQty === 1),
+    "each variant holds its own quantity",
+  );
+  check(
+    heelVariants.every(
+      (v: { costPrice: string; sellPrice: string }) => v.costPrice === "500.00" && v.sellPrice === "900.00",
+    ),
+    "variant prices default to the product's prices",
+  );
+  const heelLedger = await withRlsBypass((tx) =>
+    tx.orm.public.StockMovement.where({ productId: heelProduct.id }).aggregate((q) => ({ total: q.count() })),
+  );
+  check(heelLedger.total === 3, "exactly 3 stock movements were written, one per variant");
+
+  // Duplicate combination in one payload.
+  check(
+    (await call("/products", {
+      method: "POST",
+      token: a.ownerToken,
+      body: {
+        name: "Dupe combo", sku: "DC", costPrice: 1, sellPrice: 1,
+        variants: { hasVariants: true, rows: [
+          { sizeId: sizeIds["37"], colorId: colorIds.Red, quantity: 1 },
+          { sizeId: sizeIds["37"], colorId: colorIds.Red, quantity: 2 },
+        ] },
+        openingStock: { dateReceived: isoDate(0) },
+      },
+    })).status === 422,
+    "a duplicated size/color combination is refused",
+  );
+
+  // Two rows claiming the same explicit SKU.
+  check(
+    (await call("/products", {
+      method: "POST",
+      token: a.ownerToken,
+      body: {
+        name: "Dupe sku", sku: "DS", costPrice: 1, sellPrice: 1,
+        variants: { hasVariants: true, rows: [
+          { sizeId: sizeIds["37"], colorId: colorIds.Red, sku: "SAME-1", quantity: 1 },
+          { sizeId: sizeIds["38"], colorId: colorIds.Red, sku: "SAME-1", quantity: 1 },
+        ] },
+        openingStock: { dateReceived: isoDate(0) },
+      },
+    })).status === 409,
+    "two rows with the same SKU are refused",
+  );
+
+  // A quantity without a delivery date.
+  const noDate = await call("/products", {
+    method: "POST",
+    token: a.ownerToken,
+    body: {
+      name: "No date", sku: "ND", costPrice: 1, sellPrice: 1,
+      variants: { hasVariants: true, rows: [{ sizeId: sizeIds["37"], colorId: colorIds.Red, quantity: 1 }] },
+      openingStock: {},
+    },
+  });
+  check(
+    noDate.status === 422 && Boolean(noDate.body.error?.details?.["openingStock.dateReceived"]),
+    "date received is required when a variant ships with stock",
+  );
+
+  // A variant SKU that already exists in the shop.
+  check(
+    (await call("/products", {
+      method: "POST",
+      token: a.ownerToken,
+      body: {
+        name: "Clash", sku: "CL", costPrice: 1, sellPrice: 1,
+        variants: { hasVariants: true, rows: [{ sizeId: sizeIds["37"], colorId: colorIds.Red, sku: "LH-37-RED", quantity: 1 }] },
+        openingStock: { dateReceived: isoDate(0) },
+      },
+    })).status === 409,
+    "a variant SKU that already exists in the shop is 409",
+  );
+
+  // Another shop's size id.
+  check(
+    (await call("/products", {
+      method: "POST",
+      token: b.ownerToken,
+      body: {
+        name: "Sneaky variant", sku: "SV", costPrice: 1, sellPrice: 1,
+        variants: { hasVariants: true, rows: [{ sizeId: sizeIds["37"], colorId: colorIds.Red, quantity: 1 }] },
+        openingStock: { dateReceived: isoDate(0) },
+      },
+    })).status === 422,
+    "another shop's variant option id is refused",
+  );
+
+  // Add stock to ONE variant; the product total follows.
+  const redVariant = heelVariants.find((v: { label: string }) => v.label === "37 / Red");
+  const topped = await call("/stock-movements", {
+    method: "POST",
+    token: a.ownerToken,
+    body: { productId: heelProduct.id, variantId: redVariant.id, quantity: 2, unitCost: 500 },
+  });
+  check(topped.status === 201 && topped.body.data?.product?.stockQty === 3, "stock can target one variant");
+  const afterTop = await call(`/products/${heelProduct.id}`, { token: a.ownerToken });
+  check(
+    afterTop.body.data?.product?.stockQty === 5 &&
+      afterTop.body.data?.product?.variants?.find((v: { label: string }) => v.label === "37 / Red")?.stockQty === 3,
+    "the variant total and the product total both move",
+  );
+
+  // A multi-variant product without a variant choice is refused.
+  check(
+    (await call("/stock-movements", {
+      method: "POST",
+      token: a.ownerToken,
+      body: { productId: heelProduct.id, quantity: 1, unitCost: 1 },
+    })).status === 422,
+    "add stock without a variant choice on a multi-variant product is 422",
+  );
+
+  // Sales deduct from the chosen variant.
+  const sale = await call("/invoices", {
+    method: "POST",
+    token: a.ownerToken,
+    body: {
+      requestId: crypto.randomUUID(),
+      status: "completed",
+      paidAmount: "900",
+      paymentMethod: "cash",
+      items: [{ productId: heelProduct.id, variantId: redVariant.id, quantity: 1, unitPrice: "900" }],
+    },
+  });
+  check(sale.status === 201, "a sale can target one variant");
+  const afterSale = await call(`/products/${heelProduct.id}`, { token: a.ownerToken });
+  check(
+    afterSale.body.data?.product?.stockQty === 4 &&
+      afterSale.body.data?.product?.variants?.find((v: { label: string }) => v.label === "37 / Red")?.stockQty === 2,
+    "a sale deducts the chosen variant and the product total",
+  );
+
+  // The ledger still sums to stock_qty for the variant.
+  const redLedger = await withRlsBypass((tx) =>
+    tx.orm.public.StockMovement.where({ variantId: redVariant.id }).select("quantity").all(),
+  );
+  check(
+    redLedger.reduce((sum: number, m: { quantity: number | string }) => sum + Number(m.quantity), 0) === 2,
+    "the variant's movement ledger sums to its stock_qty",
+  );
+
+  console.log("\nvariants — edit product (Phase 2a)");
+
+  // Deactivate 39 / White: hidden from active pickers, still in history.
+  const whiteVariant = heelVariants.find((v: { label: string }) => v.label === "39 / White");
+  const deactivated = await call(`/products/${heelProduct.id}/variants`, {
+    method: "PATCH",
+    token: a.ownerToken,
+    body: { updates: [{ variantId: whiteVariant.id, isActive: false }] },
+  });
+  check(deactivated.status === 200, "a variant can be deactivated");
+  check(
+    deactivated.body.data?.product?.variantCount === 2,
+    "the active variant count drops when one is deactivated",
+  );
+  const reactivate = await call(`/products/${heelProduct.id}/variants`, {
+    method: "PATCH",
+    token: a.ownerToken,
+    body: { updates: [{ variantId: whiteVariant.id, isActive: true, barcode: "LH-BARCODE-39" }] },
+  });
+  check(reactivate.status === 200 && reactivate.body.data?.product?.variantCount === 3, "a variant can be reactivated with a barcode");
+
+  // Add size 40 through the edit endpoint — one delivery, one movement.
+  const size40 = await call("/variants/sizes", { method: "POST", token: a.ownerToken, body: { name: "40" } });
+  const added = await call(`/products/${heelProduct.id}/variants`, {
+    method: "PATCH",
+    token: a.ownerToken,
+    body: {
+      add: {
+        rows: [{ sizeId: size40.body.data?.option?.id, colorId: colorIds.Red, quantity: 5 }],
+        openingStock: { dateReceived: isoDate(0), note: "Restock delivery" },
+      },
+    },
+  });
+  check(added.status === 200 && added.body.data?.added === 1, "add-variant creates the new combination with opening stock");
+  check(
+    added.body.data?.product?.variantCount === 4 &&
+      added.body.data?.product?.variants?.find((v: { label: string }) => v.label === "40 / Red")?.stockQty === 5,
+    "the new variant holds its opening quantity",
+  );
+  check(
+    added.body.data?.product?.variants?.find((v: { label: string }) => v.label === "40 / Red")?.sku === "LH-40-RED",
+    "the new variant's SKU is generated from the product prefix",
+  );
+
+  // Duplicate combination on add is refused with a pointer to reactivate.
+  check(
+    (await call(`/products/${heelProduct.id}/variants`, {
+      method: "PATCH",
+      token: a.ownerToken,
+      body: {
+        add: { rows: [{ sizeId: sizeIds["37"], colorId: colorIds.Red, quantity: 1 }], openingStock: { dateReceived: isoDate(0) } },
+      },
+    })).status === 422,
+    "adding a combination that already exists is 422",
+  );
+
+  // Field-level SKU clash inside an update.
+  const skuClash = await call(`/products/${heelProduct.id}/variants`, {
+    method: "PATCH",
+    token: a.ownerToken,
+    body: { updates: [{ variantId: whiteVariant.id, sku: "LH-37-RED" }] },
+  });
+  check(
+    skuClash.status === 422 && Boolean(skuClash.body.error?.details?.["updates.0.sku"]),
+    "an update that collides with another variant's SKU is refused on that field",
+  );
+
+  // Rename "Red" → "Crimson": variant labels update in the same transaction.
+  const renamed = await call(`/variants/colors/${colorIds.Red}`, {
+    method: "PATCH",
+    token: a.ownerToken,
+    body: { name: "Crimson" },
+  });
+  check(
+    renamed.status === 200 && (renamed.body.data?.variantsRelabeled ?? 0) >= 2,
+    "renaming an option value relabels the affected variants",
+  );
+  const afterRename = await call(`/products/${heelProduct.id}`, { token: a.ownerToken });
+  check(
+    afterRename.body.data?.product?.variants?.some((v: { label: string; sku: string }) => v.label === "37 / Crimson" && v.sku === "LH-37-RED"),
+    "the stored label follows the rename; the SKU does not",
+  );
+  // A rename that would collide with an existing label is refused.
+  check(
+    (await call(`/variants/colors/${colorIds.Red}`, {
+      method: "PATCH",
+      token: a.ownerToken,
+      body: { name: "Gray" },
+    })).status === 409,
+    "a rename that would duplicate a variant label is 409",
+  );
+  await call(`/variants/colors/${colorIds.Red}`, { method: "PATCH", token: a.ownerToken, body: { name: "Red" } });
+
+  // SKU/barcode lookup for POS scanning.
+  const lookup = await call(`/products/lookup?code=LH-37-RED`, { token: a.ownerToken });
+  check(
+    lookup.status === 200 && lookup.body.data?.variant?.label === "37 / Red" && lookup.body.data?.variant?.productName === "Ladies Heel",
+    "an exact SKU lookup returns the variant and its product",
+  );
+  check(
+    (await call(`/products/lookup?code=LH-BARCODE-39`, { token: a.ownerToken })).status === 200,
+    "a barcode lookup works too",
+  );
+  check((await call(`/products/lookup?code=NOPE`, { token: a.ownerToken })).status === 404, "an unknown code is 404");
+
+  console.log("\ndecimals — measured units");
+
+  const kgUnit = await call("/variants/units", {
+    method: "POST",
+    token: a.ownerToken,
+    body: { name: "kg", measured: true },
+  });
+  check(kgUnit.status === 201 && kgUnit.body.data?.option?.measured === true, "a unit can be created as measured");
+
+  const flour = await call("/products", {
+    method: "POST",
+    token: a.ownerToken,
+    body: {
+      name: "Flour",
+      sku: "FLOUR",
+      unitId: kgUnit.body.data?.option?.id,
+      costPrice: "80",
+      sellPrice: "120",
+      variants: { hasVariants: false, rows: [{ quantity: 2.5 }] },
+      openingStock: { dateReceived: isoDate(0) },
+    },
+  });
+  check(
+    flour.status === 201 && flour.body.data?.product?.stockQty === 2.5,
+    "a measured-unit product can open with a fractional quantity",
+  );
+  const flourId: string = flour.body.data?.product?.id;
+  const flourVariantId: string = flour.body.data?.product?.variants?.[0]?.id;
+
+  // Sell 1.25 kg.
+  const flourSale = await call("/invoices", {
+    method: "POST",
+    token: a.ownerToken,
+    body: {
+      requestId: crypto.randomUUID(),
+      status: "completed",
+      paidAmount: "150",
+      paymentMethod: "cash",
+      items: [{ productId: flourId, variantId: flourVariantId, quantity: 1.25, unitPrice: "120" }],
+    },
+  });
+  check(
+    flourSale.status === 201 && flourSale.body.data?.invoice?.totalAmount === "150.00",
+    "a fractional sale computes its total exactly",
+  );
+  check(
+    (await call(`/products/${flourId}`, { token: a.ownerToken })).body.data?.product?.stockQty === 1.25,
+    "the sale deducts a fractional quantity",
+  );
+
+  // Wastage 0.5 kg.
+  const flourWaste = await call("/wastage", {
+    method: "POST",
+    token: a.ownerToken,
+    body: { productId: flourId, variantId: flourVariantId, quantity: 0.5, reason: "Spoiled" },
+  });
+  check(
+    flourWaste.status === 201 && flourWaste.body.data?.wastage?.lossAmount === "40.00",
+    "fractional wastage values its loss at quantity × cost",
+  );
+  check(
+    (await call(`/products/${flourId}`, { token: a.ownerToken })).body.data?.product?.stockQty === 0.75,
+    "wastage deducts a fractional quantity",
+  );
+
+  // Whole-number units still refuse fractions.
+  const pcsUnit = await call("/variants/units", {
+    method: "POST",
+    token: a.ownerToken,
+    body: { name: "pcs" },
+  });
+  const rope = await call("/products", {
+    method: "POST",
+    token: a.ownerToken,
+    body: {
+      name: "Rope",
+      sku: "ROPE",
+      unitId: pcsUnit.body.data?.option?.id,
+      costPrice: "10",
+      sellPrice: "15",
+      variants: { hasVariants: false, rows: [{ quantity: 4 }] },
+      openingStock: { dateReceived: isoDate(0) },
+    },
+  });
+  check(rope.status === 201, "a non-measured product can be created");
+  check(
+    (await call("/stock-movements", {
+      method: "POST",
+      token: a.ownerToken,
+      body: { productId: rope.body.data?.product?.id, quantity: 1.5, unitCost: 1 },
+    })).status === 422,
+    "a fractional quantity is refused for a non-measured unit",
+  );
+  check(
+    (await call("/products", {
+      method: "POST",
+      token: a.ownerToken,
+      body: {
+        name: "Fraction flour",
+        sku: "FLOUR2",
+        unitId: pcsUnit.body.data?.option?.id,
+        costPrice: "1",
+        sellPrice: "2",
+        variants: { hasVariants: false, rows: [{ quantity: 2.5 }] },
+        openingStock: { dateReceived: isoDate(0) },
+      },
+    })).status === 422,
+    "a fractional opening quantity is refused for a non-measured unit",
   );
 }
 
@@ -792,11 +1219,19 @@ async function cleanup(tenantIds: string[]): Promise<void> {
     await withRlsBypass(async (tx) => {
       const statements = [
         rawSql`DELETE FROM "public"."audit_logs" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."returns" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."sale_items" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."sales" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."wastage" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."stock_movements" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."product_variants" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."products" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."brands" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."suppliers" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."variant_colors" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."variant_sizes" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."variant_weights" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."variant_units" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."categories" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."refresh_sessions" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."users" WHERE "tenant_id" = ${tenantId}::uuid`,

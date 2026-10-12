@@ -1,11 +1,11 @@
 import { z } from "zod";
-import { optionalText, quantity, requiredRef } from "./fields.ts";
+import { decimalQuantity, optionalText, requiredRef } from "./fields.ts";
 import type { StockMovementResponse } from "./stock.ts";
 
 export const purchaseReturnSchema = z.strictObject({
   requestId: z.string().uuid().transform((id) => id.toLowerCase()),
   sourceMovementId: requiredRef("purchase entry").transform((id) => id.toLowerCase()),
-  quantity: quantity("Return quantity"),
+  quantity: decimalQuantity("Return quantity", { min: 0.001 }),
   reason: optionalText(500, "Reason").optional().default(null),
 });
 export type PurchaseReturnInput = z.output<typeof purchaseReturnSchema>;

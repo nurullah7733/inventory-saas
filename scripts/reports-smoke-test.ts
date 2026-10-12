@@ -22,16 +22,17 @@ async function fixture(populate: boolean) {
     if (populate) {
       const customer = await tx.orm.public.Customer.select("id").create(own({ name: "Smoke Customer" }));
       const supplier = await tx.orm.public.Supplier.select("id").create(own({ name: "Smoke Supplier" }));
-      const product = await tx.orm.public.Product.select("id").create(own({ name: "Smoke Product", sku: "REPORTS", stockQty: 3, costPrice: numeric("99.00"), sellPrice: numeric("50.00") }));
+      const product = await tx.orm.public.Product.select("id").create(own({ name: "Smoke Product", sku: "REPORTS", stockQty: numeric<12, 3>(3), costPrice: numeric("99.00"), sellPrice: numeric("50.00") }));
+      const variant = await tx.orm.public.ProductVariant.select("id").create(own({ productId: product.id, sku: "REPORTS", label: "Default", stockQty: numeric<12, 3>(3), costPrice: numeric("99.00"), sellPrice: numeric("50.00") }));
       const sale = await tx.orm.public.Sale.select("id").create(own({ customerId: customer.id, invoiceNo: "REPORTS-1", status: "completed", subtotal: numeric("100.00"), discount: numeric("0.00"), vatAmount: numeric("10.00"), totalAmount: numeric("110.00"), paidAmount: numeric("20.00"), soldBy: owner.id, createdAt: "2026-10-01T00:00:00Z" }));
-      const item = await tx.orm.public.SaleItem.select("id").create(own({ saleId: sale.id, productId: product.id, quantity: 2, unitCost: numeric("30.00"), unitPrice: numeric("50.00"), subtotal: numeric("100.00") }));
-      await tx.orm.public.SaleReturn.create(own({ saleItemId: item.id, quantity: 1, refundAmount: numeric("55.00"), createdBy: owner.id, createdAt: "2026-10-02T00:00:00Z" }));
+      const item = await tx.orm.public.SaleItem.select("id").create(own({ saleId: sale.id, productId: product.id, variantId: variant.id, quantity: numeric<12, 3>(2), unitCost: numeric("30.00"), unitPrice: numeric("50.00"), subtotal: numeric("100.00") }));
+      await tx.orm.public.SaleReturn.create(own({ saleItemId: item.id, quantity: numeric<12, 3>(1), refundAmount: numeric("55.00"), createdBy: owner.id, createdAt: "2026-10-02T00:00:00Z" }));
       // A draft in the same range must contribute neither orders nor sales.
       await tx.orm.public.Sale.create(own({ invoiceNo: "REPORTS-DRAFT", status: "draft", subtotal: numeric("999.00"), discount: numeric("0.00"), vatAmount: numeric("0.00"), totalAmount: numeric("999.00"), paidAmount: numeric("0.00"), soldBy: owner.id, createdAt: "2026-10-01T00:00:00Z" }));
       await tx.orm.public.Expense.create(own({ title: "Smoke expense", amount: numeric("5.00"), expenseDate: "2026-10-01", createdBy: owner.id }));
-      await tx.orm.public.Wastage.create(own({ productId: product.id, quantity: 1, lossAmount: numeric("9.00"), createdBy: owner.id, createdAt: "2026-10-03T00:00:00Z" }));
+      await tx.orm.public.Wastage.create(own({ productId: product.id, variantId: variant.id, quantity: numeric<12, 3>(1), lossAmount: numeric("9.00"), createdBy: owner.id, createdAt: "2026-10-03T00:00:00Z" }));
       for (const [date, quantity] of [["2026-09-01T00:00:00Z", 3], ["2026-10-01T00:00:00Z", 10]] as const) {
-        await tx.orm.public.StockMovement.create(own({ productId: product.id, supplierId: supplier.id, type: "in", quantity, unitCost: numeric("10.00"), createdBy: owner.id, createdAt: date }));
+        await tx.orm.public.StockMovement.create(own({ productId: product.id, variantId: variant.id, supplierId: supplier.id, type: "in", quantity: numeric<12, 3>(quantity), unitCost: numeric("10.00"), createdBy: owner.id, createdAt: date }));
       }
       await tx.orm.public.SupplierPayment.create(own({ supplierId: supplier.id, amount: numeric("20.00"), paymentDate: "2026-10-02", createdBy: owner.id }));
     }
@@ -49,7 +50,8 @@ async function cleanup() {
     await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
     await tx.orm.public.SupplierPayment.where({ tenantId }).deleteAll();
     await tx.orm.public.Expense.where({ tenantId }).deleteAll();
-    await tx.orm.public.Product.where({ tenantId }).deleteAll();
+    await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
+await tx.orm.public.Product.where({ tenantId }).deleteAll();
     await tx.orm.public.Customer.where({ tenantId }).deleteAll();
     await tx.orm.public.Supplier.where({ tenantId }).deleteAll();
     await tx.orm.public.RefreshSession.where({ tenantId }).deleteAll();

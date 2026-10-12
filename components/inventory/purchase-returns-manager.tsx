@@ -9,7 +9,7 @@ import { useSession } from "@/lib/client/use-session.ts";
 import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
 import { errorMessage, formatDateTime, formatMoney } from "@/lib/client/format.ts";
 import { localToday, addDays } from "@/lib/dates.ts";
-import { fromCents, toCents } from "@/lib/numeric.ts";
+import { moneyTimesQuantity, QUANTITY_PATTERN } from "@/lib/numeric.ts";
 import type { PurchaseReceipt, PurchaseReceiptList, PurchaseReturnList } from "@/lib/inventory/purchase-returns.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 import { EmptyState, ErrorState, ListSkeleton, Pager } from "@/components/ui/list-controls.tsx";
@@ -63,18 +63,18 @@ export function PurchaseReturnsManager() {
       <p className="text-sm text-zinc-500">{formatDateTime(entry.createdAt)} · {entry.createdBy?.name}</p>
     </article>)}
     {datesValid && query.data && <Pager page={page} pageSize={query.data.pageSize} total={query.data.total} busy={query.isFetching} onPageChange={setPage} />}
-    {selected && <ReturnPurchaseSheet key={selected.id} purchase={selected} currency={currency} onClose={() => setSelected(null)} />}
+    {selected && <ReturnPurchaseSheet key={selected.id} purchase={selected} onClose={() => setSelected(null)} />}
   </div>;
 }
 
-function ReturnPurchaseSheet({ purchase, currency, onClose }: { purchase: PurchaseReceipt; currency: string; onClose: () => void }) {
+function ReturnPurchaseSheet({ purchase, onClose }: { purchase: PurchaseReceipt; onClose: () => void }) {
   const client = useQueryClient();
   const [quantity, setQuantity] = useState("1"), [reason, setReason] = useState("");
   // Keep the exact payload on a failed request so a lost response can be retried
   // with the same ID, without returning the goods a second time.
   const [retry, setRetry] = useState<{ requestId: string; sourceMovementId: string; quantity: number; reason: string | null } | null>(null);
   const max = Math.min(purchase.returnableQuantity, purchase.stockQty);
-  const count = Number(quantity), valid = Number.isInteger(count) && count >= 1 && count <= max && reason.trim().length <= 500;
+  const count = Number(quantity), valid = QUANTITY_PATTERN.test(quantity) && count >= 1 && count <= max && reason.trim().length <= 500;
   const mutation = useMutation({ mutationFn: (body: NonNullable<typeof retry>) => apiRequest("/purchase-returns", { method: "POST", body }),
     onSuccess: async () => {
       toast.success("Purchase return recorded. Stock and supplier payable updated.");
@@ -91,9 +91,9 @@ function ReturnPurchaseSheet({ purchase, currency, onClose }: { purchase: Purcha
       setRetry(body); mutation.mutate(body);
     }}>
       <p className="text-sm">Maximum return: {max}. Credit uses the original purchase unit cost and reduces supplier payable.</p>
-      <Field label="Return quantity" required>{(props) => <input {...props} type="number" min="1" max={max} step="1" value={quantity} disabled={mutation.isPending || !!retry} onChange={(e) => setQuantity(e.target.value)} />}</Field>
+      <Field label="Return quantity" hint="Decimals allowed for measured units." required>{(props) => <input {...props} type="number" min="0.001" max={max} step="0.001" value={quantity} disabled={mutation.isPending || !!retry} onChange={(e) => setQuantity(e.target.value)} />}</Field>
       <Field label="Reason">{(props) => <textarea {...props} maxLength={500} value={reason} disabled={mutation.isPending || !!retry} onChange={(e) => setReason(e.target.value)} />}</Field>
-      <p>Return credit: {valid ? formatMoney(fromCents(toCents(purchase.unitCost ?? "0.00") * BigInt(count)), currency) : "—"}</p>
+      <p>Return credit: {valid ? moneyTimesQuantity(purchase.unitCost ?? "0.00", count) : "—"}</p>
       {mutation.isError && <p role="alert" className="text-sm text-red-600">{errorMessage(mutation.error, "Could not record purchase return.")}</p>}
       <div className="flex justify-end gap-small">
         <Button type="button" variant="ghost" disabled={mutation.isPending} onClick={onClose}>Close</Button>

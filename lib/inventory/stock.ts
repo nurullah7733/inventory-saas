@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { money, optionalRef, optionalText, quantity, requiredRef } from "./fields.ts";
+import { decimalQuantity, money, optionalRef, optionalText, requiredRef } from "./fields.ts";
 import type { NamedRef } from "./products.ts";
 
 /**
@@ -36,8 +36,14 @@ const receivedAt = z
 
 export const stockInSchema = z.strictObject({
   productId: requiredRef("product"),
+  /**
+   * Which variant receives the stock. Optional only so a client can address a
+   * single-variant product by its product id alone: when omitted, the product
+   * must have exactly one active variant (its Default) and that one is used.
+   */
+  variantId: optionalRef("variant").optional().default(null),
   supplierId: optionalRef("supplier").optional().default(null),
-  quantity: quantity("Quantity"),
+  quantity: decimalQuantity("Quantity", { min: 0.001 }),
   unitCost: money("Unit cost"),
   /**
    * When the goods arrived. Defaults to now; a back-dated entry (the paper
@@ -56,7 +62,9 @@ export type StockInInput = z.input<typeof stockInSchema>;
 
 export const wastageSchema = z.strictObject({
   productId: requiredRef("product"),
-  quantity: quantity("Quantity"),
+  /** Same rule as stock-in: optional when the product has a single variant. */
+  variantId: optionalRef("variant").optional().default(null),
+  quantity: decimalQuantity("Quantity", { min: 0.001 }),
   reason: optionalText(200, "Reason").optional().default(null),
 });
 
@@ -80,6 +88,8 @@ export interface StockMovementResponse {
   sourceMovementId: string | null;
   note: string | null;
   product: ProductRef | null;
+  /** "37 / Red" / "Default" — which variant the movement applies to. */
+  variant: NamedRef | null;
   supplier: NamedRef | null;
   createdBy: NamedRef | null;
   createdAt: string;
@@ -98,6 +108,7 @@ export interface WastageResponse {
   reason: string | null;
   lossAmount: string;
   product: ProductRef | null;
+  variant: NamedRef | null;
   createdBy: NamedRef | null;
   createdAt: string;
 }

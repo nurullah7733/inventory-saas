@@ -10,11 +10,14 @@ import { apiError, apiSuccess, validationError } from "@/lib/api/response.ts";
 import {
   applyStockDelta,
   listMovements,
+  productUnit,
+  recordStockIn,
+  resolveVariant,
   selectMovements,
   toMovementResponse,
 } from "@/lib/inventory/stock-queries.ts";
 import { MOVEMENT_TYPES, stockInSchema } from "@/lib/inventory/stock.ts";
-import { numeric } from "@/lib/numeric.ts";
+import { quantityErrorForUnit } from "@/lib/inventory/fields.ts";
 import { readTenantSafeJsonBody } from "@/lib/tenant/request.ts";
 
 function invalidField(field: string, message: string) {
@@ -99,6 +102,16 @@ export const POST = withTenantAuth(
       return invalidField("productId", "This product is deleted. Restore it before adding stock.");
     }
 
+    const resolution = await resolveVariant(auth.scope, product.id, data.variantId);
+    if (!resolution.ok) {
+      return invalidField(resolution.field, resolution.message);
+    }
+    const variant = resolution.variant;
+
+    const unit = await productUnit(auth.scope, product.id);
+    const unitError = quantityErrorForUnit(unit, data.quantity);
+    if (unitError) return invalidField("quantity", unitError);
+
     if (data.supplierId) {
       const supplier = await auth.scope.Supplier.select("id", "isActive")
         .where({ id: data.supplierId })
@@ -113,27 +126,24 @@ export const POST = withTenantAuth(
 
     const stockQty = await applyStockDelta(
       auth.scope,
-      product.id,
+      { productId: product.id, variantId: variant.id },
       data.quantity,
       data.updateCostPrice ? { costPrice: data.unitCost } : {},
     );
     if (stockQty === null) {
-      // Deleted between the read above and the update.
+      // Deleted or deactivated between the read above and the update.
       return invalidField("productId", "This product is no longer available.");
     }
 
-    const created = await auth.scope.StockMovement.select("id").create(
-      auth.scope.own({
-        productId: product.id,
-        supplierId: data.supplierId,
-        type: "in" as const,
-        quantity: data.quantity,
-        unitCost: numeric<10, 2>(data.unitCost),
-        note: data.note,
-        createdBy: auth.user.id,
-        ...(data.receivedAt ? { createdAt: data.receivedAt } : {}),
-      }),
-    );
+    const created = await recordStockIn(auth.scope, auth.user.id, {
+      productId: product.id,
+      variantId: variant.id,
+      supplierId: data.supplierId,
+      quantity: data.quantity,
+      unitCost: data.unitCost,
+      receivedAt: data.receivedAt,
+      note: data.note,
+    });
 
     const row = await selectMovements(auth.scope.StockMovement.where({ id: created.id })).first();
     if (!row) throw new Error("Created stock movement could not be read back.");
@@ -147,7 +157,8 @@ export const POST = withTenantAuth(
       entityId: movement.id,
       metadata: {
         productId: product.id,
-        sku: product.sku,
+        variantId: variant.id,
+        sku: variant.sku,
         supplierId: data.supplierId,
         quantity: data.quantity,
         unitCost: data.unitCost,
@@ -156,6 +167,9 @@ export const POST = withTenantAuth(
       },
     });
 
-    return apiSuccess({ movement, product: { id: product.id, stockQty } }, 201);
+    return apiSuccess(
+      { movement, product: { id: product.id, variantId: variant.id, stockQty } },
+      201,
+    );
   },
 );

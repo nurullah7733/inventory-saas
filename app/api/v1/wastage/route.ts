@@ -6,14 +6,10 @@ import {
   parseUuidParam,
 } from "@/lib/api/query-params.ts";
 import { apiError, apiSuccess, validationError } from "@/lib/api/response.ts";
-import {
-  applyStockDelta,
-  listWastage,
-  selectWastage,
-  toWastageResponse,
-} from "@/lib/inventory/stock-queries.ts";
+import { applyStockDelta, listWastage, productUnit, resolveVariant, selectWastage, toWastageResponse } from "@/lib/inventory/stock-queries.ts";
 import { wastageSchema } from "@/lib/inventory/stock.ts";
-import { fromCents, MAX_MONEY_CENTS, numeric, toCents } from "@/lib/numeric.ts";
+import { quantityErrorForUnit } from "@/lib/inventory/fields.ts";
+import { MAX_MONEY_CENTS, moneyTimesQuantity, numeric, toCents } from "@/lib/numeric.ts";
 import { readTenantSafeJsonBody } from "@/lib/tenant/request.ts";
 
 function invalidField(field: string, message: string) {
@@ -88,8 +84,6 @@ export const POST = withTenantAuth(
       "name",
       "sku",
       "isDeleted",
-      "stockQty",
-      "costPrice",
     )
       .where({ id: data.productId })
       .first();
@@ -99,27 +93,41 @@ export const POST = withTenantAuth(
     if (product.isDeleted) {
       return invalidField("productId", "This product is deleted. Restore it before recording wastage.");
     }
-    if (data.quantity > product.stockQty) return insufficient(product.stockQty);
 
-    const costPrice = String(product.costPrice);
-    const lossCents = toCents(costPrice) * BigInt(data.quantity);
-    if (lossCents > MAX_MONEY_CENTS) {
+    const resolution = await resolveVariant(auth.scope, product.id, data.variantId);
+    if (!resolution.ok) {
+      return invalidField(resolution.field, resolution.message);
+    }
+    const variant = resolution.variant;
+    const unit = await productUnit(auth.scope, product.id);
+    const unitError = quantityErrorForUnit(unit, data.quantity);
+    if (unitError) return invalidField("quantity", unitError);
+    if (data.quantity > variant.stockQty) return insufficient(variant.stockQty);
+
+    // The loss is valued at the VARIANT's current cost price.
+    const costPrice = variant.costPrice;
+    const lossAmount = moneyTimesQuantity(costPrice, data.quantity);
+    if (toCents(lossAmount) > MAX_MONEY_CENTS) {
       return invalidField("quantity", "The loss for this entry is too large to record. Split it into smaller entries.");
     }
-    const lossAmount = fromCents(lossCents);
 
     // The guard inside applyStockDelta re-checks the quantity against the row
     // Postgres has locked, so a concurrent sale cannot take it below zero.
-    const stockQty = await applyStockDelta(auth.scope, product.id, -data.quantity);
+    const stockQty = await applyStockDelta(
+      auth.scope,
+      { productId: product.id, variantId: variant.id },
+      -data.quantity,
+    );
     if (stockQty === null) {
-      const fresh = await auth.scope.Product.select("stockQty").where({ id: product.id }).first();
-      return insufficient(fresh?.stockQty ?? 0);
+      const fresh = await auth.scope.ProductVariant.select("stockQty").where({ id: variant.id }).first();
+      return insufficient(fresh ? Number(fresh.stockQty) : 0);
     }
 
     const created = await auth.scope.Wastage.select("id").create(
       auth.scope.own({
         productId: product.id,
-        quantity: data.quantity,
+        variantId: variant.id,
+        quantity: numeric<12, 3>(data.quantity),
         reason: data.reason,
         lossAmount: numeric<10, 2>(lossAmount),
         createdBy: auth.user.id,
@@ -129,9 +137,10 @@ export const POST = withTenantAuth(
     await auth.scope.StockMovement.create(
       auth.scope.own({
         productId: product.id,
+        variantId: variant.id,
         supplierId: null,
         type: "wastage" as const,
-        quantity: -data.quantity,
+        quantity: numeric<12, 3>(-data.quantity),
         unitCost: numeric<10, 2>(costPrice),
         note: data.reason ?? "Wastage",
         createdBy: auth.user.id,
@@ -150,7 +159,8 @@ export const POST = withTenantAuth(
       entityId: wastage.id,
       metadata: {
         productId: product.id,
-        sku: product.sku,
+        variantId: variant.id,
+        sku: variant.sku,
         quantity: data.quantity,
         reason: data.reason,
         lossAmount,
@@ -158,6 +168,6 @@ export const POST = withTenantAuth(
       },
     });
 
-    return apiSuccess({ wastage, product: { id: product.id, stockQty } }, 201);
+    return apiSuccess({ wastage, product: { id: product.id, variantId: variant.id, stockQty } }, 201);
   },
 );

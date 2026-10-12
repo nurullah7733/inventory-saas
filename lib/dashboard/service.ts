@@ -26,28 +26,28 @@ export async function getDashboardSummary(auth: TenantRequestContext, period: Da
       OR (r.created_at >= ${weekStart}::timestamptz AND r.created_at < ${weekEnd}::timestamptz))
     GROUP BY 1`.returnsRow({ date: "pg/text@1", salesReturns: "pg/text@1" }).build());
   const purchases = await tx.query(rawSql`SELECT to_char(created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
-    COALESCE(SUM(CASE WHEN type = 'in' THEN quantity::numeric * COALESCE(unit_cost, 0) ELSE 0 END), 0)::text AS purchases,
-    COALESCE(SUM(CASE WHEN type = 'purchase_return' THEN -quantity::numeric * COALESCE(unit_cost, 0) ELSE 0 END), 0)::text AS "purchaseReturns"
+    COALESCE(SUM(ROUND(CASE WHEN type = 'in' THEN quantity::numeric * COALESCE(unit_cost, 0) ELSE 0 END, 2)), 0)::text AS purchases,
+    COALESCE(SUM(ROUND(CASE WHEN type = 'purchase_return' THEN -quantity::numeric * COALESCE(unit_cost, 0) ELSE 0 END, 2)), 0)::text AS "purchaseReturns"
     FROM public.stock_movements WHERE tenant_id = ${tenantId}::uuid AND type IN ('in', 'purchase_return')
       AND ((created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz)
         OR (created_at >= ${weekStart}::timestamptz AND created_at < ${weekEnd}::timestamptz))
     GROUP BY 1`.returnsRow({ date: "pg/text@1", purchases: "pg/text@1", purchaseReturns: "pg/text@1" }).build());
   const topProducts = await tx.query(rawSql`WITH quantities AS (
-    SELECT i.product_id, SUM(i.quantity)::bigint AS sold, 0::bigint AS returned
+    SELECT i.product_id, SUM(i.quantity)::text AS sold, '0'::text AS returned
     FROM public.sale_items i JOIN public.sales s ON s.id = i.sale_id AND s.tenant_id = ${tenantId}::uuid
     WHERE i.tenant_id = ${tenantId}::uuid AND s.status = 'completed'
       AND s.created_at >= ${start}::timestamptz AND s.created_at < ${end}::timestamptz GROUP BY i.product_id
     UNION ALL
-    SELECT i.product_id, 0::bigint AS sold, SUM(r.quantity)::bigint AS returned
+    SELECT i.product_id, '0'::text AS sold, SUM(r.quantity)::text AS returned
     FROM public.returns r JOIN public.sale_items i ON i.id = r.sale_item_id AND i.tenant_id = ${tenantId}::uuid
     JOIN public.sales s ON s.id = i.sale_id AND s.tenant_id = ${tenantId}::uuid AND s.status = 'completed'
     WHERE r.tenant_id = ${tenantId}::uuid AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz
     GROUP BY i.product_id
   ) SELECT p.id, p.name, p.sku, p.is_deleted AS "isDeleted",
-    SUM(q.sold)::text AS "soldQuantity", SUM(q.returned)::text AS "returnedQuantity", (SUM(q.sold) - SUM(q.returned))::text AS "netQuantity"
+    trim_scale(SUM(q.sold::numeric))::text AS "soldQuantity", trim_scale(SUM(q.returned::numeric))::text AS "returnedQuantity", trim_scale(SUM(q.sold::numeric) - SUM(q.returned::numeric))::text AS "netQuantity"
     FROM quantities q JOIN public.products p ON p.id = q.product_id AND p.tenant_id = ${tenantId}::uuid
-    GROUP BY p.id, p.name, p.sku, p.is_deleted HAVING SUM(q.sold) - SUM(q.returned) > 0
-    ORDER BY SUM(q.sold) - SUM(q.returned) DESC, p.name ASC, p.id ASC LIMIT 5`
+    GROUP BY p.id, p.name, p.sku, p.is_deleted HAVING SUM(q.sold::numeric) - SUM(q.returned::numeric) > 0
+    ORDER BY SUM(q.sold::numeric) - SUM(q.returned::numeric) DESC, p.name ASC, p.id ASC LIMIT 5`
     .returnsRow({ id: "pg/uuid@1", name: "pg/text@1", sku: "pg/text@1", isDeleted: "pg/bool@1", soldQuantity: "pg/text@1", returnedQuantity: "pg/text@1", netQuantity: "pg/text@1" }).build());
   return buildDashboardSummary(period, { sales, returns, purchases, topProducts }, business.currencySymbol, now);
 }

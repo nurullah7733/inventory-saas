@@ -40,6 +40,8 @@ interface OptionEnvelope {
 
 interface NameForm {
   name: string;
+  /** Units only: stock for this unit may be fractional (kg, l, ...). */
+  measured: boolean;
 }
 
 function errorMessage(error: unknown, fallback: string): string {
@@ -125,17 +127,18 @@ function VariantPanel({
 
   const addForm = useForm<NameForm>({
     resolver: zodResolver<NameForm>(variantOptionSchema),
-    defaultValues: { name: "" },
+    defaultValues: { name: "", measured: false },
   });
 
   const create = useMutation({
     mutationFn: (values: NameForm) =>
       apiRequest<OptionEnvelope>(`/variants/${kind}`, {
         method: "POST",
-        body: values,
+        // Only units carry the measured flag.
+        body: kind === "units" ? values : { name: values.name },
       }),
     onSuccess: () => {
-      addForm.reset({ name: "" });
+      addForm.reset({ name: "", measured: false });
       void queryClient.invalidateQueries({ queryKey });
     },
     onError: (error) => applyServerErrors(addForm, error),
@@ -191,6 +194,12 @@ function VariantPanel({
                 />
               )}
             </Field>
+            {kind === "units" ? (
+              <label className="mt-tight flex min-h-9 items-center gap-item text-sm text-zinc-700 dark:text-zinc-300">
+                <input type="checkbox" className="h-5 w-5" {...addForm.register("measured")} />
+                Measured unit — stock may be fractional (kg, g, l, …)
+              </label>
+            ) : null}
           </div>
           {/* Aligns with the input, not the label above it. */}
           <Button type="submit" className="mt-spacious" disabled={create.isPending}>
@@ -222,6 +231,7 @@ function VariantPanel({
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
                   {option.name}
+                  {option.measured ? <span className="ml-micro text-xs font-normal text-zinc-500 dark:text-zinc-400">· measured</span> : null}
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
                   {option.productCount === 0
@@ -310,14 +320,15 @@ function RenameSheet({
 
   const form = useForm<NameForm>({
     resolver: zodResolver<NameForm>(variantOptionSchema),
-    values: { name: option?.name ?? "" },
+    values: { name: option?.name ?? "", measured: option?.measured ?? false },
   });
 
   const rename = useMutation({
     mutationFn: (values: NameForm) =>
       apiRequest<OptionEnvelope>(`/variants/${kind}/${option?.id}`, {
         method: "PATCH",
-        body: values,
+        // Only units carry the measured flag.
+        body: kind === "units" ? values : { name: values.name },
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: variantsQueryKey(kind) });
@@ -329,8 +340,8 @@ function RenameSheet({
   const onSubmit = form.handleSubmit((values) => {
     toast.promise(rename.mutateAsync(values), {
       loading: "Saving…",
-      success: (result: OptionEnvelope) => `Renamed to "${result.option.name}".`,
-      error: (error: unknown) => errorMessage(error, "Could not rename."),
+      success: (result: OptionEnvelope) => `Saved "${result.option.name}".`,
+      error: (error: unknown) => errorMessage(error, "Could not save."),
     });
   });
 
@@ -340,7 +351,7 @@ function RenameSheet({
       onOpenChange={(open) => {
         if (!open && !rename.isPending) onClose();
       }}
-      title={`Rename ${labels.singular.toLowerCase()}`}
+      title={`Edit ${labels.singular.toLowerCase()}`}
       description={
         option && option.productCount > 0
           ? `The ${option.productCount} product${option.productCount === 1 ? "" : "s"} using it will show the new name.`
@@ -359,6 +370,12 @@ function RenameSheet({
             />
           )}
         </Field>
+        {kind === "units" ? (
+          <label className="flex min-h-9 items-center gap-item text-sm text-zinc-700 dark:text-zinc-300">
+            <input type="checkbox" className="h-5 w-5" {...form.register("measured")} />
+            Measured unit — stock may be fractional (kg, g, l, …)
+          </label>
+        ) : null}
         <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
           <Button
             type="button"

@@ -312,11 +312,14 @@ model VariantWeight {
 }
 
 /// Units of measure — pcs, kg, liter, box, ...
+/// `measured` marks continuous units (kg, g, l, ml, ...) whose stock is
+/// tracked in decimals; every other unit keeps whole-number quantities.
 model VariantUnit {
   id        Uuid              @id @default(uuid())
   tenantId  Uuid              @map("tenant_id")
   tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   name      String
+  measured  Boolean           @default(false) @map("measured")
   createdAt TimestamptzString @default(now()) @map("created_at")
 
   @@unique([tenantId, name])
@@ -348,6 +351,14 @@ model Supplier {
 /// Fixed common columns cover most retail verticals; `attributes` (jsonb)
 /// catches vertical-specific extras (warranty_months, batch_no, imei, ...).
 /// Never hard-deleted while sales history references it — use `isDeleted`.
+///
+/// The parent in a parent/variant pair. Stock and prices live on
+/// ProductVariant (see below); `sku` stays here as the product code and the
+/// prefix for auto-generated variant SKUs, `costPrice`/`sellPrice` as the
+/// defaults new variants inherit, and `stockQty` as a denormalized total
+/// maintained in the same transaction as every variant-level stock change
+/// (variant rows are the source of truth). `reorderLevel` overrides the
+/// tenant-wide `Tenant.lowStockThreshold` for this product when set.
 model Product {
   id         Uuid              @id @default(uuid())
   tenantId   Uuid              @map("tenant_id")
@@ -358,23 +369,23 @@ model Product {
   sku        String
   unitId     Uuid?             @map("unit_id")
   unit       VariantUnit?      @relation(fields: [unitId], references: [id], onDelete: Restrict)
-  colorId    Uuid?             @map("color_id")
-  color      VariantColor?     @relation(fields: [colorId], references: [id], onDelete: Restrict)
-  sizeId     Uuid?             @map("size_id")
-  size       VariantSize?      @relation(fields: [sizeId], references: [id], onDelete: Restrict)
-  weightId   Uuid?             @map("weight_id")
-  weight     VariantWeight?    @relation(fields: [weightId], references: [id], onDelete: Restrict)
   expiryDate DateString?       @map("expiry_date")
   brandId    Uuid?             @map("brand_id")
   brand      Brand?            @relation(fields: [brandId], references: [id], onDelete: Restrict)
   costPrice  Numeric(10, 2)    @map("cost_price")
   sellPrice  Numeric(10, 2)    @map("sell_price")
-  stockQty   Int               @default(0) @map("stock_qty")
+  /// Stock can be fractional for measured units (kg, l, ...). Numeric, not
+  /// Int, for exactly those; integer units simply never carry decimals.
+  /// No @default: the API layer supplies 0 (see the header note above).
+  stockQty   Numeric(12, 3)    @map("stock_qty")
+  reorderLevel Int?            @map("reorder_level")
   attributes Jsonb?
   imageUrl   String?           @map("image_url")
   isDeleted  Boolean           @default(false) @map("is_deleted")
   createdAt  TimestamptzString @default(now()) @map("created_at")
   updatedAt  temporal          .updatedAtString() @map("updated_at")
+
+  variants ProductVariant[]
 
   @@unique([tenantId, sku])
   @@index([tenantId, id])
@@ -382,6 +393,45 @@ model Product {
   @@index([tenantId, expiryDate])
   @@index([tenantId, stockQty])
   @@map("products")
+  @@rls
+}
+
+/// A purchasable/sellable variant of a Product. Every product has at least one
+/// variant: simple products get exactly one "Default" variant, so all stock,
+/// sales and wastage logic only ever deals with variants. Variants are never
+/// hard-deleted while history points at them — flip `isActive` off instead.
+/// `label` ("37 / Red", "Default") is unique per product, which also makes the
+/// (size, color, weight) option combination unique per product.
+model ProductVariant {
+  id        Uuid              @id @default(uuid())
+  tenantId  Uuid              @map("tenant_id")
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  productId Uuid              @map("product_id")
+  product   Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sku       String
+  barcode   String?
+  label     String
+  sizeId    Uuid?             @map("size_id")
+  size      VariantSize?      @relation(fields: [sizeId], references: [id], onDelete: Restrict)
+  colorId   Uuid?             @map("color_id")
+  color     VariantColor?     @relation(fields: [colorId], references: [id], onDelete: Restrict)
+  weightId  Uuid?             @map("weight_id")
+  weight    VariantWeight?    @relation(fields: [weightId], references: [id], onDelete: Restrict)
+  costPrice Numeric(10, 2)    @map("cost_price")
+  sellPrice Numeric(10, 2)    @map("sell_price")
+  /// Same fractional-stock rule as the parent product.
+  stockQty  Numeric(12, 3)    @map("stock_qty")
+  isActive  Boolean           @default(true) @map("is_active")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal          .updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, sku])
+  @@unique([tenantId, barcode])
+  @@unique([productId, label])
+  @@index([tenantId, id])
+  @@index([tenantId, productId])
+  @@index([tenantId, isActive])
+  @@map("product_variants")
   @@rls
 }
 
@@ -395,13 +445,19 @@ model StockMovement {
   tenant        Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   productId     Uuid                @map("product_id")
   product       Product             @relation(fields: [productId], references: [id], onDelete: Restrict)
+  /// Variant the movement applies to. `productId` is kept alongside it —
+  /// a variant never moves products, so both stay consistent.
+  variantId     Uuid                @map("variant_id")
+  variant       ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Restrict)
   supplierId    Uuid?               @map("supplier_id")
   supplier      Supplier?           @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   /// Only purchase returns reference the original supplier stock-in entry.
   sourceMovementId Uuid?             @map("source_movement_id")
   sourceMovement StockMovement?     @relation(fields: [sourceMovementId], references: [id], onDelete: Restrict)
+  /// Signed: positive adds stock, negative removes it. Fractional for
+  /// measured units (numeric(12,3)); integer units never carry decimals.
   type          stock_movement_type
-  quantity      Int
+  quantity      Numeric(12, 3)
   unitCost      Numeric(10, 2)?     @map("unit_cost")
   note          String?
   createdBy     Uuid                @map("created_by")
@@ -412,6 +468,7 @@ model StockMovement {
   @@index([tenantId, createdAt])
   @@index([tenantId, supplierId])
   @@index([tenantId, productId, createdAt])
+  @@index([tenantId, variantId])
   @@index([tenantId, sourceMovementId], name: "stock_source_tenant_idx")
   @@check(expression: "(type = 'purchase_return' AND source_movement_id IS NOT NULL AND source_movement_id <> id AND supplier_id IS NOT NULL AND unit_cost IS NOT NULL AND quantity < 0) OR (type <> 'purchase_return' AND source_movement_id IS NULL)", name: "stock_purchase_return_check")
   @@map("stock_movements")
@@ -423,17 +480,20 @@ model Wastage {
   id            Uuid              @id @default(uuid())
   tenantId      Uuid              @map("tenant_id")
   tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  productId     Uuid              @map("product_id")
-  product       Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity      Int
-  reason        String?
-  lossAmount    Numeric(10, 2)    @map("loss_amount")
-  createdBy     Uuid              @map("created_by")
-  createdByUser User              @relation(fields: [createdBy], references: [id], onDelete: Restrict)
-  createdAt     TimestamptzString @default(now()) @map("created_at")
+  productId   Uuid              @map("product_id")
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
+  variantId   Uuid              @map("variant_id")
+  variant     ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity    Numeric(12, 3)
+  reason      String?
+  lossAmount  Numeric(10, 2)    @map("loss_amount")
+  createdBy     Uuid                @map("created_by")
+  createdByUser User                @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  createdAt     TimestamptzString   @default(now()) @map("created_at")
 
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
+  @@index([tenantId, variantId])
   @@map("wastage")
   @@rls
 }
@@ -521,7 +581,9 @@ model SaleItem {
   sale      Sale              @relation(fields: [saleId], references: [id], onDelete: Restrict)
   productId Uuid              @map("product_id")
   product   Product           @relation(fields: [productId], references: [id], onDelete: Restrict)
-  quantity  Int
+  variantId Uuid              @map("variant_id")
+  variant   ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  quantity  Numeric(12, 3)
   unitPrice Numeric(10, 2)    @map("unit_price")
   unitCost  Numeric(10, 2)    @map("unit_cost")
   subtotal  Numeric(10, 2)
@@ -531,6 +593,7 @@ model SaleItem {
   @@index([tenantId, createdAt])
   @@index([tenantId, saleId])
   @@index([tenantId, productId])
+  @@index([tenantId, variantId])
   @@map("sale_items")
   @@rls
 }
@@ -542,7 +605,7 @@ model SaleReturn {
   tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   saleItemId    Uuid              @map("sale_item_id")
   saleItem      SaleItem          @relation(fields: [saleItemId], references: [id], onDelete: Restrict)
-  quantity      Int
+  quantity      Numeric(12, 3)
   reason        String?
   refundAmount  Numeric(10, 2)    @map("refund_amount")
   createdBy     Uuid              @map("created_by")
@@ -742,6 +805,12 @@ policy_all tenant_isolation_suppliers {
 
 policy_all tenant_isolation_products {
   target    = Product
+  using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_product_variants {
+  target    = ProductVariant
   using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
   withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
 }

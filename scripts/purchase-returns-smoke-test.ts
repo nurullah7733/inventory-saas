@@ -29,11 +29,12 @@ async function fixture() {
     }
     const owner = await account("shop_owner"), manager = await account("manager"), staff = await account("staff");
     const supplier = await tx.orm.public.Supplier.select("id").create(own({ name: "QA Supplier" }));
-    const product = await tx.orm.public.Product.select("id").create(own({ name: "QA Shoes", sku: "QA-SHOES", stockQty: 12, costPrice: numeric("99.00"), sellPrice: numeric("120.00") }));
-    const purchase = await tx.orm.public.StockMovement.select("id").create(own({ productId: product.id, supplierId: supplier.id, type: "in", quantity: 10, unitCost: numeric("10.25"), createdBy: owner.user.id }));
-    const other = await tx.orm.public.StockMovement.select("id").create(own({ productId: product.id, supplierId: supplier.id, type: "in", quantity: 2, unitCost: numeric("50.00"), createdBy: owner.user.id }));
-    const noSupplier = await tx.orm.public.StockMovement.select("id").create(own({ productId: product.id, supplierId: null, type: "adjustment", quantity: 0, unitCost: null, createdBy: owner.user.id }));
-    return { tenantId: tenant.id, owner, manager, staff, supplierId: supplier.id, productId: product.id, purchaseId: purchase.id, otherId: other.id, noSupplierId: noSupplier.id };
+    const product = await tx.orm.public.Product.select("id").create(own({ name: "QA Shoes", sku: "QA-SHOES", stockQty: numeric<12, 3>(12), costPrice: numeric("99.00"), sellPrice: numeric("120.00") }));
+    const variant = await tx.orm.public.ProductVariant.select("id").create(own({ productId: product.id, sku: "QA-SHOES", label: "Default", stockQty: numeric<12, 3>(12), costPrice: numeric("99.00"), sellPrice: numeric("120.00") }));
+    const purchase = await tx.orm.public.StockMovement.select("id").create(own({ productId: product.id, variantId: variant.id, supplierId: supplier.id, type: "in", quantity: numeric<12, 3>(10), unitCost: numeric("10.25"), createdBy: owner.user.id }));
+    const other = await tx.orm.public.StockMovement.select("id").create(own({ productId: product.id, variantId: variant.id, supplierId: supplier.id, type: "in", quantity: numeric<12, 3>(2), unitCost: numeric("50.00"), createdBy: owner.user.id }));
+    const noSupplier = await tx.orm.public.StockMovement.select("id").create(own({ productId: product.id, variantId: variant.id, supplierId: null, type: "adjustment", quantity: numeric<12, 3>(0), unitCost: null, createdBy: owner.user.id }));
+    return { tenantId: tenant.id, owner, manager, staff, supplierId: supplier.id, productId: product.id, variantId: variant.id, purchaseId: purchase.id, otherId: other.id, noSupplierId: noSupplier.id };
   });
 }
 async function call(path: string, token?: string, body?: unknown) {
@@ -45,7 +46,7 @@ async function main() {
   try {
     const a = await fixture(), b = await fixture();
     const data = (quantity: number, extra = {}) => ({ requestId: randomUUID(), sourceMovementId: a.purchaseId, quantity, reason: "Damaged packaging", ...extra });
-    const stock = () => withTenantRls(a.tenantId, (tx) => tx.orm.public.Product.where({ id: a.productId }).select("stockQty").first());
+    const stock = async () => withTenantRls(a.tenantId, async (tx) => Number((await tx.orm.public.Product.where({ id: a.productId }).select("stockQty").first())!.stockQty));
     const events = () => withTenantRls(a.tenantId, (tx) => tx.orm.public.AuditLog.where({ tenantId: a.tenantId, action: "purchase_return.create" }).all());
     assert.equal((await call("/purchase-returns")).status, 401);
     assert.equal((await call("/purchase-returns", a.staff.token, data(1))).status, 403);
@@ -64,23 +65,29 @@ async function main() {
     assert.equal(first.status, 201, JSON.stringify(first.body));
     assert.equal(first.body.data.purchaseReturn.creditAmount, "20.50", "Credit uses original unit cost, not the current product cost");
     assert.equal(first.body.data.purchaseReturn.quantity, -2);
-    assert.equal((await stock())!.stockQty, 10);
+    assert.equal(await stock(), 10);
     assert.equal((await events()).length, 1);
     const replay = await call("/purchase-returns", a.owner.token, firstBody);
     assert.equal(replay.status, 200); assert.equal(replay.body.data.replayed, true);
-    assert.equal((await stock())!.stockQty, 10); assert.equal((await events()).length, 1);
+    assert.equal(await stock(), 10); assert.equal((await events()).length, 1);
     assert.equal((await call("/purchase-returns", a.owner.token, { ...firstBody, quantity: 1 })).status, 409);
     assert.equal((await call("/purchase-returns", a.manager.token, data(1))).status, 201);
     const competing = await Promise.all([call("/purchase-returns", a.owner.token, data(4)), call("/purchase-returns", a.manager.token, data(4))]);
     assert.deepEqual(competing.map((r) => r.status).sort(), [201, 409], "Concurrent returns cannot exceed the original purchase quantity");
-    assert.equal((await stock())!.stockQty, 5); assert.equal((await events()).length, 3);
+    assert.equal(await stock(), 5); assert.equal((await events()).length, 3);
     const receiptAfter = await call("/purchase-returns/purchases", a.owner.token);
     const remaining = receiptAfter.body.data.purchases.find((p: { id: string }) => p.id === a.purchaseId);
     assert.equal(remaining.returnedQuantity, 7); assert.equal(remaining.returnableQuantity, 3);
-    await withRlsBypass((tx) => tx.orm.public.Product.where({ id: a.productId }).update({ stockQty: 1 }));
+    await withRlsBypass(async (tx) => {
+      await tx.orm.public.ProductVariant.where({ id: a.variantId }).update({ stockQty: numeric<12, 3>(1) });
+      await tx.orm.public.Product.where({ id: a.productId }).update({ stockQty: numeric<12, 3>(1) });
+    });
     assert.equal((await call("/purchase-returns", a.owner.token, data(2))).status, 409, "On-hand stock is a separate return limit");
-    assert.equal((await stock())!.stockQty, 1); assert.equal((await events()).length, 3);
-    await withRlsBypass((tx) => tx.orm.public.Product.where({ id: a.productId }).update({ stockQty: 5, isDeleted: true }));
+    assert.equal(await stock(), 1); assert.equal((await events()).length, 3);
+    await withRlsBypass(async (tx) => {
+      await tx.orm.public.ProductVariant.where({ id: a.variantId }).update({ stockQty: numeric<12, 3>(5) });
+      await tx.orm.public.Product.where({ id: a.productId }).update({ stockQty: numeric<12, 3>(5), isDeleted: true });
+    });
     assert.equal((await call("/purchase-returns", a.owner.token, data(1))).status, 409);
     assert.equal((await call("/purchase-returns", a.owner.token, firstBody)).status, 200, "A replay remains safe even after the product is archived");
     await withRlsBypass(async (tx) => {
@@ -90,12 +97,12 @@ async function main() {
     const rollbackId = randomUUID();
     await assert.rejects(withTenantRls(a.tenantId, () => withAuditActor(a.owner.user as AuthUser, () => createPurchaseReturn(tenantScope(a.tenantId), a.staff.user.id,
       { requestId: rollbackId, sourceMovementId: a.purchaseId, quantity: 1, reason: null }))), /verified request user/);
-    assert.equal((await stock())!.stockQty, 5, "Audit failure rolls stock back");
+    assert.equal(await stock(), 5, "Audit failure rolls stock back");
     assert.equal(await withTenantRls(a.tenantId, (tx) => tx.orm.public.StockMovement.where({ id: rollbackId }).first()), null);
     const sameRequest = data(1);
     const retries = await Promise.all([call("/purchase-returns", a.owner.token, sameRequest), call("/purchase-returns", a.owner.token, sameRequest)]);
     assert.deepEqual(retries.map((r) => r.status).sort(), [200, 201], "Concurrent duplicate request produces one return");
-    assert.equal((await stock())!.stockQty, 4); assert.equal((await events()).length, 4);
+    assert.equal(await stock(), 4); assert.equal((await events()).length, 4);
     const day = reportDay(new Date().toISOString());
     const report = await call(`/reports/payable?from=${day}&to=${day}`, a.owner.token);
     assert.equal(report.status, 200, JSON.stringify(report.body));
@@ -119,7 +126,8 @@ async function main() {
       await tx.orm.public.AuditLog.where({ tenantId }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId, type: "purchase_return" }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
-      await tx.orm.public.Product.where({ tenantId }).deleteAll();
+      await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
+await tx.orm.public.Product.where({ tenantId }).deleteAll();
       await tx.orm.public.Supplier.where({ tenantId }).deleteAll();
       await tx.orm.public.RefreshSession.where({ tenantId }).deleteAll();
       await tx.orm.public.User.where({ tenantId }).deleteAll();

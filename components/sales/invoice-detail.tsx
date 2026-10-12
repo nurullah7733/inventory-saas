@@ -10,7 +10,7 @@ import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
 import { returnSchema, type ReturnInput } from "@/lib/sales/schemas.ts";
 import type { InvoiceDetail as InvoiceData, ReturnEntry } from "@/lib/sales/types.ts";
-import { fromCents, toCents } from "@/lib/numeric.ts";
+import { fromCents, QUANTITY_PATTERN, toCents } from "@/lib/numeric.ts";
 import { returnCredit, settledAmounts } from "@/lib/sales/calculations.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 import { ErrorState, ListSkeleton } from "@/components/ui/list-controls.tsx";
@@ -28,7 +28,7 @@ function ReturnForm({ invoice }: { invoice: InvoiceData }) {
   const quantity = Number(values.quantity);
   let credit: string | null = null;
   let cash = "0.00";
-  if (selected && Number.isInteger(quantity) && quantity > 0 && quantity <= selected.returnableQuantity) {
+  if (selected && QUANTITY_PATTERN.test(String(quantity)) && quantity > 0 && quantity <= selected.returnableQuantity) {
     credit = fromCents(returnCredit(toCents(selected.lineCredit), selected.quantity, selected.returnedQuantity, quantity));
     const after = settledAmounts(invoice.totalAmount, invoice.paidAmount, fromCents(toCents(invoice.creditAmount) + toCents(credit)));
     cash = fromCents(toCents(after.cashRefundAmount) - toCents(invoice.cashRefundAmount));
@@ -52,7 +52,7 @@ function ReturnForm({ invoice }: { invoice: InvoiceData }) {
     <h2 className="font-semibold">Add return</h2>
     <fieldset disabled={mutation.isPending} className="space-y-content">
       <Field label="Invoice item" error={form.formState.errors.saleItemId?.message}>{(props) => <select {...props} {...form.register("saleItemId")}><option value="">Choose item</option>{available.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.returnableQuantity} returnable)</option>)}</select>}</Field>
-      <Field label="Quantity" error={form.formState.errors.quantity?.message}>{(props) => <input {...props} type="number" min="1" step="1" max={selected?.returnableQuantity ?? 1000000} {...form.register("quantity", { valueAsNumber: true })} />}</Field>
+      <Field label="Quantity" hint="Decimals allowed for measured units." error={form.formState.errors.quantity?.message}>{(props) => <input {...props} type="number" min="0.001" step="0.001" max={selected?.returnableQuantity ?? 1000000} {...form.register("quantity", { valueAsNumber: true })} />}</Field>
       <Field label="Reason" error={form.formState.errors.reason?.message}>{(props) => <textarea {...props} maxLength={1000} {...form.register("reason")} />}</Field>
       <p aria-live="polite">Return credit: {currency} {credit ?? "—"} · Cash to refund: {currency} {credit ? cash : "—"}</p>
       <p className="text-sm text-zinc-500">Credit includes the original discount and VAT. It reduces unpaid dues first; refund the remaining amount to the customer. Returned units go back into stock.</p>

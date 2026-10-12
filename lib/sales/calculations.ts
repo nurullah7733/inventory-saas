@@ -1,4 +1,4 @@
-import { fromCents, MAX_MONEY_CENTS, toCents } from "../numeric.ts";
+import { fromCents, MAX_MONEY_CENTS, moneyTimesQuantity, toCents, toScaledQuantity } from "../numeric.ts";
 
 const ZERO = BigInt(0);
 function roundedDivide(value: bigint, divisor: bigint) {
@@ -11,7 +11,12 @@ export function invoiceTotals(
   discount: string,
   vatPercentage: string,
 ) {
-  const subtotal = items.reduce((sum, item) => sum + toCents(item.unitPrice) * BigInt(item.quantity), ZERO);
+  // Quantities may be fractional (measured units); moneyTimesQuantity rounds
+  // each line half-up to exact cents before summing.
+  const subtotal = items.reduce(
+    (sum, item) => sum + toCents(moneyTimesQuantity(item.unitPrice, item.quantity)),
+    ZERO,
+  );
   const reduction = toCents(discount);
   if (reduction > subtotal) throw new Error("Discount cannot exceed the subtotal.");
   const vat = roundedDivide((subtotal - reduction) * toCents(vatPercentage), BigInt(10000));
@@ -40,10 +45,17 @@ export function allocateLineCredits(
   return result;
 }
 
-/** Partial returns use cumulative rounding, so splitting returns cannot gain pennies. */
+/**
+ * Partial returns use cumulative rounding, so splitting returns cannot gain
+ * pennies. Quantities may be fractional (measured units) — the proration runs
+ * in scale-1000 integer space and rounds once, half-up.
+ */
 export function returnCredit(lineCredit: bigint, sold: number, returned: number, quantity: number) {
-  return roundedDivide(lineCredit * BigInt(returned + quantity), BigInt(sold))
-    - roundedDivide(lineCredit * BigInt(returned), BigInt(sold));
+  const afterScaled = toScaledQuantity(String(returned + quantity));
+  const beforeScaled = toScaledQuantity(String(returned));
+  const soldScaled = toScaledQuantity(String(sold));
+  return roundedDivide(lineCredit * afterScaled, soldScaled)
+    - roundedDivide(lineCredit * beforeScaled, soldScaled);
 }
 
 export function settledAmounts(total: string, paid: string, credit: string) {

@@ -1,0 +1,1918 @@
+[
+  {
+    "id": "table.product_variants",
+    "label": "Create table \"product_variants\"",
+    "summary": "Creates table \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"product_variants\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"product_variants\"",
+        "sql": "CREATE TABLE \"public\".\"product_variants\" (\n  \"barcode\" text,\n  \"color_id\" uuid,\n  \"cost_price\" numeric(10,2) NOT NULL,\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"is_active\" bool DEFAULT true NOT NULL,\n  \"label\" text NOT NULL,\n  \"product_id\" uuid NOT NULL,\n  \"sell_price\" numeric(10,2) NOT NULL,\n  \"size_id\" uuid,\n  \"sku\" text NOT NULL,\n  \"stock_qty\" int4 DEFAULT 0 NOT NULL,\n  \"tenant_id\" uuid NOT NULL,\n  \"updated_at\" timestamptz NOT NULL,\n  \"weight_id\" uuid,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"product_variants\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.products.reorder_level",
+    "label": "Add column \"reorder_level\" to \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "reorder_level",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"reorder_level\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "reorder_level"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"reorder_level\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ADD COLUMN \"reorder_level\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"reorder_level\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "reorder_level"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.sale_items.variant_id",
+    "label": "Add column \"variant_id\" to \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "variant_id",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"variant_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "variant_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"variant_id\"",
+        "sql": "ALTER TABLE \"public\".\"sale_items\" ADD COLUMN \"variant_id\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"variant_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "variant_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.stock_movements.variant_id",
+    "label": "Add column \"variant_id\" to \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "variant_id",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"variant_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "variant_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"variant_id\"",
+        "sql": "ALTER TABLE \"public\".\"stock_movements\" ADD COLUMN \"variant_id\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"variant_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "variant_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.wastage.variant_id",
+    "label": "Add column \"variant_id\" to \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "variant_id",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"variant_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "variant_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"variant_id\"",
+        "sql": "ALTER TABLE \"public\".\"wastage\" ADD COLUMN \"variant_id\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"variant_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "variant_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "data.backfill_default_variants",
+    "label": "Create one \"Default\" variant per existing product, inheriting sku, prices, stock and the product-level size/color/weight",
+    "operationClass": "data",
+    "target": {
+      "id": "data.backfill_default_variants",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "product_variants"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Insert a Default ProductVariant row for every product",
+        "sql": "INSERT INTO \"public\".\"product_variants\" (\"id\", \"tenant_id\", \"product_id\", \"sku\", \"barcode\", \"label\", \"size_id\", \"color_id\", \"weight_id\", \"cost_price\", \"sell_price\", \"stock_qty\", \"is_active\", \"created_at\", \"updated_at\")\nSELECT gen_random_uuid(), \"tenant_id\", \"id\", \"sku\", NULL, 'Default', \"size_id\", \"color_id\", \"weight_id\", \"cost_price\", \"sell_price\", \"stock_qty\", true, \"created_at\", now()\nFROM \"public\".\"products\""
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "data.backfill_stock_movements_variant_id",
+    "label": "Re-point stock_movements.variant_id at the product Default variant",
+    "operationClass": "data",
+    "target": {
+      "id": "data.backfill_stock_movements_variant_id",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "stock_movements"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Set variant_id from the product Default variant",
+        "sql": "UPDATE \"public\".\"stock_movements\" AS \"sm\"\nSET \"variant_id\" = \"pv\".\"id\"\nFROM \"public\".\"product_variants\" AS \"pv\"\nWHERE \"pv\".\"product_id\" = \"sm\".\"product_id\" AND \"pv\".\"label\" = 'Default'"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "data.backfill_sale_items_variant_id",
+    "label": "Re-point sale_items.variant_id at the product Default variant",
+    "operationClass": "data",
+    "target": {
+      "id": "data.backfill_sale_items_variant_id",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "sale_items"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Set variant_id from the product Default variant",
+        "sql": "UPDATE \"public\".\"sale_items\" AS \"si\"\nSET \"variant_id\" = \"pv\".\"id\"\nFROM \"public\".\"product_variants\" AS \"pv\"\nWHERE \"pv\".\"product_id\" = \"si\".\"product_id\" AND \"pv\".\"label\" = 'Default'"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "data.backfill_wastage_variant_id",
+    "label": "Re-point wastage.variant_id at the product Default variant",
+    "operationClass": "data",
+    "target": {
+      "id": "data.backfill_wastage_variant_id",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "wastage"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Set variant_id from the product Default variant",
+        "sql": "UPDATE \"public\".\"wastage\" AS \"w\"\nSET \"variant_id\" = \"pv\".\"id\"\nFROM \"public\".\"product_variants\" AS \"pv\"\nWHERE \"pv\".\"product_id\" = \"w\".\"product_id\" AND \"pv\".\"label\" = 'Default'"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "alterNullability.setNotNull.sale_items.variant_id",
+    "label": "Set NOT NULL on \"sale_items\".\"variant_id\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "variant_id",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"variant_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "variant_id"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"variant_id\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"sale_items\" WHERE \"variant_id\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"variant_id\"",
+        "sql": "ALTER TABLE \"public\".\"sale_items\" ALTER COLUMN \"variant_id\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"variant_id\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "sale_items",
+          "variant_id",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.stock_movements.variant_id",
+    "label": "Set NOT NULL on \"stock_movements\".\"variant_id\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "variant_id",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"variant_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "variant_id"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"variant_id\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"stock_movements\" WHERE \"variant_id\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"variant_id\"",
+        "sql": "ALTER TABLE \"public\".\"stock_movements\" ALTER COLUMN \"variant_id\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"variant_id\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "stock_movements",
+          "variant_id",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alterNullability.setNotNull.wastage.variant_id",
+    "label": "Set NOT NULL on \"wastage\".\"variant_id\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "variant_id",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"variant_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "variant_id"
+        ]
+      },
+      {
+        "description": "ensure no NULL values in \"variant_id\"",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"public\".\"wastage\" WHERE \"variant_id\" IS NULL) AS \"result\"",
+        "params": []
+      }
+    ],
+    "execute": [
+      {
+        "description": "set NOT NULL on \"variant_id\"",
+        "sql": "ALTER TABLE \"public\".\"wastage\" ALTER COLUMN \"variant_id\" SET NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"variant_id\" is NOT NULL",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3 AND \"is_nullable\" = $4)) AS \"result\"",
+        "params": [
+          "public",
+          "wastage",
+          "variant_id",
+          "NO"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.products.products_color_id_fkey",
+    "label": "Drop constraint \"products_color_id_fkey\" on \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "products_color_id_fkey",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"products_color_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_color_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"products_color_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP CONSTRAINT \"products_color_id_fkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"products_color_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_color_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.products.products_size_id_fkey",
+    "label": "Drop constraint \"products_size_id_fkey\" on \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "products_size_id_fkey",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"products_size_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_size_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"products_size_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP CONSTRAINT \"products_size_id_fkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"products_size_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_size_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropConstraint.products.products_weight_id_fkey",
+    "label": "Drop constraint \"products_weight_id_fkey\" on \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "products_weight_id_fkey",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"products_weight_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_weight_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"products_weight_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP CONSTRAINT \"products_weight_id_fkey\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"products_weight_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_weight_id_fkey",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropIndex.products.products_color_id_idx_34d8d0d9",
+    "label": "Drop index \"products_color_id_idx_34d8d0d9\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "products_color_id_idx_34d8d0d9",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"products_color_id_idx_34d8d0d9\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_color_id_idx_34d8d0d9\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"products_color_id_idx_34d8d0d9\"",
+        "sql": "DROP INDEX \"public\".\"products_color_id_idx_34d8d0d9\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"products_color_id_idx_34d8d0d9\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_color_id_idx_34d8d0d9\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.products.color_id",
+    "label": "Drop column \"color_id\" from \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "color_id",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"color_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "color_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"color_id\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP COLUMN \"color_id\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"color_id\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "color_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropIndex.products.products_size_id_idx_6a72a89a",
+    "label": "Drop index \"products_size_id_idx_6a72a89a\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "products_size_id_idx_6a72a89a",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"products_size_id_idx_6a72a89a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_size_id_idx_6a72a89a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"products_size_id_idx_6a72a89a\"",
+        "sql": "DROP INDEX \"public\".\"products_size_id_idx_6a72a89a\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"products_size_id_idx_6a72a89a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_size_id_idx_6a72a89a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.products.size_id",
+    "label": "Drop column \"size_id\" from \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "size_id",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"size_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "size_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"size_id\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP COLUMN \"size_id\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"size_id\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "size_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropIndex.products.products_weight_id_idx_7c4ea817",
+    "label": "Drop index \"products_weight_id_idx_7c4ea817\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "products_weight_id_idx_7c4ea817",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"products_weight_id_idx_7c4ea817\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_weight_id_idx_7c4ea817\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"products_weight_id_idx_7c4ea817\"",
+        "sql": "DROP INDEX \"public\".\"products_weight_id_idx_7c4ea817\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"products_weight_id_idx_7c4ea817\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"products_weight_id_idx_7c4ea817\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.products.weight_id",
+    "label": "Drop column \"weight_id\" from \"products\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "weight_id",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"weight_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "weight_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"weight_id\"",
+        "sql": "ALTER TABLE \"public\".\"products\" DROP COLUMN \"weight_id\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"weight_id\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "weight_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.product_variants.product_variants_tenant_id_sku_key",
+    "label": "Add unique constraint on \"product_variants\" (tenant_id, sku)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "product_variants_tenant_id_sku_key",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"product_variants_tenant_id_sku_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_tenant_id_sku_key",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"product_variants_tenant_id_sku_key\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" ADD CONSTRAINT \"product_variants_tenant_id_sku_key\" UNIQUE (\"tenant_id\", \"sku\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"product_variants_tenant_id_sku_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_tenant_id_sku_key",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.product_variants.product_variants_tenant_id_barcode_key",
+    "label": "Add unique constraint on \"product_variants\" (tenant_id, barcode)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "product_variants_tenant_id_barcode_key",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"product_variants_tenant_id_barcode_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_tenant_id_barcode_key",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"product_variants_tenant_id_barcode_key\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" ADD CONSTRAINT \"product_variants_tenant_id_barcode_key\" UNIQUE (\"tenant_id\", \"barcode\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"product_variants_tenant_id_barcode_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_tenant_id_barcode_key",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.product_variants.product_variants_product_id_label_key",
+    "label": "Add unique constraint on \"product_variants\" (product_id, label)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "product_variants_product_id_label_key",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"product_variants_product_id_label_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_product_id_label_key",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"product_variants_product_id_label_key\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" ADD CONSTRAINT \"product_variants_product_id_label_key\" UNIQUE (\"product_id\", \"label\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"product_variants_product_id_label_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_product_id_label_key",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_color_id_idx_34d8d0d9",
+    "label": "Create index \"product_variants_color_id_idx_34d8d0d9\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_color_id_idx_34d8d0d9",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_color_id_idx_34d8d0d9\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_color_id_idx_34d8d0d9\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_color_id_idx_34d8d0d9\"",
+        "sql": "CREATE INDEX \"product_variants_color_id_idx_34d8d0d9\" ON \"public\".\"product_variants\" (\"color_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_color_id_idx_34d8d0d9\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_color_id_idx_34d8d0d9\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_product_id_idx_22a2b7d2",
+    "label": "Create index \"product_variants_product_id_idx_22a2b7d2\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_product_id_idx_22a2b7d2",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_product_id_idx_22a2b7d2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_product_id_idx_22a2b7d2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_product_id_idx_22a2b7d2\"",
+        "sql": "CREATE INDEX \"product_variants_product_id_idx_22a2b7d2\" ON \"public\".\"product_variants\" (\"product_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_product_id_idx_22a2b7d2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_product_id_idx_22a2b7d2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_size_id_idx_6a72a89a",
+    "label": "Create index \"product_variants_size_id_idx_6a72a89a\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_size_id_idx_6a72a89a",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_size_id_idx_6a72a89a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_size_id_idx_6a72a89a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_size_id_idx_6a72a89a\"",
+        "sql": "CREATE INDEX \"product_variants_size_id_idx_6a72a89a\" ON \"public\".\"product_variants\" (\"size_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_size_id_idx_6a72a89a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_size_id_idx_6a72a89a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_tenant_id_id_idx_621bc114",
+    "label": "Create index \"product_variants_tenant_id_id_idx_621bc114\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_tenant_id_id_idx_621bc114",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_tenant_id_id_idx_621bc114\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_id_idx_621bc114\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_tenant_id_id_idx_621bc114\"",
+        "sql": "CREATE INDEX \"product_variants_tenant_id_id_idx_621bc114\" ON \"public\".\"product_variants\" (\"tenant_id\", \"id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_tenant_id_id_idx_621bc114\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_id_idx_621bc114\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_tenant_id_idx_41c0d441",
+    "label": "Create index \"product_variants_tenant_id_idx_41c0d441\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_tenant_id_idx_41c0d441",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"product_variants_tenant_id_idx_41c0d441\" ON \"public\".\"product_variants\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_tenant_id_is_active_idx_930fdf5b",
+    "label": "Create index \"product_variants_tenant_id_is_active_idx_930fdf5b\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_tenant_id_is_active_idx_930fdf5b",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_tenant_id_is_active_idx_930fdf5b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_is_active_idx_930fdf5b\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_tenant_id_is_active_idx_930fdf5b\"",
+        "sql": "CREATE INDEX \"product_variants_tenant_id_is_active_idx_930fdf5b\" ON \"public\".\"product_variants\" (\"tenant_id\", \"is_active\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_tenant_id_is_active_idx_930fdf5b\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_is_active_idx_930fdf5b\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_tenant_id_product_id_idx_724dd954",
+    "label": "Create index \"product_variants_tenant_id_product_id_idx_724dd954\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_tenant_id_product_id_idx_724dd954",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_tenant_id_product_id_idx_724dd954\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_product_id_idx_724dd954\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_tenant_id_product_id_idx_724dd954\"",
+        "sql": "CREATE INDEX \"product_variants_tenant_id_product_id_idx_724dd954\" ON \"public\".\"product_variants\" (\"tenant_id\", \"product_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_tenant_id_product_id_idx_724dd954\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_tenant_id_product_id_idx_724dd954\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product_variants.product_variants_weight_id_idx_7c4ea817",
+    "label": "Create index \"product_variants_weight_id_idx_7c4ea817\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_variants_weight_id_idx_7c4ea817",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_variants_weight_id_idx_7c4ea817\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_weight_id_idx_7c4ea817\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_variants_weight_id_idx_7c4ea817\"",
+        "sql": "CREATE INDEX \"product_variants_weight_id_idx_7c4ea817\" ON \"public\".\"product_variants\" (\"weight_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_variants_weight_id_idx_7c4ea817\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_variants_weight_id_idx_7c4ea817\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sale_items.sale_items_tenant_id_variant_id_idx_cef0b336",
+    "label": "Create index \"sale_items_tenant_id_variant_id_idx_cef0b336\" on \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sale_items_tenant_id_variant_id_idx_cef0b336",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sale_items_tenant_id_variant_id_idx_cef0b336\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sale_items_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sale_items_tenant_id_variant_id_idx_cef0b336\"",
+        "sql": "CREATE INDEX \"sale_items_tenant_id_variant_id_idx_cef0b336\" ON \"public\".\"sale_items\" (\"tenant_id\", \"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sale_items_tenant_id_variant_id_idx_cef0b336\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sale_items_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sale_items.sale_items_variant_id_idx_4a7fac73",
+    "label": "Create index \"sale_items_variant_id_idx_4a7fac73\" on \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sale_items_variant_id_idx_4a7fac73",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sale_items_variant_id_idx_4a7fac73\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sale_items_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sale_items_variant_id_idx_4a7fac73\"",
+        "sql": "CREATE INDEX \"sale_items_variant_id_idx_4a7fac73\" ON \"public\".\"sale_items\" (\"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sale_items_variant_id_idx_4a7fac73\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sale_items_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.stock_movements.stock_movements_tenant_id_variant_id_idx_cef0b336",
+    "label": "Create index \"stock_movements_tenant_id_variant_id_idx_cef0b336\" on \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "stock_movements_tenant_id_variant_id_idx_cef0b336",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"stock_movements_tenant_id_variant_id_idx_cef0b336\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"stock_movements_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"stock_movements_tenant_id_variant_id_idx_cef0b336\"",
+        "sql": "CREATE INDEX \"stock_movements_tenant_id_variant_id_idx_cef0b336\" ON \"public\".\"stock_movements\" (\"tenant_id\", \"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"stock_movements_tenant_id_variant_id_idx_cef0b336\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"stock_movements_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.stock_movements.stock_movements_variant_id_idx_4a7fac73",
+    "label": "Create index \"stock_movements_variant_id_idx_4a7fac73\" on \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "stock_movements_variant_id_idx_4a7fac73",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"stock_movements_variant_id_idx_4a7fac73\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"stock_movements_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"stock_movements_variant_id_idx_4a7fac73\"",
+        "sql": "CREATE INDEX \"stock_movements_variant_id_idx_4a7fac73\" ON \"public\".\"stock_movements\" (\"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"stock_movements_variant_id_idx_4a7fac73\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"stock_movements_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.wastage.wastage_tenant_id_variant_id_idx_cef0b336",
+    "label": "Create index \"wastage_tenant_id_variant_id_idx_cef0b336\" on \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "wastage_tenant_id_variant_id_idx_cef0b336",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"wastage_tenant_id_variant_id_idx_cef0b336\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"wastage_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"wastage_tenant_id_variant_id_idx_cef0b336\"",
+        "sql": "CREATE INDEX \"wastage_tenant_id_variant_id_idx_cef0b336\" ON \"public\".\"wastage\" (\"tenant_id\", \"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"wastage_tenant_id_variant_id_idx_cef0b336\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"wastage_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.wastage.wastage_variant_id_idx_4a7fac73",
+    "label": "Create index \"wastage_variant_id_idx_4a7fac73\" on \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "wastage_variant_id_idx_4a7fac73",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"wastage_variant_id_idx_4a7fac73\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"wastage_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"wastage_variant_id_idx_4a7fac73\"",
+        "sql": "CREATE INDEX \"wastage_variant_id_idx_4a7fac73\" ON \"public\".\"wastage\" (\"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"wastage_variant_id_idx_4a7fac73\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"wastage_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.product_variants.product_variants_tenant_id_fkey",
+    "label": "Add foreign key \"product_variants_tenant_id_fkey\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "product_variants_tenant_id_fkey",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"product_variants_tenant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_tenant_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"product_variants_tenant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\"\nADD CONSTRAINT \"product_variants_tenant_id_fkey\"\nFOREIGN KEY (\"tenant_id\")\nREFERENCES \"public\".\"tenants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"product_variants_tenant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_tenant_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.product_variants.product_variants_product_id_fkey",
+    "label": "Add foreign key \"product_variants_product_id_fkey\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "product_variants_product_id_fkey",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"product_variants_product_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_product_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"product_variants_product_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\"\nADD CONSTRAINT \"product_variants_product_id_fkey\"\nFOREIGN KEY (\"product_id\")\nREFERENCES \"public\".\"products\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"product_variants_product_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_product_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.product_variants.product_variants_size_id_fkey",
+    "label": "Add foreign key \"product_variants_size_id_fkey\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "product_variants_size_id_fkey",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"product_variants_size_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_size_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"product_variants_size_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\"\nADD CONSTRAINT \"product_variants_size_id_fkey\"\nFOREIGN KEY (\"size_id\")\nREFERENCES \"public\".\"variant_sizes\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"product_variants_size_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_size_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.product_variants.product_variants_color_id_fkey",
+    "label": "Add foreign key \"product_variants_color_id_fkey\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "product_variants_color_id_fkey",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"product_variants_color_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_color_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"product_variants_color_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\"\nADD CONSTRAINT \"product_variants_color_id_fkey\"\nFOREIGN KEY (\"color_id\")\nREFERENCES \"public\".\"variant_colors\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"product_variants_color_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_color_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.product_variants.product_variants_weight_id_fkey",
+    "label": "Add foreign key \"product_variants_weight_id_fkey\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "product_variants_weight_id_fkey",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"product_variants_weight_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_weight_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"product_variants_weight_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\"\nADD CONSTRAINT \"product_variants_weight_id_fkey\"\nFOREIGN KEY (\"weight_id\")\nREFERENCES \"public\".\"variant_weights\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"product_variants_weight_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_variants_weight_id_fkey",
+          "public",
+          "\"public\".\"product_variants\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.sale_items.sale_items_variant_id_fkey",
+    "label": "Add foreign key \"sale_items_variant_id_fkey\" on \"sale_items\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "sale_items_variant_id_fkey",
+        "table": "sale_items"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"sale_items_variant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sale_items_variant_id_fkey",
+          "public",
+          "\"public\".\"sale_items\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"sale_items_variant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"sale_items\"\nADD CONSTRAINT \"sale_items_variant_id_fkey\"\nFOREIGN KEY (\"variant_id\")\nREFERENCES \"public\".\"product_variants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"sale_items_variant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sale_items_variant_id_fkey",
+          "public",
+          "\"public\".\"sale_items\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.stock_movements.stock_movements_variant_id_fkey",
+    "label": "Add foreign key \"stock_movements_variant_id_fkey\" on \"stock_movements\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "stock_movements_variant_id_fkey",
+        "table": "stock_movements"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"stock_movements_variant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "stock_movements_variant_id_fkey",
+          "public",
+          "\"public\".\"stock_movements\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"stock_movements_variant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"stock_movements\"\nADD CONSTRAINT \"stock_movements_variant_id_fkey\"\nFOREIGN KEY (\"variant_id\")\nREFERENCES \"public\".\"product_variants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"stock_movements_variant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "stock_movements_variant_id_fkey",
+          "public",
+          "\"public\".\"stock_movements\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.wastage.wastage_variant_id_fkey",
+    "label": "Add foreign key \"wastage_variant_id_fkey\" on \"wastage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "wastage_variant_id_fkey",
+        "table": "wastage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"wastage_variant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "wastage_variant_id_fkey",
+          "public",
+          "\"public\".\"wastage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"wastage_variant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"wastage\"\nADD CONSTRAINT \"wastage_variant_id_fkey\"\nFOREIGN KEY (\"variant_id\")\nREFERENCES \"public\".\"product_variants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"wastage_variant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "wastage_variant_id_fkey",
+          "public",
+          "\"public\".\"wastage\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.product_variants",
+    "label": "Enable row-level security on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"product_variants\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"product_variants\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"product_variants\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.force.public.product_variants",
+    "label": "Force row-level security on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "rowLevelSecurity.force.public.product_variants",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "product_variants",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "force row-level security on \"product_variants\"",
+        "sql": "ALTER TABLE \"public\".\"product_variants\" FORCE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "rlsPolicy.public.product_variants.tenant_isolation_product_variants_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_product_variants_ffe271ab\" on \"product_variants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_product_variants_ffe271ab",
+        "table": "product_variants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_product_variants_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants",
+          "tenant_isolation_product_variants_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_product_variants_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_product_variants_ffe271ab\" ON \"public\".\"product_variants\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_product_variants_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "product_variants",
+          "tenant_isolation_product_variants_ffe271ab"
+        ]
+      }
+    ]
+  }
+]

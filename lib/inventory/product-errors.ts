@@ -8,6 +8,21 @@ export function skuTaken(sku: string, holder: { name: string; isDeleted: boolean
   });
 }
 
+/** Variant rows carry their own field-level conflict errors. */
+export function variantSkuTaken(sku: string, holderLabel?: string) {
+  const where = holderLabel ? ` (variant "${holderLabel}")` : "";
+  return apiError("CONFLICT", `SKU ${sku} is already in use${where}.`, 409, {
+    sku: [`SKU ${sku} already exists.`],
+  });
+}
+
+export function variantBarcodeTaken(barcode: string, holderLabel?: string) {
+  const where = holderLabel ? ` (variant "${holderLabel}")` : "";
+  return apiError("CONFLICT", `Barcode ${barcode} is already in use${where}.`, 409, {
+    barcode: [`Barcode ${barcode} already exists.`],
+  });
+}
+
 export function planLimitReached(max: number) {
   return apiError(
     "PLAN_LIMIT_REACHED",

@@ -2,8 +2,9 @@ import { randomUUID } from "node:crypto";
 import { ApiProblem } from "../api/response.ts";
 import { recordAudit } from "../audit/log.ts";
 import { rawSql, rlsDb } from "../db/rls.ts";
-import { applyStockDelta } from "../inventory/stock-queries.ts";
-import { fromCents, numeric, toCents } from "../numeric.ts";
+import { applyStockDelta, resolveVariant } from "../inventory/stock-queries.ts";
+import { quantityErrorForUnit } from "../inventory/fields.ts";
+import { fromCents, moneyTimesQuantity, numeric, toCents } from "../numeric.ts";
 import type { TenantScope } from "../tenant/scope.ts";
 import { invoiceTotals, returnCredit } from "./calculations.ts";
 import { getInvoice, getReturn } from "./queries.ts";
@@ -49,21 +50,30 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
   }
   if (toCents(input.paidAmount) > BigInt(0) && !input.paymentMethod) invalid("Choose a payment method.");
 
-  // Deterministic lock order prevents two multi-product tills deadlocking.
+  // Deterministic lock order prevents two multi-product tills deadlocking:
+  // variants are locked in variant-id order, whatever product they belong to.
   const lines = [];
-  for (const item of [...input.items].sort((a, b) => a.productId.localeCompare(b.productId))) {
-    const rows = await rlsDb().query(rawSql`SELECT id FROM public.products
-      WHERE tenant_id = ${scope.tenantId}::uuid AND id = ${item.productId}::uuid AND is_deleted = false FOR UPDATE`
+  for (const item of [...input.items].sort((a, b) => (a.variantId ?? "").localeCompare(b.variantId ?? ""))) {
+    const resolution = await resolveVariant(scope, item.productId, item.variantId);
+    if (!resolution.ok) invalid(resolution.message);
+    const variant = resolution.variant;
+    const locked = await rlsDb().query(rawSql`SELECT id FROM public.product_variants
+      WHERE tenant_id = ${scope.tenantId}::uuid AND id = ${variant.id}::uuid AND is_active = true FOR UPDATE`
       .returnsRow({ id: "pg/uuid@1" }).build());
-    if (!rows.length) invalid("A cart product is unavailable. Remove it and choose an active product.");
-    const product = await scope.Product.where({ id: item.productId }).select("name", "costPrice").first();
-    if (!product) invalid("Product not found.");
+    if (!locked.length) invalid("A cart item is unavailable. Remove it and choose an active product.");
+    const product = await scope.Product.where({ id: item.productId })
+      .select("name", "isDeleted")
+      .include("unit", (u) => u.select("name", "measured"))
+      .first();
+    if (!product || product.isDeleted) invalid("A cart product is unavailable. Remove it and choose an active product.");
+    const unitError = quantityErrorForUnit(product.unit, item.quantity);
+    if (unitError) invalid(unitError);
     if (input.status === "completed") {
-      if (await applyStockDelta(scope, item.productId, -item.quantity) === null) {
-        throw new ApiProblem("INSUFFICIENT_STOCK", `Not enough stock for ${product.name}. Adjust the cart and try again.`, 409);
+      if (await applyStockDelta(scope, { productId: item.productId, variantId: variant.id }, -item.quantity) === null) {
+        throw new ApiProblem("INSUFFICIENT_STOCK", `Not enough stock for ${product.name} (${variant.label}). Adjust the cart and try again.`, 409);
       }
     }
-    lines.push({ ...item, unitCost: String(product.costPrice), subtotal: fromCents(toCents(item.unitPrice) * BigInt(item.quantity)) });
+    lines.push({ ...item, variantId: variant.id, unitCost: variant.costPrice, subtotal: moneyTimesQuantity(item.unitPrice, item.quantity) });
   }
   const values = {
     customerId: input.customerId, status: input.status, subtotal: numeric<10, 2>(totals.subtotal),
@@ -78,11 +88,11 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
     await scope.Sale.create(scope.own({ ...values, id, invoiceNo: `INV-${id.toUpperCase()}` }));
   }
   for (const item of lines) {
-    await scope.SaleItem.create(scope.own({ saleId: id, productId: item.productId, quantity: item.quantity,
+    await scope.SaleItem.create(scope.own({ saleId: id, productId: item.productId, variantId: item.variantId, quantity: numeric<12, 3>(item.quantity),
       unitPrice: numeric<10, 2>(item.unitPrice), unitCost: numeric<10, 2>(item.unitCost), subtotal: numeric<10, 2>(item.subtotal) }));
     if (input.status === "completed") {
-      await scope.StockMovement.create(scope.own({ productId: item.productId, supplierId: null, type: "out",
-        quantity: -item.quantity, unitCost: numeric<10, 2>(item.unitCost), note: `Invoice ${id}`, createdBy: userId }));
+      await scope.StockMovement.create(scope.own({ productId: item.productId, variantId: item.variantId, supplierId: null, type: "out",
+        quantity: numeric<12, 3>(-item.quantity), unitCost: numeric<10, 2>(item.unitCost), note: `Invoice ${id}`, createdBy: userId }));
     }
   }
   await recordAudit({ tenantId: scope.tenantId, userId, action: input.status === "completed" ? "sale.complete" : existingId ? "sale.update" : "sale.create",
@@ -107,18 +117,30 @@ export async function createReturn(scope: TenantScope, userId: string, input: Re
   if (!line || input.quantity > line.returnableQuantity) {
     throw new ApiProblem("CONFLICT", `At most ${line?.returnableQuantity ?? 0} items can be returned.`, 409);
   }
+  // Decimals only for measured units, like every other stock write.
+  const returnUnit = await scope.Product
+    .where({ id: line.productId })
+    .select("id")
+    .include("unit", (u) => u.select("name", "measured"))
+    .first();
+  const returnUnitError = quantityErrorForUnit(returnUnit?.unit ?? null, input.quantity, "Return quantity");
+  if (returnUnitError) invalid(returnUnitError);
   const refundAmount = fromCents(returnCredit(toCents(line.lineCredit), line.quantity, line.returnedQuantity, input.quantity));
-  // Historical products may be archived; a physical return still restores stock.
-  const stock = await rlsDb().query(rawSql`UPDATE public.products
-    SET stock_qty = stock_qty + ${input.quantity}::int, updated_at = now()
-    WHERE tenant_id = ${scope.tenantId}::uuid AND id = ${line.productId}::uuid
-      AND stock_qty <= 2147483647 - ${input.quantity}::int
+  // Historical variants may be inactive; a physical return still restores stock.
+  const stock = await rlsDb().query(rawSql`UPDATE public.product_variants
+    SET stock_qty = stock_qty + ${input.quantity}::numeric, updated_at = now()
+    WHERE tenant_id = ${scope.tenantId}::uuid AND id = ${line.variantId}::uuid
+      AND stock_qty + ${input.quantity}::numeric <= 999999999.999
     RETURNING id`.returnsRow({ id: "pg/uuid@1" }).build());
   if (!stock.length) throw new ApiProblem("CONFLICT", "Stock cannot accept this return quantity.", 409);
-  await scope.SaleReturn.create(scope.own({ id, saleItemId: line.id, quantity: input.quantity,
+  await rlsDb().execute(rawSql`UPDATE public.products
+    SET stock_qty = stock_qty + ${input.quantity}::numeric, updated_at = now()
+    WHERE tenant_id = ${scope.tenantId}::uuid AND id = ${line.productId}::uuid`
+    .affectedCount().build());
+  await scope.SaleReturn.create(scope.own({ id, saleItemId: line.id, quantity: numeric<12, 3>(input.quantity),
     reason: input.reason, refundAmount: numeric<10, 2>(refundAmount), createdBy: userId }));
-  await scope.StockMovement.create(scope.own({ productId: line.productId, supplierId: null, type: "return",
-    quantity: input.quantity, unitCost: numeric<10, 2>(line.unitCost), note: `Return ${id}; invoice ${invoice.invoiceNo}`, createdBy: userId }));
+  await scope.StockMovement.create(scope.own({ productId: line.productId, variantId: line.variantId, supplierId: null, type: "return",
+    quantity: numeric<12, 3>(input.quantity), unitCost: numeric<10, 2>(line.unitCost), note: `Return ${id}; invoice ${invoice.invoiceNo}`, createdBy: userId }));
   await recordAudit({ tenantId: scope.tenantId, userId, action: "return.create", entityType: "return", entityId: id,
     metadata: { saleId: invoice.id, saleItemId: line.id, quantity: input.quantity, refundAmount } });
   const entry = await getReturn(scope, id);

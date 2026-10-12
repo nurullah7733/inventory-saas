@@ -16,13 +16,13 @@ import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
 import { errorMessage, formatDateTime, formatMoney } from "@/lib/client/format.ts";
 import { isCalendarDate, localToday } from "@/lib/dates.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
-import { money, optionalRef, optionalText, quantity } from "@/lib/inventory/fields.ts";
+import { decimalQuantity, money, optionalRef, optionalText } from "@/lib/inventory/fields.ts";
 import type {
   StockMovementListResponse,
   StockMovementResponse,
 } from "@/lib/inventory/stock.ts";
 import type { SupplierResponse } from "@/lib/inventory/suppliers.ts";
-import { fromCents, MONEY_PATTERN, toCents } from "@/lib/numeric.ts";
+import { moneyTimesQuantity, MONEY_PATTERN } from "@/lib/numeric.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 import {
   EmptyState,
@@ -33,7 +33,7 @@ import {
   PrimaryAction,
 } from "@/components/ui/list-controls.tsx";
 import { Sheet } from "@/components/ui/sheet.tsx";
-import { ProductPicker, type PickedProduct } from "./product-picker.tsx";
+import { ProductPicker, useProductVariants, type PickedProduct } from "./product-picker.tsx";
 import { SUPPLIERS_QUERY_KEY } from "./suppliers-manager.tsx";
 
 /**
@@ -131,7 +131,7 @@ function MovementRow({
 }) {
   const total =
     movement.unitCost && MONEY_PATTERN.test(movement.unitCost)
-      ? fromCents(toCents(movement.unitCost) * BigInt(Math.abs(movement.quantity)))
+      ? moneyTimesQuantity(movement.unitCost, Math.abs(movement.quantity))
       : null;
 
   return (
@@ -142,6 +142,7 @@ function MovementRow({
         </p>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {movement.product?.sku}
+          {movement.variant && movement.variant.name !== "Default" ? ` · ${movement.variant.name}` : ""}
           {movement.supplier ? ` · from ${movement.supplier.name}` : ""}
         </p>
         {movement.note ? (
@@ -167,7 +168,7 @@ function MovementRow({
   );
 }
 
-function useSuppliers() {
+export function useSuppliers() {
   return useQuery({
     queryKey: SUPPLIERS_QUERY_KEY,
     queryFn: () => apiRequest<{ suppliers: SupplierResponse[] }>("/suppliers?status=all"),
@@ -177,7 +178,7 @@ function useSuppliers() {
 
 const stockFormSchema = z.object({
   supplierId: optionalRef("supplier"),
-  quantity: quantity("Quantity"),
+  quantity: decimalQuantity("Quantity", { min: 1 }),
   unitCost: money("Unit cost"),
   date: z
     .string()
@@ -198,7 +199,7 @@ interface StockForm {
 
 interface StockInResult {
   movement: StockMovementResponse;
-  product: { id: string; stockQty: number };
+  product: { id: string; variantId: string; stockQty: number };
 }
 
 const STOCK_IN_MUTATION = ["inventory", "stock-in"] as const;
@@ -247,6 +248,12 @@ function AddStockForm({
 
   const [product, setProduct] = useState<PickedProduct | null>(initialProduct);
   const [productError, setProductError] = useState<string | undefined>();
+  const [variantId, setVariantId] = useState<string | null>(null);
+  const [variantError, setVariantError] = useState<string | undefined>();
+
+  const variants = useProductVariants(product?.id ?? null);
+  const activeVariants = variants.data ?? [];
+  const needsVariant = activeVariants.length > 1;
 
   const form = useForm<StockForm>({
     resolver: zodResolver<StockForm>(stockFormSchema),
@@ -271,6 +278,7 @@ function AddStockForm({
     onError: (error) => {
       if (error instanceof ApiClientError && error.details) {
         if (error.details.productId) setProductError(error.details.productId[0]);
+        if (error.details.variantId) setVariantError(error.details.variantId[0]);
         for (const field of ["supplierId", "quantity", "unitCost", "note"] as const) {
           const message = error.details[field]?.[0];
           if (message) form.setError(field, { type: "server", message });
@@ -287,6 +295,10 @@ function AddStockForm({
       setProductError("Choose a product.");
       return;
     }
+    if (needsVariant && variantId === null) {
+      setVariantError("This product has several sizes or colors — choose one.");
+      return;
+    }
     // Today → let the server stamp the exact time. An earlier day → noon
     // local time on that day, so no timezone shift can move it across midnight.
     const receivedAt =
@@ -294,6 +306,7 @@ function AddStockForm({
 
     const body = {
       productId: product.id,
+      variantId,
       supplierId: values.supplierId || null,
       quantity: values.quantity,
       unitCost: values.unitCost,
@@ -304,7 +317,7 @@ function AddStockForm({
     toast.promise(save.mutateAsync(body), {
       loading: "Adding stock…",
       success: (result: StockInResult) =>
-        `Added ${result.movement.quantity} × ${product.name}. Now ${result.product.stockQty} in stock.`,
+        `Added ${result.movement.quantity} × ${product.name}. That variant now has ${result.product.stockQty} in stock.`,
       error: (error: unknown) => errorMessage(error, "Could not add stock."),
     });
   });
@@ -320,12 +333,41 @@ function AddStockForm({
         onChange={(picked) => {
           setProduct(picked);
           setProductError(undefined);
+          setVariantId(null);
+          setVariantError(undefined);
           // Suggest the product's current cost unless the user typed one.
           if (picked && !form.getFieldState("unitCost").isDirty) {
             form.setValue("unitCost", picked.costPrice);
           }
         }}
       />
+
+      {product && needsVariant ? (
+        <Field
+          label="Variant"
+          error={variantError}
+          hint="Which size or color received the goods."
+          required
+        >
+          {(props) => (
+            <select
+              {...props}
+              value={variantId ?? ""}
+              onChange={(event) => {
+                setVariantId(event.target.value || null);
+                setVariantError(undefined);
+              }}
+            >
+              <option value="">Choose a variant…</option>
+              {activeVariants.map((variant) => (
+                <option key={variant.id} value={variant.id}>
+                  {variant.label} · {variant.stockQty} in stock
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
+      ) : null}
 
       <Field label="Supplier" error={errors.supplierId?.message} hint="Optional.">
         {(props) => (
@@ -343,7 +385,7 @@ function AddStockForm({
       <div className="grid grid-cols-2 gap-item">
         <Field label="Quantity" error={errors.quantity?.message} required>
           {(props) => (
-            <input {...props} type="text" inputMode="numeric" autoComplete="off" placeholder="0" {...form.register("quantity")} />
+            <input {...props} type="text" inputMode="decimal" autoComplete="off" placeholder="0" {...form.register("quantity")} />
           )}
         </Field>
         <Field label="Unit cost" error={errors.unitCost?.message} required>

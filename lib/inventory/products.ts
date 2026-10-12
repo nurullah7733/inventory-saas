@@ -1,9 +1,12 @@
 import { z } from "zod";
 import {
+  decimalQuantity,
   imageUrl,
   money,
   optionalDate,
   optionalRef,
+  optionalText,
+  requiredRef,
 } from "./fields.ts";
 
 const productName = z
@@ -60,9 +63,6 @@ const productFields = {
   sku,
   categoryId: optionalRef("category"),
   unitId: optionalRef("unit"),
-  colorId: optionalRef("color"),
-  sizeId: optionalRef("size"),
-  weightId: optionalRef("weight"),
   expiryDate: optionalDate("Expiry date"),
   brandId: optionalRef("brand"),
   costPrice: money("Cost price"),
@@ -76,9 +76,6 @@ export const productSchema = z.strictObject({
   sku: productFields.sku.optional().default(""),
   categoryId: productFields.categoryId.optional().default(null),
   unitId: productFields.unitId.optional().default(null),
-  colorId: productFields.colorId.optional().default(null),
-  sizeId: productFields.sizeId.optional().default(null),
-  weightId: productFields.weightId.optional().default(null),
   expiryDate: productFields.expiryDate.optional().default(null),
   brandId: productFields.brandId.optional().default(null),
   costPrice: productFields.costPrice,
@@ -109,15 +106,190 @@ export const productPatchSchema = z
 
 export type ProductPatch = z.output<typeof productPatchSchema>;
 
+// --- Create with variants ---------------------------------------------------
+
+export const MAX_VARIANT_ROWS = 100;
+
+/**
+ * One row of the "Variants to be created" table. `hasVariants` is false for a
+ * plain product: the client then sends a single bare row `{ quantity }` and
+ * the server builds the Default variant itself. With variants on, every row
+ * names its option combination, and blank `sku` means "generate from the
+ * product SKU" ("LH-37-RED").
+ */
+export const variantRowSchema = z.strictObject({
+  label: z.string().trim().max(80, "Variant label must be at most 80 characters.").optional().default(""),
+  sizeId: optionalRef("size").optional().default(null),
+  colorId: optionalRef("color").optional().default(null),
+  weightId: optionalRef("weight").optional().default(null),
+  sku: productFields.sku.optional().default(""),
+  barcode: optionalText(64, "Barcode").optional().default(null),
+  costPrice: productFields.costPrice.optional(),
+  sellPrice: productFields.sellPrice.optional(),
+  /** Opening stock for this variant. 0 creates the variant with no stock entry. */
+  quantity: decimalQuantity("Quantity"),
+});
+
+export type VariantRowInput = z.input<typeof variantRowSchema>;
+export type VariantRowData = z.output<typeof variantRowSchema>;
+
+/**
+ * Opening-stock delivery details, entered once for the whole delivery. The
+ * unit cost defaults to the product's cost price and the date is required
+ * only when at least one row has a quantity (refined in productCreateSchema).
+ */
+export const openingStockSchema = z.strictObject({
+  supplierId: optionalRef("supplier").optional().default(null),
+  unitCost: productFields.costPrice.optional(),
+  dateReceived: optionalDate("Date received").optional().default(null),
+  note: optionalText(500, "Note").optional().default(null),
+  /** Also set the product's (and the variants') cost price to this unit cost. */
+  updateCostPrice: z.boolean().optional().default(false),
+});
+
+export type OpeningStockData = z.output<typeof openingStockSchema>;
+
+export const productCreateSchema = productSchema.extend({
+  variants: z.strictObject({
+    hasVariants: z.boolean().optional().default(false),
+    rows: z
+      .array(variantRowSchema)
+      .max(MAX_VARIANT_ROWS, `At most ${MAX_VARIANT_ROWS} variants can be created at once.`)
+      .optional()
+      .default([]),
+  })
+    .optional()
+    .default({ hasVariants: false, rows: [] }),
+  openingStock: openingStockSchema
+    .optional()
+    .default({
+      supplierId: null,
+      dateReceived: null,
+      note: null,
+      updateCostPrice: false,
+    }),
+})
+  .superRefine((data, ctx) => {
+    const { hasVariants, rows } = data.variants;
+    if (hasVariants && rows.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["variants", "rows"],
+        message: "Add at least one variant combination or turn the variants toggle off.",
+      });
+    }
+    // A cell with 0/blank quantity creates no variant at all — so a variant
+    // product needs at least one quantity for anything to be created.
+    if (hasVariants && !rows.some((row) => row.quantity > 0)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["variants", "rows"],
+        message: "Enter a quantity for at least one variant.",
+      });
+    }
+    if (rows.some((row) => row.quantity > 0) && !data.openingStock.dateReceived) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["openingStock", "dateReceived"],
+        message: "Date received is required when opening stock is given.",
+      });
+    }
+  });
+
+export type ProductCreateInput = z.input<typeof productCreateSchema>;
+export type ProductCreateData = z.output<typeof productCreateSchema>;
+
+// --- Variant management on an existing product -------------------------------
+
+export const MAX_VARIANT_UPDATES = 100;
+
+/** Fields of an EXISTING variant a shop may edit. `label` and the option
+ * combination are derived (combo edits are a later phase); stock lives in the
+ * ledger; deletion does not exist — `isActive` is the off switch. */
+export const variantPatchSchema = z.strictObject({
+  variantId: requiredRef("variant"),
+  sku: productFields.sku.optional(),
+  barcode: optionalText(64, "Barcode").optional(),
+  costPrice: productFields.costPrice.optional(),
+  sellPrice: productFields.sellPrice.optional(),
+  isActive: z.boolean({ error: "isActive must be true or false." }).optional(),
+});
+
+export type VariantPatchInput = z.input<typeof variantPatchSchema>;
+export type VariantPatchData = z.output<typeof variantPatchSchema>;
+
+/** "Add variant" inside Edit product — same shape as the create-time rows. */
+export const variantAddSchema = z.strictObject({
+  rows: z
+    .array(variantRowSchema)
+    .max(MAX_VARIANT_ROWS, `At most ${MAX_VARIANT_ROWS} variants can be added at once.`)
+    .default([]),
+  openingStock: openingStockSchema
+    .optional()
+    .default({
+      supplierId: null,
+      dateReceived: null,
+      note: null,
+      updateCostPrice: false,
+    }),
+})
+  .superRefine((data, ctx) => {
+    if (data.rows.length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["rows"],
+        message: "Add at least one variant combination.",
+      });
+    }
+    if (!data.rows.some((row) => row.quantity > 0)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["rows"],
+        message: "Enter a quantity for at least one variant.",
+      });
+    }
+    if (data.rows.some((row) => row.quantity > 0) && !data.openingStock.dateReceived) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["openingStock", "dateReceived"],
+        message: "Date received is required when opening stock is given.",
+      });
+    }
+  });
+
+export type VariantAddData = z.output<typeof variantAddSchema>;
+
+export const productVariantsPatchSchema = z.strictObject({
+  updates: z
+    .array(variantPatchSchema)
+    .max(MAX_VARIANT_UPDATES, `At most ${MAX_VARIANT_UPDATES} variants can be updated at once.`)
+    .optional()
+    .default([]),
+  add: variantAddSchema.optional(),
+})
+  .refine(
+    (value) => value.updates.length > 0 || value.add !== undefined,
+    "Send at least one variant update or an add block.",
+  );
+
+export type ProductVariantsPatchInput = z.input<typeof productVariantsPatchSchema>;
+export type ProductVariantsPatchData = z.output<typeof productVariantsPatchSchema>;
+
 /** The reference fields a product can point at, and the label for each. */
 export const PRODUCT_REFS = {
   categoryId: "category",
   brandId: "brand",
   unitId: "unit",
-  colorId: "color",
+} as const;
+
+/** The option references a variant row can point at, and the label for each. */
+export const VARIANT_REFS = {
   sizeId: "size",
+  colorId: "color",
   weightId: "weight",
 } as const;
+
+export type VariantRefField = keyof typeof VARIANT_REFS;
 
 export type ProductRefField = keyof typeof PRODUCT_REFS;
 
@@ -129,6 +301,23 @@ export interface NamedRef {
   name: string;
 }
 
+export interface ProductVariantResponse {
+  id: string;
+  productId: string;
+  sku: string;
+  barcode: string | null;
+  label: string;
+  size: NamedRef | null;
+  color: NamedRef | null;
+  weight: NamedRef | null;
+  costPrice: string;
+  sellPrice: string;
+  stockQty: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProductResponse {
   id: string;
   name: string;
@@ -136,14 +325,15 @@ export interface ProductResponse {
   brand: NamedRef | null;
   category: NamedRef | null;
   unit: NamedRef | null;
-  color: NamedRef | null;
-  size: NamedRef | null;
-  weight: NamedRef | null;
   expiryDate: string | null;
   /** Decimal strings, e.g. "1250.00" — exact, never a float. */
   costPrice: string;
   sellPrice: string;
+  /** Denormalized total across the product's variants. */
   stockQty: number;
+  /** Active variants. Populated on the detail response, empty on list rows. */
+  variants: ProductVariantResponse[];
+  variantCount: number;
   attributes: ProductAttributes | null;
   imageUrl: string | null;
   isDeleted: boolean;
@@ -156,6 +346,12 @@ export interface ProductListResponse {
   page: number;
   pageSize: number;
   total: number;
+}
+
+/** The `{ product }` wrapper every product route returns. */
+export interface ProductEnvelope {
+  product: ProductResponse;
+  changed?: string[];
 }
 
 /**
