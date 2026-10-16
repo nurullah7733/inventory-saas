@@ -295,7 +295,7 @@ export const PATCH = withTenantAuth(
     // --- Create added variants + opening stock -------------------------------
     const unitCostDefault = data.add?.openingStock.unitCost ?? null;
     const opening = data.add?.openingStock;
-    const createdIds: { id: string; quantity: number }[] = [];
+    const createdIds: { id: string; quantity: number; unitCost: string }[] = [];
     try {
       for (const variant of planned) {
         const row = await auth.scope.ProductVariant.select("id").create(
@@ -312,7 +312,7 @@ export const PATCH = withTenantAuth(
             stockQty: numeric<12, 3>(0),
           }),
         );
-        createdIds.push({ id: row.id, quantity: variant.quantity });
+        createdIds.push({ id: row.id, quantity: variant.quantity, unitCost: unitCostDefault ?? variant.costPrice });
       }
     } catch (error) {
       if (isUniqueViolation(error)) {
@@ -355,9 +355,21 @@ export const PATCH = withTenantAuth(
         variantId: created.id,
         supplierId: opening?.supplierId ?? null,
         quantity: created.quantity,
-        unitCost: unitCostDefault ?? planned[0].costPrice,
+        unitCost: created.unitCost,
         receivedAt,
         note: opening?.note ?? null,
+      });
+    }
+
+    if (createdIds.length > 0 && opening?.updateCostPrice && opening.unitCost !== null && opening.unitCost !== undefined) {
+      await auth.scope.Product.where({ id }).update({ costPrice: numeric<10, 2>(opening.unitCost) });
+      await recordAudit({
+        tenantId: auth.tenantId,
+        userId: auth.user.id,
+        action: "product.update",
+        entityType: "product",
+        entityId: id,
+        metadata: { changed: ["costPrice"], before: { costPrice: product.costPrice }, after: { costPrice: opening.unitCost } },
       });
     }
 

@@ -67,3 +67,7 @@ for (const kind of ["sales", "profit-loss", "due", "payable", "stock", "expense"
   assert.ok(report.tables.every((t) => t.rows.length === 0), `${kind}: empty results stay exportable`);
 }
 console.log("Reports calculation tests passed (dates, COGS, returns, due, payable, stock, expense, empty reports).");
+
+const mixedCosts: ReportData = { ...data, products: [{ id: "mixed", name: "Mixed prices", sku: "MIX", stockQty: 3, costPrice: "999.00", isDeleted: false,
+  variants: [{ stockQty: 1, costPrice: "100.00" }, { stockQty: 2, costPrice: "250.00" }] }] };
+assert.equal(buildReport("stock", filter, mixedCosts, business).summary.find((s) => s.label === "Value at current cost")?.value, "600.00", "Stock valuation sums each variant, independent of product default");

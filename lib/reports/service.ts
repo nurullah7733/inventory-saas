@@ -146,11 +146,12 @@ export async function getReport(
         "stockQty",
         "costPrice",
         "isDeleted",
-      ).all();
+      ).include("variants", (v) => v.select("stockQty", "costPrice")).all();
       data.products = products.map((r) => ({
         ...r,
         stockQty: Number(r.stockQty),
         costPrice: String(r.costPrice),
+        variants: r.variants.map((v) => ({ stockQty: Number(v.stockQty), costPrice: String(v.costPrice) })),
       }));
     }
   }

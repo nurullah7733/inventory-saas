@@ -135,7 +135,7 @@ export type VariantRowData = z.output<typeof variantRowSchema>;
 
 /**
  * Opening-stock delivery details, entered once for the whole delivery. The
- * unit cost defaults to the product's cost price and the date is required
+ * unit cost defaults to each variant's cost price and the date is required
  * only when at least one row has a quantity (refined in productCreateSchema).
  */
 export const openingStockSchema = z.strictObject({
@@ -145,6 +145,10 @@ export const openingStockSchema = z.strictObject({
   note: optionalText(500, "Note").optional().default(null),
   /** Also set the product's (and the variants') cost price to this unit cost. */
   updateCostPrice: z.boolean().optional().default(false),
+}).superRefine((data, ctx) => {
+  if (data.updateCostPrice && data.unitCost === undefined) {
+    ctx.addIssue({ code: "custom", path: ["unitCost"], message: "Enter a delivery unit cost to replace costs." });
+  }
 });
 
 export type OpeningStockData = z.output<typeof openingStockSchema>;

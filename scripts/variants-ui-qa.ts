@@ -1,4 +1,5 @@
 import "dotenv/config";
+import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -12,7 +13,10 @@ import { numeric } from "../lib/numeric.ts";
 const base = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 const endpoint = process.env.BROWSER_CDP_URL ?? "http://127.0.0.1:9222";
 const outDir = process.env.QA_OUT_DIR ?? ".";
-const widths = [360, 390, 768, 1280];
+const widths = [360, 675, 768, 1280];
+let fixtureTenantId: string | null = null;
+let browserSocket: WebSocket | null = null;
+let browserTargetId: string | null = null;
 
 async function main() {
   // --- fixture tenant with the Ladies Heel 3x3 grid -------------------------
@@ -37,13 +41,11 @@ async function main() {
       weights[name] = row.id;
     }
     const heel = await tx.orm.public.Product.select("id").create(own({ name: "Ladies Heel", sku: "LH", stockQty: numeric<12, 3>(9), costPrice: numeric("550.00"), sellPrice: numeric("600.00") }));
-    let index = 0;
     for (const [sizeName, sizeId] of Object.entries(sizes)) {
       if (sizeName === "40") continue;
       for (const [colorName, colorId] of Object.entries(colors)) {
-        index += 1;
         const sku = `LH-${sizeName}-${colorName.toUpperCase().slice(0, 3)}`;
-        await tx.orm.public.ProductVariant.select("id").create(own({ productId: heel.id, sku, label: `${sizeName} / ${colorName}`, sizeId, colorId, stockQty: numeric<12, 3>(3), costPrice: numeric("550.00"), sellPrice: numeric("600.00") }));
+        await tx.orm.public.ProductVariant.select("id").create(own({ productId: heel.id, sku, label: `${sizeName} / ${colorName}`, sizeId, colorId, stockQty: numeric<12, 3>(3), costPrice: numeric("12345678.90"), sellPrice: numeric("87654321.09") }));
       }
     }
     // A second product so the list has more than one row.
@@ -52,13 +54,16 @@ async function main() {
     return { tenantId: tenant.id, user };
   });
 
+  fixtureTenantId = created.tenantId;
   const session = await withRlsBypass(() => issueSession({ userId: created.user.id, tenantId: created.tenantId, deviceId: "variants-ui-qa" }));
   const token = (await signAccessToken({ userId: created.user.id, tenantId: created.tenantId, role: "shop_owner", sessionId: session.sessionId })).token;
   const storedSession = { user: { ...created.user, pinEnabled: false }, tenant: null, refreshToken: session.refreshToken, refreshExpiresAt: session.expiresAt, token };
 
   // --- CDP driver -----------------------------------------------------------
   const target = await (await fetch(`${endpoint}/json/new?about:blank`, { method: "PUT" })).json() as { id: string; webSocketDebuggerUrl: string };
+  browserTargetId = target.id;
   const socket = new WebSocket(target.webSocketDebuggerUrl);
+  browserSocket = socket;
   await new Promise<void>((resolve, reject) => { socket.addEventListener("open", () => resolve(), { once: true }); socket.addEventListener("error", () => reject(new Error("Browser connection failed")), { once: true }); });
   let callId = 0;
   const pending = new Map<number, { resolve: (result: Record<string, unknown>) => void; reject: (error: Error) => void }>();
@@ -75,10 +80,10 @@ async function main() {
     let result: Record<string, unknown>;
     try {
       result = await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true });
-    } catch (error) {
+    } catch {
       throw new Error(`CDP error for: ${expression.slice(0, 120)}`);
     }
-    if (result.exceptionDetails) throw new Error(`Eval failed for: ${expression.slice(0, 160)} :: ${JSON.stringify(result.exceptionDetails.exception?.description ?? "").slice(0, 160)}`);
+    if (result.exceptionDetails) throw new Error(`Eval failed for: ${expression.slice(0, 160)} :: ${JSON.stringify((result.exceptionDetails as { exception?: { description?: string } }).exception?.description ?? "").slice(0, 160)}`);
     return (result.result as { value: unknown }).value;
   }
   async function waitFor(expression: string) {
@@ -124,7 +129,7 @@ async function main() {
   }
 
   await send("Page.enable");
-  await send("Page.addScriptToEvaluateOnNewDocument", { source: `if (location.origin === ${JSON.stringify(base)} && !localStorage.getItem("inventory-saas.session")) { localStorage.setItem("inventory-saas.session", ${JSON.stringify(JSON.stringify(storedSession))}); document.cookie = "has_session=1; Path=/; SameSite=Lax"; }` });
+  await send("Page.addScriptToEvaluateOnNewDocument", { source: `if (location.origin === ${JSON.stringify(base)} && localStorage.getItem("inventory-saas.qa-tenant") !== ${JSON.stringify(created.tenantId)}) { localStorage.setItem("inventory-saas.qa-tenant", ${JSON.stringify(created.tenantId)}); localStorage.setItem("inventory-saas.session", ${JSON.stringify(JSON.stringify(storedSession))}); document.cookie = "has_session=1; Path=/; SameSite=Lax"; }` });
   await send("Network.setCookie", { name: "has_session", value: "1", url: base, path: "/" });
 
   const results: string[] = [];
@@ -164,15 +169,27 @@ async function main() {
     await setValue('[aria-label="Size 37, Color Red quantity"]', "5");
     await setValue('[aria-label="Size 38, Color Gray quantity"]', "2");
     await setValue('[aria-label="Size 39, Color White quantity"]', "1");
+    await waitFor(`document.querySelector('[aria-label="Size 37, Color Red quantity"]').value === "5"`);
+    assert.equal(await evaluate(`document.querySelector('[aria-label="Size 38, Color Gray quantity"]').value`), "2", "two-axis quantity persists");
+    assert.ok(await evaluate(`document.querySelector('[role="dialog"]').textContent.includes("Default prices")`));
     await shot(path.join(`add-matrix-${width}.png`));
 
     // Add the third axis → tabs.
     await clickButton("500 g", '[role="dialog"]');
     await waitFor(`!!document.querySelector('[role="dialog"] [role="tablist"]')`);
     report(`${width}: third-axis tablist shown = ${await evaluate(`!!document.querySelector('[role="dialog"] [role="tablist"]')`)}`);
-    results.push; // keep signature
-    report(`${width}: single summary bar = ${await evaluate(`(() => { const d = document.querySelector('[role="dialog"]').innerText; return (d.match(/·/g) ?? []).length === 1; })()`)}`);
+    await setValue('[aria-label="Size 37, Color Red quantity"]', "7");
+    await waitFor(`document.querySelector('[aria-label="Size 37, Color Red quantity"]').value === "7"`);
+    await waitFor(`document.querySelectorAll('[role="dialog"] [aria-live="polite"]').length === 1`);
+    report(`${width}: single summary bar = true`);
+
     await clickButton("750 g", '[role="dialog"]');
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] [role="tab"]')).find((b) => b.textContent.trim().startsWith("750 g")).click()`);
+    await setValue('[aria-label="Size 37, Color Red quantity"]', "3");
+    await waitFor(`document.querySelector('[aria-label="Size 37, Color Red quantity"]').value === "3"`);
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] [role="tab"]')).find((b) => b.textContent.trim().startsWith("500 g")).click()`);
+    await waitFor(`document.querySelector('[aria-label="Size 37, Color Red quantity"]').value === "7"`);
+    report(`${width}: three-axis quantities persist independently = true`);
     await shot(path.join(`add-tabs-${width}.png`));
 
     // Preview: mobile cards vs desktop table.
@@ -195,6 +212,19 @@ async function main() {
     })()`);
     await waitFor(`!!document.querySelector('[role="dialog"]') && document.querySelector('[role="dialog"]').textContent.includes("Save")`);
     await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] th')).some((th) => th.textContent === "Variant") || document.querySelectorAll('[role="dialog"] li input[type="checkbox"]').length >= 9`);
+    const pricesFit = await evaluate(`(() => {
+      const fields = Array.from(document.querySelectorAll('[role="dialog"] input[aria-label^="Cost price for"], [role="dialog"] input[aria-label^="Sale price for"]'));
+      return fields.length === 18 && fields.every((field) => {
+        const style = getComputedStyle(field);
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        context.font = style.font;
+        return field.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight) >= context.measureText(field.value).width;
+      });
+    })()`);
+    assert.equal(pricesFit, true, `${width}: full maximum-length cost and sale price values fit`);
+    report(`${width}: full maximum-length prices visible = true`);
+    await evaluate(`document.querySelector('[role="dialog"] input[aria-label^="Cost price for"]').scrollIntoView({ block: "center" })`);
     await shot(path.join(`edit-variants-${width}.png`));
     report(`${width}: edit dialog = ${await evaluate(`document.querySelector('[role="dialog"]').innerText.replace(/\\n/g, " | ").slice(0, 500)`)}`);
     report(`${width}: sku inputs = ${await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] input[aria-label^="SKU for"]')).map((el) => el.value).slice(0, 4).join(",")`)}`);
@@ -221,28 +251,32 @@ async function main() {
   await socket.close();
   await fetch(`${endpoint}/json/close/${target.id}`);
 
-  // --- cleanup ---------------------------------------------------------------
+}
+
+async function cleanupFixture() {
+  browserSocket?.close();
+  if (browserTargetId) await fetch(`${endpoint}/json/close/${browserTargetId}`).catch(() => undefined);
+  if (!fixtureTenantId) return;
+  const tenantId = fixtureTenantId;
   await withRlsBypass(async (tx) => {
     const orm = tx.orm.public;
-    const strays = await orm.Tenant.select("id").where((t) => t.name.ilike("Variants UI QA%")).all();
-    for (const stray of strays) {
-      const tenantId = stray.id;
-      await orm.AuditLog.where({ tenantId }).deleteAll();
-      await orm.StockMovement.where({ tenantId }).deleteAll();
-      await orm.ProductVariant.where({ tenantId }).deleteAll();
-      await orm.Product.where({ tenantId }).deleteAll();
-      await orm.VariantColor.where({ tenantId }).deleteAll();
-      await orm.VariantSize.where({ tenantId }).deleteAll();
-      await orm.VariantWeight.where({ tenantId }).deleteAll();
-      await orm.RefreshSession.where({ tenantId }).deleteAll();
-      await orm.User.where({ tenantId }).deleteAll();
-      await orm.Tenant.where({ id: tenantId }).delete();
-    }
+    await orm.AuditLog.where({ tenantId }).deleteAll();
+    await orm.StockMovement.where({ tenantId }).deleteAll();
+    await orm.ProductVariant.where({ tenantId }).deleteAll();
+    await orm.Product.where({ tenantId }).deleteAll();
+    await orm.VariantColor.where({ tenantId }).deleteAll();
+    await orm.VariantSize.where({ tenantId }).deleteAll();
+    await orm.VariantWeight.where({ tenantId }).deleteAll();
+    await orm.RefreshSession.where({ tenantId }).deleteAll();
+    await orm.User.where({ tenantId }).deleteAll();
+    await orm.Tenant.where({ id: tenantId }).delete();
   });
 }
 
 main()
   .catch((error) => { console.error("QA failed:", error.message ?? error); process.exitCode = 1; })
-  .finally(() => process.exit(0));
+  .finally(async () => {
+    try { await cleanupFixture(); } finally { await db.close(); }
+  });
 
 void rawSql;

@@ -11,7 +11,7 @@ export interface ReportData {
   customers: { id: string; name: string; phone: string | null }[];
   suppliers: { id: string; name: string; phone: string | null }[];
   categories: { id: string; name: string }[];
-  products: { id: string; name: string; sku: string; stockQty: number; costPrice: string; isDeleted: boolean }[];
+  products: { id: string; name: string; sku: string; stockQty: number; costPrice: string; isDeleted: boolean; variants?: { stockQty: number; costPrice: string }[] }[];
   movements: { productId: string; supplierId: string | null; type: string; quantity: number; unitCost: string | null; createdAt: string; note: string | null }[];
   payments: { supplierId: string; amount: string; paymentDate: string }[];
 }
@@ -117,9 +117,12 @@ export function buildReport(kind: ReportKind, filter: ReportFilter, data: Report
     const products = data.products.filter((p) => !p.isDeleted).sort((a, b) => a.stockQty-b.stockQty || a.name.localeCompare(b.name));
     metric("Products", products.length); metric("Low stock", products.filter((p) => p.stockQty <= business.lowStockThreshold).length);
     metric("On-hand units", products.reduce((s, p) => s+p.stockQty, 0));
-    cash("Value at current cost", products.reduce((s, p) => s + toCents(moneyTimesQuantity(p.costPrice, p.stockQty)), zero));
-    report.notes.push("On-hand is the current snapshot, valued at current product cost. Date range filters the movement log only. Signed movement quantities add or remove stock; archived products remain in history.");
-    report.tables.push({ title: "Current on-hand", columns: ["Product", "SKU", "Quantity", "Unit cost", "Stock value", "Low stock"], rows: products.map((p) => [p.name, p.sku, p.stockQty, p.costPrice, moneyTimesQuantity(p.costPrice, p.stockQty), p.stockQty <= business.lowStockThreshold ? "Yes" : "No"]) });
+    const stockValue = (p: ReportData["products"][number]) => p.variants?.length
+      ? fromCents(p.variants.reduce((sum, v) => sum + toCents(moneyTimesQuantity(v.costPrice, v.stockQty)), zero))
+      : moneyTimesQuantity(p.costPrice, p.stockQty);
+    cash("Value at current cost", products.reduce((s, p) => s + toCents(stockValue(p)), zero));
+    report.notes.push("On-hand is the current snapshot, valued at each variant's current cost, including inactive variants still on hand. The default cost column is a reference, not the valuation basis. Date range filters the movement log only. Signed movement quantities add or remove stock; archived products remain in history.");
+    report.tables.push({ title: "Current on-hand", columns: ["Product", "SKU", "Quantity", "Default unit cost", "Stock value", "Low stock"], rows: products.map((p) => [p.name, p.sku, p.stockQty, p.costPrice, stockValue(p), p.stockQty <= business.lowStockThreshold ? "Yes" : "No"]) });
     report.tables.push({ title: "Stock movements", columns: ["Date", "Product", "Type", "Signed quantity", "Unit cost", "Note"], rows: data.movements.filter((m) => inRange(reportDay(m.createdAt))).sort((a,b) => b.createdAt.localeCompare(a.createdAt)).map((m) => [reportDay(m.createdAt), names.get(m.productId) ?? "Product", m.type, m.quantity, m.unitCost ?? "", m.note ?? ""]) });
   } else {
     const selected = data.expenses.filter((e) => inRange(e.expenseDate)).sort((a,b) => b.expenseDate.localeCompare(a.expenseDate));

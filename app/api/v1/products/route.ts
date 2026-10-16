@@ -240,7 +240,6 @@ export const POST = withTenantAuth(
       optionNameMap(auth.scope, [...optionIds.weightId], "weights"),
     ]);
 
-    const unitCost = opening.unitCost ?? data.costPrice;
     const planned: PlannedVariant[] = [];
     if (hasVariants) {
       const takenSkus = new Set<string>();
@@ -316,7 +315,7 @@ export const POST = withTenantAuth(
           unitId: data.unitId,
           expiryDate: data.expiryDate,
           brandId: data.brandId,
-          costPrice: numeric<10, 2>(unitCost),
+          costPrice: numeric<10, 2>(opening.updateCostPrice && opening.unitCost ? opening.unitCost : data.costPrice),
           sellPrice: numeric<10, 2>(data.sellPrice),
           stockQty: numeric<12, 3>(0),
           attributes: data.attributes,
@@ -333,7 +332,7 @@ export const POST = withTenantAuth(
       throw error;
     }
 
-    const variantIds: { id: string; quantity: number }[] = [];
+    const variantIds: { id: string; quantity: number; unitCost: string }[] = [];
     try {
       for (const variant of planned) {
         const row = await auth.scope.ProductVariant.select("id").create(
@@ -350,7 +349,7 @@ export const POST = withTenantAuth(
             stockQty: numeric<12, 3>(0),
           }),
         );
-        variantIds.push({ id: row.id, quantity: variant.quantity });
+        variantIds.push({ id: row.id, quantity: variant.quantity, unitCost: opening.unitCost ?? variant.costPrice });
       }
     } catch (error) {
       // Lost a race on a variant SKU/barcode/label unique constraint.
@@ -375,7 +374,7 @@ export const POST = withTenantAuth(
         variantId: variant.id,
         supplierId: opening.supplierId,
         quantity: variant.quantity,
-        unitCost,
+        unitCost: variant.unitCost,
         receivedAt,
         note: opening.note,
       });
@@ -413,7 +412,7 @@ export const POST = withTenantAuth(
           sku: variant.sku,
           supplierId: opening.supplierId,
           quantity: variant.stockQty,
-          unitCost,
+          unitCost: opening.unitCost ?? variant.costPrice,
           costPriceUpdated: opening.updateCostPrice,
         },
       });

@@ -106,14 +106,14 @@ export function InvoiceEditor({ invoice }: { invoice?: InvoiceDetail }) {
   }
 
   async function addProduct(product: { id: string; name: string; variantCount: number; sellPrice: string }) {
-    if (product.variantCount <= 1) {
-      appendLine(product.id, null, product.name, product.sellPrice);
-      return;
-    }
     setVariantBusy(true);
     try {
       const detail = await apiRequest<ProductEnvelope>(`/products/${product.id}`);
       const variants = detail.product.variants.filter((variant) => variant.isActive);
+      if (variants.length === 0) {
+        toast.error("This product has no active variants available for sale.");
+        return;
+      }
       setNames((current) => ({ ...current, [product.id]: detail.product.name }));
       if (variants.length === 1) {
         const [variant] = variants;

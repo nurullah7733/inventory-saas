@@ -64,6 +64,7 @@ async function call(
 
   const response = await fetch(`${API}${path}`, {
     method: init.method ?? "GET",
+    signal: AbortSignal.timeout(90000),
     headers,
     body: init.form ?? (init.body === undefined ? undefined : JSON.stringify(init.body)),
   });
@@ -192,6 +193,7 @@ async function main(): Promise<void> {
     await stockChecks(a, b, productId, supplierId);
     await wastageChecks(a, b);
     await variantChecks(a, b);
+    await pricingChecks(a);
     await alertChecks(a);
     await uploadChecks(a);
     await auditChecks(a);
@@ -1258,3 +1260,63 @@ main()
   .finally(async () => {
     await db.close();
   });
+
+async function pricingChecks(a: Fixture): Promise<void> {
+  console.log("\npricing - defaults, custom prices, delivery costs and invoice snapshots");
+  const sizeIds: string[] = [];
+  for (let index = 0; index < 5; index++) {
+    const result = await call("/variants/sizes", { method: "POST", token: a.ownerToken, body: { name: `Pricing-${index}` } });
+    if (result.status !== 201) throw new Error(`Pricing size fixture failed: ${JSON.stringify(result.body)}`);
+    sizeIds.push(result.body.data.option.id);
+  }
+  const make = async (sku: string, unitCost?: string, updateCostPrice = false) => {
+    const result = await call("/products", { method: "POST", token: a.ownerToken, body: {
+      name: sku, sku, costPrice: "500", sellPrice: "900",
+      variants: { hasVariants: true, rows: [
+        { sizeId: sizeIds[0], quantity: 1, costPrice: "100", sellPrice: "200" },
+        { sizeId: sizeIds[1], quantity: 2, costPrice: "250", sellPrice: "400" },
+      ] }, openingStock: { dateReceived: isoDate(0), ...(unitCost === undefined ? {} : { unitCost }), updateCostPrice },
+    } });
+    check(result.status === 201, `${sku} is created`);
+    if (result.status !== 201) throw new Error(JSON.stringify(result.body));
+    return result.body.data.product;
+  };
+  const ledger = async (productId: string) => withRlsBypass((tx) =>
+    tx.orm.public.StockMovement.where({ productId }).select("variantId", "unitCost", "quantity").all());
+  const mixed = await make("PR-MIXED");
+  const mixedLedger = await ledger(mixed.id);
+  check(mixed.variants.every((v: { id: string; costPrice: string }) => mixedLedger.some((m) => m.variantId === v.id && String(m.unitCost) === v.costPrice)), "create ledger uses each custom variant cost when delivery cost is blank");
+  const delivered = await make("PR-DELIVERY", "80");
+  check(delivered.costPrice === "500.00" && delivered.variants.some((v: { costPrice: string }) => v.costPrice === "250.00"), "delivery cost without replacement preserves default and custom costs");
+  check((await ledger(delivered.id)).every((m) => String(m.unitCost) === "80.00"), "common delivery cost applies to all opening entries");
+  const replaced = await make("PR-REPLACED", "0", true);
+  check(replaced.costPrice === "0.00" && replaced.variants.every((v: { costPrice: string }) => v.costPrice === "0.00"), "explicit zero delivery cost replaces default and all new variant costs");
+  const edited = await call(`/products/${mixed.id}/variants`, { method: "PATCH", token: a.ownerToken, body: {
+    add: { rows: [
+      { sizeId: sizeIds[2], quantity: 1, costPrice: "300", sellPrice: "600" },
+      { sizeId: sizeIds[3], quantity: 1, costPrice: "450", sellPrice: "700" },
+    ], openingStock: { dateReceived: isoDate(0) } },
+  } });
+  check(edited.status === 200 && edited.body.data?.added === 2, "edit adds variants with different costs");
+  const editedLedger = await ledger(mixed.id);
+  check(edited.body.data?.product?.variants.every((v: { id: string; costPrice: string }) => editedLedger.some((m) => m.variantId === v.id && String(m.unitCost) === v.costPrice)), "edit ledger uses each new variant's cost, not the first row's cost");
+  const replaceEdit = await call(`/products/${mixed.id}/variants`, { method: "PATCH", token: a.ownerToken, body: {
+    add: { rows: [{ sizeId: sizeIds[4], quantity: 1, costPrice: "999" }], openingStock: { dateReceived: isoDate(0), unitCost: "0", updateCostPrice: true } },
+  } });
+  check(replaceEdit.status === 200 && replaceEdit.body.data?.product?.costPrice === "0.00", "edit delivery replacement also updates product default");
+  check(replaceEdit.body.data?.product?.variants.find((v: { size: { id: string } }) => v.size?.id === sizeIds[0])?.costPrice === "100.00", "delivery replacement leaves existing variant costs unchanged");
+  const defaults = await call(`/products/${mixed.id}`, { method: "PATCH", token: a.ownerToken, body: { costPrice: "700", sellPrice: "1000" } });
+  check(defaults.status === 200 && defaults.body.data?.product?.variants.some((v: { costPrice: string; sellPrice: string }) => v.costPrice === "100.00" && v.sellPrice === "200.00"), "editing defaults preserves existing variant prices");
+  const variant = mixed.variants.find((v: { size: { id: string } }) => v.size?.id === sizeIds[0]);
+  const invoice = await call("/invoices", { method: "POST", token: a.ownerToken, body: {
+    status: "draft", items: [{ productId: mixed.id, variantId: variant.id, quantity: 1, unitPrice: variant.sellPrice }], discount: "0", paidAmount: "0", paymentMethod: "cash",
+  } });
+  check(invoice.status === 201 && invoice.body.data?.invoice?.items[0]?.unitCost === "100.00" && invoice.body.data?.invoice?.items[0]?.unitPrice === "200.00", "invoice snapshots variant cost and sale price rather than product defaults");
+  await call(`/products/${mixed.id}/variants`, { method: "PATCH", token: a.ownerToken, body: { updates: [{ variantId: variant.id, costPrice: "150", sellPrice: "250" }] } });
+  if (invoice.status === 201) {
+    const historical = await call(`/invoices/${invoice.body.data.invoice.id}`, { token: a.ownerToken });
+    check(historical.body.data?.invoice?.items[0]?.unitCost === "100.00", "later variant cost edits preserve historical invoice cost");
+  }
+  const invalid = await call("/products", { method: "POST", token: a.ownerToken, body: { name: "Missing delivery cost", costPrice: "1", sellPrice: "2", openingStock: { updateCostPrice: true } } });
+  check(invalid.status === 422 && invalid.body.error?.details?.["openingStock.unitCost"], "cost replacement requires an explicit delivery unit cost");
+}

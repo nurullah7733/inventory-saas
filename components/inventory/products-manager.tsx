@@ -542,18 +542,18 @@ function ProductRow({
         </div>
       </div>
 
-      <div className="flex items-end justify-between gap-item sm:flex-col sm:items-end">
+      <div className="flex w-full flex-col gap-item sm:w-auto sm:items-end">
         <div className="sm:text-right">
           <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-            {formatMoney(product.sellPrice, currency)}
+            Default {formatMoney(product.sellPrice, currency)}
           </p>
           {canEdit ? (
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              cost {formatMoney(product.costPrice, currency)}
+              default cost {formatMoney(product.costPrice, currency)}
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap justify-end gap-small">
+        <div className={`grid w-full gap-small [&>button]:min-w-0 [&>button]:px-small ${canEdit && !product.isDeleted ? "grid-cols-3" : "grid-cols-1"} sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:[&>button]:px-control-button`}>
           {product.isDeleted ? (
             canEdit ? (
               <Button type="button" variant="ghost" aria-label={`Restore ${product.name}`} onClick={onRestore}>
@@ -767,7 +767,11 @@ function comboKeyOf(sizeId: string | null, colorId: string | null, weightId: str
 
 function quantityOf(row: BuilderRow): number {
   const trimmed = row.quantity.trim();
-  return trimmed === "" ? 0 : Number(trimmed);
+  return QUANTITY_PATTERN.test(trimmed) ? Number(trimmed) : 0;
+}
+
+function invalidQuantity(rows: BuilderRow[]): BuilderRow | undefined {
+  return rows.find((row) => row.quantity.trim() !== "" && !QUANTITY_PATTERN.test(row.quantity.trim()));
 }
 
 const SAVE_PRODUCT_MUTATION = ["inventory", "product-save"] as const;
@@ -786,7 +790,9 @@ function ProductFormSheet({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const saving = useIsMutating({ mutationKey: SAVE_PRODUCT_MUTATION }) > 0;
+  const savingProduct = useIsMutating({ mutationKey: SAVE_PRODUCT_MUTATION }) > 0;
+  const savingVariants = useIsMutating({ mutationKey: SAVE_VARIANTS_MUTATION }) > 0;
+  const saving = savingProduct || savingVariants;
   const editing = target !== null && target !== "new" ? target : null;
   // Unsaved variant edits (Edit product only) block a silent close.
   const [variantChanges, setVariantChanges] = useState(0);
@@ -861,6 +867,10 @@ function ProductFormBody({
   // when it is turned back on.
   function toggleHasVariants(value: boolean) {
     setHasVariants(value);
+    if (value) {
+      form.setValue("stockQuantity", "");
+      form.clearErrors("stockQuantity");
+    }
     if (!value) {
       setSelection(EMPTY_SELECTION);
       setTyped({});
@@ -998,6 +1008,10 @@ function ProductFormBody({
 
   const onSubmit = form.handleSubmit((values) => {
     setVariantError(null);
+    if (!editing && values.stockUpdateCostPrice && values.stockUnitCost.trim() === "") {
+      form.setError("stockUnitCost", { message: "Enter a delivery unit cost to replace costs." });
+      return;
+    }
 
     if (editing) {
       toast.promise(save.mutateAsync({ values, variantRows: [], hasVariants: false }), {
@@ -1008,10 +1022,15 @@ function ProductFormBody({
       return;
     }
 
+    const invalid = hasVariants ? invalidQuantity(rows) : undefined;
+    if (invalid) {
+      setVariantError(`Quantity for "${invalid.label}" must be a non-negative number with at most 3 decimal places.`);
+      return;
+    }
     const variantRows = rows.filter((row) => quantityOf(row) > 0);
     const variantTotal = variantRows.reduce((sum, row) => sum + quantityOf(row), 0);
     const plainTotal =
-      values.stockQuantity.trim() === "" ? 0 : Number(values.stockQuantity.trim());
+      hasVariants || values.stockQuantity.trim() === "" ? 0 : Number(values.stockQuantity.trim());
 
     if (hasVariants) {
       if (!combos.ok) {
@@ -1093,6 +1112,8 @@ function ProductFormBody({
   const errors = form.formState.errors;
   const watchSku = useWatch({ control: form.control, name: "sku" }) ?? "";
   const watchName = useWatch({ control: form.control, name: "name" }) ?? "";
+  const defaultCostPrice = useWatch({ control: form.control, name: "costPrice" }) ?? "";
+  const defaultSellPrice = useWatch({ control: form.control, name: "sellPrice" }) ?? "";
   const watchUnitId = useWatch({ control: form.control, name: "unitId" }) ?? "";
   const watchStockQuantity = useWatch({ control: form.control, name: "stockQuantity" }) ?? "";
   const currency = useCurrencySymbol();
@@ -1168,17 +1189,20 @@ function ProductFormBody({
         </Field>
       </FormSection>
 
-      <FormSection title="Price">
-        <Field label="Cost price" error={errors.costPrice?.message} required>
+      <FormSection title="Default prices" description={editing ? "Used for new variants only. Change existing selling prices and costs in Variants, then save those changes separately." : "Used for every new variant unless you enter a custom price below."}>
+        <Field label="Default cost price" error={errors.costPrice?.message} required>
           {(props) => (
             <input {...props} type="text" inputMode="decimal" autoComplete="off" placeholder="0.00" {...form.register("costPrice")} />
           )}
         </Field>
-        <Field label="Sale price" error={errors.sellPrice?.message} required>
+        <Field label="Default sale price" error={errors.sellPrice?.message} required>
           {(props) => (
             <input {...props} type="text" inputMode="decimal" autoComplete="off" placeholder="0.00" {...form.register("sellPrice")} />
           )}
         </Field>
+        {MONEY_PATTERN.test(defaultCostPrice) && MONEY_PATTERN.test(defaultSellPrice) && Number(defaultSellPrice) <= Number(defaultCostPrice) ? (
+          <p role="status" className="text-sm text-amber-700 sm:col-span-2 dark:text-amber-300">Default sale price is at or below cost. You can still save these prices.</p>
+        ) : null}
       </FormSection>
 
       {editing ? (
@@ -1187,6 +1211,11 @@ function ProductFormBody({
             product={editingDetail.data.product}
             onChanged={onSaved}
             onDirtyChange={onVariantDirty}
+          />
+        ) : editingDetail.isError ? (
+          <ErrorState
+            message={errorMessage(editingDetail.error, "Could not load variants.")}
+            onRetry={() => void editingDetail.refetch()}
           />
         ) : (
           <FormSection title="Variants">
@@ -1207,6 +1236,8 @@ function ProductFormBody({
           selectedKinds={selectedKinds}
           productName={watchName}
           productSku={watchSku}
+          defaultCostPrice={defaultCostPrice}
+          defaultSellPrice={defaultSellPrice}
           quantityRegister={form.register("stockQuantity")}
           quantityError={errors.stockQuantity?.message}
           currency={currency}
@@ -1236,7 +1267,7 @@ function ProductFormBody({
           <Field
             label="Unit cost"
             error={errors.stockUnitCost?.message}
-            hint="Defaults to the cost price."
+            hint="Optional common cost for this delivery. Blank uses each variant's cost."
           >
             {(props) => (
               <input {...props} type="text" inputMode="decimal" autoComplete="off" placeholder="0.00" {...form.register("stockUnitCost")} />
@@ -1257,7 +1288,7 @@ function ProductFormBody({
           </Field>
           <label className="flex min-h-11 items-center gap-item text-sm text-zinc-700 dark:text-zinc-300">
             <input type="checkbox" className="h-5 w-5" {...form.register("stockUpdateCostPrice")} />
-            Also set the product&apos;s cost price to this unit cost
+            Replace default cost and all new variant costs with this delivery cost (overrides custom costs)
           </label>
         </FormSection>
       ) : null}
@@ -1353,6 +1384,8 @@ function VariantBuilderSection({
   selectedKinds,
   productName,
   productSku,
+  defaultCostPrice,
+  defaultSellPrice,
   quantityRegister,
   quantityError,
   currency,
@@ -1370,6 +1403,8 @@ function VariantBuilderSection({
   selectedKinds: BuilderKind[];
   productName: string;
   productSku: string;
+  defaultCostPrice: string;
+  defaultSellPrice: string;
   quantityRegister: UseFormRegisterReturn;
   quantityError?: string;
   currency: string;
@@ -1425,8 +1460,9 @@ function VariantBuilderSection({
                     rows={createdRows}
                     productName={productName}
                     productSku={productSku}
+                    defaultCostPrice={defaultCostPrice}
+                    defaultSellPrice={defaultSellPrice}
                     currency={currency}
-                    measured={measured}
                     onRowChange={onRowChange}
                   />
                 ) : null}
@@ -1648,22 +1684,6 @@ function VariantQuantityEntry({
   );
 }
 
-function comboKeyFor(
-  rowKind: BuilderKind,
-  rowValueId: string,
-  columnKind: BuilderKind,
-  columnValueId: string,
-) {
-  const slots: Record<"sizeId" | "colorId" | "weightId", string | null> = {
-    sizeId: null,
-    colorId: null,
-    weightId: null,
-  };
-  slots[slotOf(rowKind)] = rowValueId;
-  slots[slotOf(columnKind)] = columnValueId;
-  return comboKeyOf(slots.sizeId, slots.colorId, slots.weightId);
-}
-
 function QuantityMatrix({
   rows,
   rowKind,
@@ -1739,17 +1759,16 @@ function QuantityMatrix({
                 {rowValue.name}
               </th>
               {columnValues.map((columnValue) => {
-                const key = comboKeyFor(rowKind, rowValue.id, columnKind, columnValue.id);
-                const row = rows.find((entry) => entry.key === key);
+                const row = rows.find((entry) => entry[rowSlot] === rowValue.id && entry[columnSlot] === columnValue.id);
                 return (
                   <td key={columnValue.id} className="border-b border-zinc-200 p-tight dark:border-zinc-800">
-                    <MatrixCell
-                      rowKey={key}
+                    {row ? <MatrixCell
+                      rowKey={row.key}
                       label={`${rowLabel} ${rowValue.name}, ${columnLabel} ${columnValue.name}`}
-                      quantity={row?.quantity ?? ""}
+                      quantity={row.quantity}
                       inputMode={measured ? "decimal" : "numeric"}
                       onRowChange={onRowChange}
-                    />
+                    /> : <span className="block text-center text-xs text-zinc-500">Already exists</span>}
                   </td>
                 );
               })}
@@ -1926,22 +1945,24 @@ function VariantQuantityList({
 }
 
 /**
- * "Variants to be created": a compact table from `sm` up, one tappable card
- * per variant below that (fields hidden behind a small Edit toggle).
+ * New variants show their quantity and prices in cards at every screen size.
+ * Optional custom prices and codes expand into full-width fields.
  */
 function CreatedVariantsPreview({
   rows,
   productName,
   productSku,
+  defaultCostPrice,
+  defaultSellPrice,
   currency,
-  measured,
   onRowChange,
 }: {
   rows: BuilderRow[];
   productName: string;
   productSku: string;
+  defaultCostPrice: string;
+  defaultSellPrice: string;
   currency: string;
-  measured: boolean;
   onRowChange: (key: string, patch: Partial<BuilderRow>) => void;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -1958,60 +1979,12 @@ function CreatedVariantsPreview({
     <div className="flex flex-col gap-item">
       <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Variants to be created</p>
 
-      {/* Desktop table — full width, no horizontal scroll. */}
-      <div className="hidden overflow-hidden rounded-xl border border-zinc-200 sm:block dark:border-zinc-800">
-        <table className="w-full table-fixed border-collapse text-sm">
-          <caption className="sr-only">Variants to be created</caption>
-          <colgroup>
-            <col className="w-[24%]" />
-            <col className="w-[18%]" />
-            <col className="w-[16%]" />
-            <col className="w-[13%]" />
-            <col className="w-[15%]" />
-            <col className="w-[14%]" />
-          </colgroup>
-          <thead>
-            <tr className="text-left">
-              <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Variant</th>
-              <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">SKU</th>
-              <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Barcode</th>
-              <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Cost</th>
-              <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Sale price</th>
-              <th scope="col" className="border-b border-zinc-200 p-item text-center font-medium dark:border-zinc-800">Qty</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.key} className="align-top">
-                <th scope="row" className="border-b border-zinc-200 p-item text-left font-normal dark:border-zinc-800">
-                  <span className="block break-words">{row.label}</span>
-                  <span className="block text-xs text-zinc-500 dark:text-zinc-400">{rowSkuPreview(row, productSku, productName)}</span>
-                </th>
-                <td className="border-b border-zinc-200 p-item dark:border-zinc-800">
-                  <input type="text" autoComplete="off" autoCapitalize="characters" aria-label={`SKU for ${row.label}`} placeholder="Auto" className={`${inputClasses} min-h-9 w-full`} value={row.sku} onChange={(event) => onRowChange(row.key, { sku: event.target.value })} />
-                </td>
-                <td className="border-b border-zinc-200 p-item dark:border-zinc-800">
-                  <input type="text" autoComplete="off" aria-label={`Barcode for ${row.label}`} placeholder="Optional" className={`${inputClasses} min-h-9 w-full`} value={row.barcode} onChange={(event) => onRowChange(row.key, { barcode: event.target.value })} />
-                </td>
-                <td className="border-b border-zinc-200 p-item dark:border-zinc-800">
-                  <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Cost price for ${row.label}`} placeholder="Default" className={`${inputClasses} min-h-9 w-full`} value={row.costPrice} onChange={(event) => onRowChange(row.key, { costPrice: event.target.value })} />
-                </td>
-                <td className="border-b border-zinc-200 p-item dark:border-zinc-800">
-                  <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Sale price for ${row.label}`} placeholder="Default" className={`${inputClasses} min-h-9 w-full`} value={row.sellPrice} onChange={(event) => onRowChange(row.key, { sellPrice: event.target.value })} />
-                </td>
-                <td className="border-b border-zinc-200 p-item dark:border-zinc-800">
-                  <input type="text" inputMode={measured ? "decimal" : "numeric"} autoComplete="off" aria-label={`Quantity for ${row.label}`} placeholder="0" className={`${inputClasses} min-h-9 w-full text-center`} value={row.quantity} onChange={(event) => onRowChange(row.key, { quantity: event.target.value })} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile cards — label + quantity first, fields behind an Edit toggle. */}
-      <ul className="flex flex-col gap-small sm:hidden">
+      <ul className="flex flex-col gap-small">
         {rows.map((row) => {
           const open = expanded.has(row.key);
+          const cost = row.costPrice.trim() || defaultCostPrice;
+          const sale = row.sellPrice.trim() || defaultSellPrice;
+          const lowMargin = MONEY_PATTERN.test(cost) && MONEY_PATTERN.test(sale) && Number(sale) <= Number(cost);
           return (
             <li key={row.key} className="rounded-xl border border-zinc-200 p-item dark:border-zinc-800">
               <div className="flex min-h-9 items-center justify-between gap-item">
@@ -2029,9 +2002,11 @@ function CreatedVariantsPreview({
                   aria-expanded={open}
                   onClick={() => toggle(row.key)}
                 >
-                  {open ? "Done" : "Edit"}
+                  {open ? "Done" : "Custom prices / codes"}
                 </Button>
               </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">Cost: {currency} {cost || "Not set"} | Sale: {currency} {sale || "Not set"}</p>
+              {lowMargin ? <p role="status" className="text-xs text-amber-700 dark:text-amber-300">Sale price is at or below cost. You can still save.</p> : null}
               {open ? (
                 <div className="mt-tight grid grid-cols-2 gap-item">
                   <MiniField label="SKU">
@@ -2041,10 +2016,10 @@ function CreatedVariantsPreview({
                     <input type="text" autoComplete="off" aria-label={`Barcode for ${row.label}`} placeholder="Optional" className={`${inputClasses} min-h-11 w-full`} value={row.barcode} onChange={(event) => onRowChange(row.key, { barcode: event.target.value })} />
                   </MiniField>
                   <MiniField label={`Cost (${currency})`}>
-                    <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Cost price for ${row.label}`} placeholder="Default" className={`${inputClasses} min-h-11 w-full`} value={row.costPrice} onChange={(event) => onRowChange(row.key, { costPrice: event.target.value })} />
+                    <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Cost price for ${row.label}`} placeholder={defaultCostPrice || "Default"} className={`${inputClasses} min-h-11 w-full`} value={row.costPrice} onChange={(event) => onRowChange(row.key, { costPrice: event.target.value })} />
                   </MiniField>
                   <MiniField label={`Sale (${currency})`}>
-                    <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Sale price for ${row.label}`} placeholder="Default" className={`${inputClasses} min-h-11 w-full`} value={row.sellPrice} onChange={(event) => onRowChange(row.key, { sellPrice: event.target.value })} />
+                    <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Sale price for ${row.label}`} placeholder={defaultSellPrice || "Default"} className={`${inputClasses} min-h-11 w-full`} value={row.sellPrice} onChange={(event) => onRowChange(row.key, { sellPrice: event.target.value })} />
                   </MiniField>
                 </div>
               ) : null}
@@ -2054,7 +2029,7 @@ function CreatedVariantsPreview({
       </ul>
 
       <p className="text-xs text-zinc-500 dark:text-zinc-400">
-        Prices left blank use the product&apos;s own ({currency}). When the product SKU is blank, the
+        Custom prices are optional ({currency}). Blank prices copy the defaults when the variant is created; later default changes do not change existing variants. When the product SKU is blank, the
         shop&apos;s generated code prefixes the variants.
       </p>
     </div>
@@ -2268,6 +2243,9 @@ function EditVariantsSection({
   const save = useMutation({
     mutationKey: SAVE_VARIANTS_MUTATION,
     mutationFn: async () => {
+      if (delivery.updateCostPrice && delivery.unitCost.trim() === "") throw new Error("Enter a delivery unit cost to replace costs.");
+      const invalid = invalidQuantity(rows2);
+      if (invalid) throw new Error(`Quantity for "${invalid.label}" must be a non-negative number with at most 3 decimal places.`);
       const updates = rows
         .map((row) => {
           const before = original.find((variant) => variant.id === row.id);
@@ -2371,7 +2349,7 @@ function EditVariantsSection({
         row.isActive !== before.isActive)
     );
   });
-  const changeCount = changedExisting.length + newRows.length;
+  const changeCount = changedExisting.length + rows2.filter((row) => row.quantity.trim() !== "" && row.quantity.trim() !== "0").length;
 
   // The dialog warns before closing while edits are unsaved.
   useEffect(() => {
@@ -2393,76 +2371,19 @@ function EditVariantsSection({
           </p>
         ) : null}
 
-        {/* Desktop: full-width table. Mobile: one card per variant. */}
-        <div className="hidden overflow-hidden rounded-xl border border-zinc-200 sm:block dark:border-zinc-800">
-          <table className="w-full table-fixed border-collapse text-sm">
-            <caption className="sr-only">This product&apos;s variants</caption>
-            <colgroup>
-              <col className="w-[15%]" />
-              <col className="w-[17%]" />
-              <col className="w-[17%]" />
-              <col className="w-[13%]" />
-              <col className="w-[14%]" />
-              <col className="w-[9%]" />
-              <col className="w-[15%]" />
-            </colgroup>
-            <thead>
-              <tr className="text-left">
-                <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Variant</th>
-                <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">SKU</th>
-                <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Barcode</th>
-                <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Cost</th>
-                <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Sale price</th>
-                <th scope="col" className="border-b border-zinc-200 p-item text-center font-medium dark:border-zinc-800">Stock</th>
-                <th scope="col" className="border-b border-zinc-200 p-item font-medium dark:border-zinc-800">Active</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayRows.map((row) => (
-                <tr key={row.id} className={row.isActive ? "" : "opacity-60"}>
-                  <th scope="row" className="border-b border-zinc-200 p-item align-top text-left font-normal dark:border-zinc-800">
-                    <span className="flex flex-wrap items-center gap-tight break-words">
-                      {row.label}
-                      {row.isActive ? null : <Badge tone="neutral">Inactive</Badge>}
-                    </span>
-                    {rowErrors[row.id] ? (
-                      <span role="alert" className="block text-xs text-red-600 dark:text-red-400">{rowErrors[row.id]}</span>
-                    ) : null}
-                  </th>
-                  <td className="border-b border-zinc-200 p-item align-top dark:border-zinc-800">
-                    <input type="text" autoComplete="off" autoCapitalize="characters" aria-label={`SKU for ${row.label}`} className={`${inputClasses} min-h-9 w-full`} value={row.sku} onChange={(event) => updateExisting(row.id, { sku: event.target.value })} />
-                  </td>
-                  <td className="border-b border-zinc-200 p-item align-top dark:border-zinc-800">
-                    <input type="text" autoComplete="off" aria-label={`Barcode for ${row.label}`} placeholder="Optional" className={`${inputClasses} min-h-9 w-full`} value={row.barcode} onChange={(event) => updateExisting(row.id, { barcode: event.target.value })} />
-                  </td>
-                  <td className="border-b border-zinc-200 p-item align-top dark:border-zinc-800">
-                    <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Cost price for ${row.label}`} className={`${inputClasses} min-h-9 w-full`} value={row.costPrice} onChange={(event) => updateExisting(row.id, { costPrice: event.target.value })} />
-                  </td>
-                  <td className="border-b border-zinc-200 p-item align-top dark:border-zinc-800">
-                    <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Sale price for ${row.label}`} className={`${inputClasses} min-h-9 w-full`} value={row.sellPrice} onChange={(event) => updateExisting(row.id, { sellPrice: event.target.value })} />
-                  </td>
-                  <td className="border-b border-zinc-200 p-item text-center align-top tabular-nums dark:border-zinc-800">{row.stockQty}</td>
-                  <td className="border-b border-zinc-200 p-item align-top dark:border-zinc-800">
-                    <label className="flex min-h-9 cursor-pointer items-center gap-tight text-sm text-zinc-700 dark:text-zinc-300">
-                      <input type="checkbox" className="h-5 w-5" aria-label={`Active — ${row.label}`} checked={row.isActive} onChange={(event) => updateExisting(row.id, { isActive: event.target.checked })} />
-                      {row.isActive ? "Active" : "Off"}
-                    </label>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <ul className="flex flex-col gap-small sm:hidden">
+        {/* Cards follow the dialog width, so every editable value has room. */}
+        <ul className="flex flex-col gap-small">
           {displayRows.map((row) => (
-            <li key={row.id} className={`rounded-xl border border-zinc-200 p-item dark:border-zinc-800 ${row.isActive ? "" : "opacity-60"}`}>
+            <li key={row.id} className={`min-w-0 rounded-xl border border-zinc-200 p-item dark:border-zinc-800 ${row.isActive ? "" : "opacity-60"}`}>
               <div className="flex min-h-11 items-center justify-between gap-item">
                 <span className="flex min-w-0 flex-1 flex-wrap items-center gap-tight text-sm font-medium">
                   <span className="break-words">{row.label}</span>
                   {row.isActive ? null : <Badge tone="neutral">Inactive</Badge>}
                 </span>
-                <input type="checkbox" className="h-5 w-5" aria-label={`Active — ${row.label}`} checked={row.isActive} onChange={(event) => updateExisting(row.id, { isActive: event.target.checked })} />
+                <label className="flex min-h-11 shrink-0 items-center gap-tight text-sm">
+                  <input type="checkbox" className="h-5 w-5" aria-label={`Active — ${row.label}`} checked={row.isActive} onChange={(event) => updateExisting(row.id, { isActive: event.target.checked })} />
+                  {row.isActive ? "Active" : "Off"}
+                </label>
               </div>
               <div className="mb-tight">
                 <Badge tone="neutral">{row.stockQty} in stock</Badge>
@@ -2470,22 +2391,22 @@ function EditVariantsSection({
               {rowErrors[row.id] ? (
                 <p role="alert" className="mb-tight text-xs text-red-600 dark:text-red-400">{rowErrors[row.id]}</p>
               ) : null}
-              <div className="grid grid-cols-2 gap-item">
-                <label className="flex flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              <div className="ui-field-grid grid-cols-1 sm:grid-cols-2">
+                <label className="flex min-w-0 flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   SKU
-                  <input type="text" autoComplete="off" autoCapitalize="characters" aria-label={`SKU for ${row.label}`} className={`${inputClasses} min-h-11 w-full`} value={row.sku} onChange={(event) => updateExisting(row.id, { sku: event.target.value })} />
+                  <input type="text" autoComplete="off" autoCapitalize="characters" aria-label={`SKU for ${row.label}`} className={`${inputClasses} min-h-11 min-w-0 w-full`} value={row.sku} onChange={(event) => updateExisting(row.id, { sku: event.target.value })} />
                 </label>
-                <label className="flex flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="flex min-w-0 flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Barcode
-                  <input type="text" autoComplete="off" aria-label={`Barcode for ${row.label}`} placeholder="Optional" className={`${inputClasses} min-h-11 w-full`} value={row.barcode} onChange={(event) => updateExisting(row.id, { barcode: event.target.value })} />
+                  <input type="text" autoComplete="off" aria-label={`Barcode for ${row.label}`} placeholder="Optional" className={`${inputClasses} min-h-11 min-w-0 w-full`} value={row.barcode} onChange={(event) => updateExisting(row.id, { barcode: event.target.value })} />
                 </label>
-                <label className="flex flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="flex min-w-0 flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Cost price
-                  <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Cost price for ${row.label}`} className={`${inputClasses} min-h-11 w-full`} value={row.costPrice} onChange={(event) => updateExisting(row.id, { costPrice: event.target.value })} />
+                  <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Cost price for ${row.label}`} className={`${inputClasses} min-h-11 min-w-0 w-full`} value={row.costPrice} onChange={(event) => updateExisting(row.id, { costPrice: event.target.value })} />
                 </label>
-                <label className="flex flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                <label className="flex min-w-0 flex-col gap-tight text-xs font-medium text-zinc-600 dark:text-zinc-400">
                   Sale price
-                  <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Sale price for ${row.label}`} className={`${inputClasses} min-h-11 w-full`} value={row.sellPrice} onChange={(event) => updateExisting(row.id, { sellPrice: event.target.value })} />
+                  <input type="text" inputMode="decimal" autoComplete="off" aria-label={`Sale price for ${row.label}`} className={`${inputClasses} min-h-11 min-w-0 w-full`} value={row.sellPrice} onChange={(event) => updateExisting(row.id, { sellPrice: event.target.value })} />
                 </label>
               </div>
             </li>
@@ -2509,7 +2430,7 @@ function EditVariantsSection({
                   measured={measured}
                   onRowChange={updateRow}
                 />
-                {selectedKindsFrom(selection).length > 0 && newRows.length === 0 ? (
+                {selectedKindsFrom(selection).length > 0 && rows2.length === 0 ? (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     All selected combinations already exist — pick more values to add new ones.
                   </p>
@@ -2519,8 +2440,9 @@ function EditVariantsSection({
                     rows={newRows}
                     productName={product.name}
                     productSku={product.sku}
+                    defaultCostPrice={product.costPrice}
+                    defaultSellPrice={product.sellPrice}
                     currency={currencySymbol}
-                    measured={measured}
                     onRowChange={updateRow}
                   />
                 ) : null}
@@ -2540,7 +2462,7 @@ function EditVariantsSection({
                       </select>
                     )}
                   </Field>
-                  <Field label="Unit cost" hint="Defaults to the variant cost price.">
+                  <Field label="Unit cost" hint="Optional common cost for this delivery. Blank uses each variant's cost.">
                     {(props) => (
                       <input {...props} type="text" inputMode="decimal" autoComplete="off" placeholder="0.00" value={delivery.unitCost} onChange={(event) => setDelivery({ ...delivery, unitCost: event.target.value })} />
                     )}
@@ -2558,13 +2480,13 @@ function EditVariantsSection({
                 </div>
                 <label className="flex min-h-11 items-center gap-item text-sm text-zinc-700 dark:text-zinc-300">
                   <input type="checkbox" className="h-5 w-5" checked={delivery.updateCostPrice} onChange={(event) => setDelivery({ ...delivery, updateCostPrice: event.target.checked })} />
-                  Also set the product&apos;s cost price to this unit cost
+                  Replace default cost and all new variant costs with this delivery cost (overrides custom costs)
                 </label>
               </div>
             ) : null}
             <div>
               <Button type="button" variant="ghost" className="self-start" onClick={() => { setAdding(false); setSelection(EMPTY_SELECTION); setTyped({}); }}>
-                Done adding
+                Discard new variants
               </Button>
             </div>
           </div>
