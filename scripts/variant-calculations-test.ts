@@ -86,7 +86,7 @@ assert.equal(variantSkuBase("", { size: "37", color: "Red", weight: null }), "37
 // Size-only variant.
 assert.equal(variantSkuBase("LH", { size: "38", color: null, weight: null }), "LH-38");
 // Weight-only variant.
-assert.equal(variantSkuBase("LH", { size: null, color: null, weight: "500g" }), "LH-500");
+assert.equal(variantSkuBase("LH", { size: null, color: null, weight: "500g" }), "LH-500G");
 
 // --- generateUniqueSku -------------------------------------------------------
 

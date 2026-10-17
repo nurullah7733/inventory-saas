@@ -123,7 +123,7 @@ export const variantRowSchema = z.strictObject({
   colorId: optionalRef("color").optional().default(null),
   weightId: optionalRef("weight").optional().default(null),
   sku: productFields.sku.optional().default(""),
-  barcode: optionalText(64, "Barcode").optional().default(null),
+  barcode: optionalText(64, "Barcode").transform((value) => value?.toUpperCase() ?? null).optional().default(null),
   costPrice: productFields.costPrice.optional(),
   sellPrice: productFields.sellPrice.optional(),
   /** Opening stock for this variant. 0 creates the variant with no stock entry. */
@@ -212,8 +212,8 @@ export const MAX_VARIANT_UPDATES = 100;
  * ledger; deletion does not exist — `isActive` is the off switch. */
 export const variantPatchSchema = z.strictObject({
   variantId: requiredRef("variant"),
-  sku: productFields.sku.optional(),
-  barcode: optionalText(64, "Barcode").optional(),
+  sku: productFields.sku.refine((value) => value !== "", "SKU cannot be blank.").optional(),
+  barcode: optionalText(64, "Barcode").transform((value) => value?.toUpperCase() ?? null).optional(),
   costPrice: productFields.costPrice.optional(),
   sellPrice: productFields.sellPrice.optional(),
   isActive: z.boolean({ error: "isActive must be true or false." }).optional(),

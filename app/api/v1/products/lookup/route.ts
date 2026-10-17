@@ -1,3 +1,5 @@
+import { variantIdFromLabel } from "@/lib/inventory/label-codes.ts";
+import { escapeLike } from "@/lib/inventory/master-data.ts";
 import { or } from "@prisma/orm-postgres/orm-client";
 import { withTenantAuth } from "@/lib/api/guard.ts";
 import { apiError, apiSuccess } from "@/lib/api/response.ts";
@@ -13,21 +15,26 @@ import { apiError, apiSuccess } from "@/lib/api/response.ts";
  */
 export const GET = withTenantAuth(async (request: Request, auth) => {
   const params = new URL(request.url).searchParams;
-  const code = (params.get("code") ?? "").trim().toUpperCase().slice(0, 64);
-  if (code === "") {
+  const code = (params.get("code") ?? "").trim().toUpperCase();
+  if (code === "" || code.length > 64) {
     return apiError("VALIDATION_ERROR", "Give a SKU or barcode to look up.", 422, {
-      code: ["This field is required."],
+      code: ["Enter a SKU or barcode between 1 and 64 characters."],
     });
   }
 
-  const variant = await auth.scope.ProductVariant
+  const labelId = variantIdFromLabel(code);
+  const matches = await auth.scope.ProductVariant
     .select("id", "sku", "label", "sellPrice", "stockQty")
     .include("product", (p) =>
       p.where({ tenantId: auth.tenantId, isDeleted: false }).select("id", "name"),
     )
     .where({ isActive: true })
-    .where((v) => or(v.sku.eq(code), v.barcode.eq(code)))
-    .first();
+    .where((v) => or(v.sku.eq(code), v.barcode.ilike(escapeLike(code)), ...(labelId ? [v.id.eq(labelId)] : [])))
+    .limit(2)
+    .all();
+
+  if (matches.length > 1) return apiError("CONFLICT", "This scan code matches multiple variants. Resolve their SKU/barcode conflict before selling.", 409);
+  const variant = matches[0];
 
   if (!variant || !variant.product) {
     return apiError("NOT_FOUND", "No product variant with this SKU or barcode.", 404);

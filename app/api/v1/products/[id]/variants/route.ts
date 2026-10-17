@@ -1,3 +1,4 @@
+import { lockCatalogCodes, catalogCodeConflict, allocateVariantCodes } from "@/lib/inventory/catalog-codes.ts";
 import { recordAudit } from "@/lib/audit/log.ts";
 import { withTenantAuth, type TenantRequestContext } from "@/lib/api/guard.ts";
 import { apiError, apiSuccess, validationError } from "@/lib/api/response.ts";
@@ -36,6 +37,7 @@ interface PlannedVariant {
   costPrice: string;
   sellPrice: string;
   quantity: number;
+  autoSku?: boolean;
 }
 
 function comboKey(row: { sizeId: string | null; colorId: string | null; weightId: string | null }) {
@@ -87,6 +89,7 @@ export const PATCH = withTenantAuth(
     const parsed = productVariantsPatchSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
     const data = parsed.data;
+    await lockCatalogCodes(auth.scope);
 
     const product = await auth.scope.Product.select("id", "name", "sku", "isDeleted", "costPrice", "sellPrice")
       .where({ id })
@@ -227,6 +230,7 @@ export const PATCH = withTenantAuth(
               weightId: row.weightId,
               sku: row.sku !== "" ? row.sku : generateUniqueSku(variantSkuBase(product.sku, combo), takenSkus),
               barcode: row.barcode,
+              autoSku: row.sku === "",
               costPrice:
                 opening.updateCostPrice && opening.unitCost
                   ? opening.unitCost
@@ -242,6 +246,14 @@ export const PATCH = withTenantAuth(
     if (Object.keys(fieldErrors).length > 0) {
       return apiError("VALIDATION_ERROR", "The submitted data is invalid.", 422, fieldErrors);
     }
+
+    const intended = current.map((variant) => {
+      const update = data.updates.find((row) => row.variantId === variant.id);
+      return { id: variant.id, sku: update?.sku ?? variant.sku, barcode: update?.barcode === undefined ? variant.barcode : update.barcode };
+    });
+    await allocateVariantCodes(auth.scope, [...intended, ...planned]);
+    const codeConflict = await catalogCodeConflict(auth.scope, id, product.sku, [...intended, ...planned]);
+    if (codeConflict) return apiError("CONFLICT", codeConflict, 409, { "add.rows": [codeConflict] });
 
     // --- Apply updates -------------------------------------------------------
     let deactivateCount = 0;

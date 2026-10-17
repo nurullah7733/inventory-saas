@@ -1,3 +1,4 @@
+import { lockCatalogCodes, catalogCodeConflict, allocateVariantCodes } from "@/lib/inventory/catalog-codes.ts";
 import { recordAudit } from "@/lib/audit/log.ts";
 import { withTenantAuth, type TenantRequestContext } from "@/lib/api/guard.ts";
 import {
@@ -86,6 +87,7 @@ interface PlannedVariant {
   costPrice: string;
   sellPrice: string;
   quantity: number;
+  autoSku?: boolean;
 }
 
 function comboKey(row: { sizeId: string | null; colorId: string | null; weightId: string | null }) {
@@ -125,6 +127,7 @@ export const POST = withTenantAuth(
     const parsed = productCreateSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
     const data = parsed.data;
+    await lockCatalogCodes(auth.scope);
     const { hasVariants, rows } = data.variants;
     const opening = data.openingStock;
 
@@ -261,6 +264,7 @@ export const POST = withTenantAuth(
           weightId: row.weightId,
           sku,
           barcode: row.barcode,
+          autoSku: row.sku === "",
           costPrice:
             opening.updateCostPrice && opening.unitCost
               ? opening.unitCost
@@ -282,6 +286,10 @@ export const POST = withTenantAuth(
         quantity: rows[0]?.quantity ?? 0,
       });
     }
+
+    await allocateVariantCodes(auth.scope, planned);
+    const codeConflict = await catalogCodeConflict(auth.scope, null, productSku, planned);
+    if (codeConflict) return apiError("CONFLICT", codeConflict, 409, { sku: [codeConflict] });
 
     // --- SKU / barcode clashes against the database --------------------------
     const skuClashes = await auth.scope.ProductVariant

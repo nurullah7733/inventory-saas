@@ -3,6 +3,7 @@ import { or } from "@prisma/orm-postgres/orm-client";
 import type { RlsSession } from "../db/rls.ts";
 import type { TenantScope } from "../tenant/scope.ts";
 import { escapeLike } from "./master-data.ts";
+import { variantIdFromLabel } from "./label-codes.ts";
 import {
   PRODUCT_REFS,
   VARIANT_REFS,
@@ -181,7 +182,16 @@ export function filterProducts(
   if (filter.categoryId) query = query.where({ categoryId: filter.categoryId });
   if (filter.search !== "") {
     const pattern = `%${escapeLike(filter.search)}%`;
-    query = query.where((p) => or(p.name.ilike(pattern), p.sku.ilike(pattern)));
+    const labelVariantId = variantIdFromLabel(filter.search.trim());
+    query = query.where((p) => or(
+      p.name.ilike(pattern),
+      p.sku.ilike(pattern),
+      p.variants.some((v) => or(
+        v.sku.ilike(pattern),
+        v.barcode.ilike(pattern),
+        ...(labelVariantId ? [v.id.eq(labelVariantId)] : []),
+      )),
+    ));
   }
   return query;
 }
@@ -224,7 +234,7 @@ export async function findSkuClash(scope: TenantScope, sku: string, exceptId?: s
   if (exceptId) query = query.where((p) => p.id.neq(exceptId));
   const [product, variant] = await Promise.all([
     query.select("id", "name", "isDeleted").first(),
-    scope.ProductVariant.select("id").where({ sku }).first(),
+    scope.ProductVariant.select("id").where((v) => or(v.sku.eq(sku), v.barcode.ilike(escapeLike(sku)))).first(),
   ]);
   return product ?? (variant ? { id: variant.id, name: "variant", isDeleted: false } : null);
 }

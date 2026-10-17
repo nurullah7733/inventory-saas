@@ -28,6 +28,7 @@ import { rawSql, withRlsBypass } from "../lib/db/rls.ts";
 import { signAccessToken } from "../lib/auth/jwt.ts";
 import { issueSession } from "../lib/auth/session.ts";
 import { hashPassword } from "../lib/auth/password.ts";
+import { labelCode } from "../lib/inventory/label-codes.ts";
 import { numeric } from "../lib/numeric.ts";
 import type { UserRole } from "../lib/auth/roles.ts";
 
@@ -188,15 +189,20 @@ async function main(): Promise<void> {
   console.log("  ok   two shops, each with an owner, a manager, staff, categories, a color and a brand");
 
   try {
-    const productId = await productChecks(a, b);
-    const supplierId = await supplierChecks(a, b);
-    await stockChecks(a, b, productId, supplierId);
-    await wastageChecks(a, b);
-    await variantChecks(a, b);
-    await pricingChecks(a);
-    await alertChecks(a);
-    await uploadChecks(a);
-    await auditChecks(a);
+    if (process.argv.includes("--catalog-codes")) {
+      await catalogCodeChecks(a, b);
+    } else {
+      const productId = await productChecks(a, b);
+      const supplierId = await supplierChecks(a, b);
+      await stockChecks(a, b, productId, supplierId);
+      await wastageChecks(a, b);
+      await variantChecks(a, b);
+      await pricingChecks(a);
+      await catalogCodeChecks(a, b);
+      await alertChecks(a);
+      await uploadChecks(a);
+      await auditChecks(a);
+    }
   } finally {
     await cleanup([a.tenantId, b.tenantId]);
   }
@@ -1319,4 +1325,59 @@ async function pricingChecks(a: Fixture): Promise<void> {
   }
   const invalid = await call("/products", { method: "POST", token: a.ownerToken, body: { name: "Missing delivery cost", costPrice: "1", sellPrice: "2", openingStock: { updateCostPrice: true } } });
   check(invalid.status === 422 && invalid.body.error?.details?.["openingStock.unitCost"], "cost replacement requires an explicit delivery unit cost");
+}
+
+async function catalogCodeChecks(a: Fixture, b: Fixture): Promise<void> {
+  console.log("\nSKU and barcode isolation, concurrency, stable labels");
+  const create = async (token: string, sku: string, barcode: string, variantSku: string) => call("/products", { method: "POST", token, body: {
+    name: `Generic item ${sku}`, sku, costPrice: "10", sellPrice: "20",
+    variants: { hasVariants: true, rows: [{ label: "Standard", colorId: token === a.ownerToken ? a.colorId : b.colorId, sku: variantSku, barcode, quantity: 1 }] }, openingStock: { dateReceived: isoDate(0) },
+  } });
+  const first = await create(a.ownerToken, "CATALOG-A", "MANUFACTURER-A", "VARIANT-A");
+  check(first.status === 201, "generic product with custom SKU and manufacturer barcode is created");
+  if (first.status !== 201) throw new Error(JSON.stringify(first.body));
+  const product = first.body.data.product; const variant = product.variants[0];
+  const scan = labelCode(variant.id);
+  const search = `/products?search=${scan}`;
+  const found = await call(search, { token: a.staffToken });
+  check(found.status === 200 && found.body.data?.total === 1 && found.body.data?.products[0]?.id === product.id, "Products search resolves a full internal barcode to its parent product");
+  check((await call(search, { token: b.ownerToken })).body.data?.total === 0, "Products internal barcode search is isolated to the authenticated shop");
+  check((await call(`${search}&categoryId=${a.categoryId}`, { token: a.ownerToken })).body.data?.total === 0, "category filter still applies when searching an internal barcode");
+  check((await call(`/products?search=${"9".repeat(40)}`, { token: a.ownerToken })).body.data?.total === 0, "an out-of-range internal code returns no products without an error");
+
+  check((await call(`/products/lookup?code=${scan}`, { token: a.staffToken })).body.data?.variant?.id === variant.id, "internal label scans to the correct tenant variant");
+  check((await call(`/products/lookup?code=${scan}`, { token: b.ownerToken })).status === 404, "another shop cannot scan this label into its catalog");
+  const renamed = await call(`/products/${product.id}/variants`, { method: "PATCH", token: a.ownerToken, body: { updates: [{ variantId: variant.id, sku: "VARIANT-RENAMED" }] } });
+  check(renamed.status === 200 && (await call(`/products/lookup?code=${scan}`, { token: a.ownerToken })).body.data?.variant?.sku === "VARIANT-RENAMED", "printed label remains valid after a SKU edit");
+  check((await call(search, { token: a.ownerToken })).body.data?.products[0]?.id === product.id, "Products barcode search remains valid after a variant SKU edit");
+  check((await call("/products?search=VARIANT-RENAMED", { token: a.ownerToken })).body.data?.products?.some((p: { id: string }) => p.id === product.id), "product search includes variant SKUs");
+  check((await call("/products?search=MANUFACTURER-A", { token: a.ownerToken })).body.data?.products?.some((p: { id: string }) => p.id === product.id), "product search includes manufacturer barcodes");
+  check((await create(a.ownerToken, "CATALOG-B", "VARIANT-RENAMED", "VARIANT-B")).status === 409, "barcode cannot claim another variant's SKU");
+  check((await create(a.ownerToken, "CATALOG-C", "OTHER-C", "MANUFACTURER-A")).status === 409, "variant SKU cannot claim another barcode");
+  check((await create(a.ownerToken, "MANUFACTURER-A", "OTHER-D", "VARIANT-D")).status === 409, "product SKU cannot claim another barcode");
+  check((await create(b.ownerToken, "CATALOG-A", "MANUFACTURER-A", "VARIANT-A")).status === 201, "different shops may use the same manufacturer/SKU codes");
+  const races = await Promise.all([
+    create(a.ownerToken, "RACE-PRODUCT-A", "RACE-SCAN", "RACE-VARIANT-A"),
+    create(a.ownerToken, "RACE-PRODUCT-B", "RACE-BARCODE-B", "RACE-SCAN"),
+  ]);
+  check(races.filter((r) => r.status === 201).length === 1 && races.filter((r) => r.status === 409).length === 1, "concurrent cross-field claims allow only one owner of a scan code");
+  const blocker = await create(a.ownerToken, "AUTO-BLOCKER", "AUTO-BLA", "AUTO-BLOCKER-VARIANT");
+  check(blocker.status === 201, "auto-code collision fixture is created");
+  const automatic = await call("/products", { method: "POST", token: a.ownerToken, body: {
+    name: "Automatic code", sku: "AUTO", costPrice: "1", sellPrice: "2", variants: { hasVariants: true, rows: [{ colorId: a.colorId, quantity: 1 }] }, openingStock: { dateReceived: isoDate(0) },
+  } });
+  check(automatic.status === 201 && automatic.body.data?.product?.variants[0]?.sku === "AUTO-BLA-2", "auto SKU allocates a suffix when a manufacturer barcode already owns the candidate");
+  const crossPatch = await call(`/products/${product.id}/variants`, { method: "PATCH", token: a.ownerToken, body: { updates: [{ variantId: variant.id, barcode: "AUTO-BLA-2" }] } });
+  check(crossPatch.status === 409, "variant edit cannot create a SKU/barcode cross-field collision");
+  const reserved = await create(a.ownerToken, "RESERVED-PRODUCT", scan, "RESERVED-VARIANT");
+  check(reserved.status === 409, "internal label namespace cannot be reused as a custom barcode");
+  const blank = await call(`/products/${product.id}/variants`, { method: "PATCH", token: a.ownerToken, body: { updates: [{ variantId: variant.id, sku: "" }] } });
+  check(blank.status === 422, "existing variant SKU cannot be cleared");
+  const inactive = await call(`/products/${product.id}/variants`, { method: "PATCH", token: a.ownerToken, body: { updates: [{ variantId: variant.id, isActive: false }] } });
+  check(inactive.status === 200 && (await call(`/products/lookup?code=${scan}`, { token: a.ownerToken })).status === 404, "inactive variants do not scan into POS");
+  check((await call(search, { token: a.ownerToken })).body.data?.products[0]?.id === product.id, "Products management can find a product by an inactive variant's internal label");
+  await call(`/products/${product.id}`, { method: "DELETE", token: a.ownerToken });
+  check((await call(search, { token: a.ownerToken })).body.data?.total === 0, "deleted products stay hidden from active internal-barcode search");
+  check((await call(`${search}&status=deleted`, { token: a.ownerToken })).body.data?.products[0]?.id === product.id, "Deleted filter can find archived products by their internal label");
+
 }

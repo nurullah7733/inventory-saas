@@ -143,6 +143,39 @@ async function main() {
     await waitFor(`document.body.innerText.includes("Ladies Heel")`);
     report(`${width}: page scrollWidth fits = ${await evaluate("document.documentElement.scrollWidth <= innerWidth")}`);
 
+    // Labels use the same stable ID for every copy; mock only the OS print dialog.
+    await evaluate(`document.querySelector('[aria-label="Print labels for Ladies Heel"]').click()`);
+    await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 27 labels")`);
+    await clickButton("Clear copies", '[role="dialog"]');
+    await setValue('[role="dialog"] input[aria-label^="Label copies for"]', "2");
+    await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 2 labels")`);
+    await evaluate(`(() => {
+      const original = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "contentWindow");
+      Object.defineProperty(HTMLIFrameElement.prototype, "contentWindow", { configurable: true, get() {
+        const win = original.get.call(this);
+        if (win) win.print = () => { window.__printedLabels = { count: win.document.querySelectorAll("article").length, svg: win.document.querySelectorAll("article svg").length, text: win.document.body.textContent, page: win.document.querySelector("style").textContent }; };
+        return win;
+      }});
+    })()`);
+    await clickButton("Print 2 labels", '[role="dialog"]');
+    await waitFor(`window.__printedLabels?.count === 2`);
+    assert.ok(await evaluate(`window.__printedLabels.svg === 2 && window.__printedLabels.text.includes("Ladies Heel") && window.__printedLabels.text.includes("87654321.09") && window.__printedLabels.page.includes("70mm 40mm")`), "print document includes barcode, current price and paper dimensions");
+    report(`${width}: barcode preview and two-copy print document = true`);
+    if (width === 360) {
+      for (const paper of ["roll100", "a4"]) {
+        await evaluate(`(() => { const field = document.querySelector('[role="dialog"] select'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(field, ${JSON.stringify(paper)}); field.dispatchEvent(new Event("change", { bubbles: true })); window.__printedLabels = null; })()`);
+        await clickButton("Print 2 labels", '[role="dialog"]');
+        await waitFor(`window.__printedLabels?.count === 2`);
+        assert.ok(await evaluate(`window.__printedLabels.page.includes(${JSON.stringify(paper === "a4" ? "size: A4" : "100mm 50mm")})`), `${paper}: print page dimensions`);
+      }
+      report("70mm, 100mm and A4 print layouts verified");
+    }
+    await evaluate(`document.querySelector('[role="dialog"] svg[role="img"]').scrollIntoView({ block: "center" })`);
+
+    await shot(path.join(`barcode-labels-${width}.png`));
+    await evaluate(`document.querySelector('[role="dialog"] button[aria-label="Close"]').click()`);
+    await waitFor(`!document.querySelector('[role="dialog"]')`);
+
     // --- Add product modal --------------------------------------------------
     await evaluate(`Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Add product").click()`);
     await waitFor(`!!document.querySelector('[role="dialog"]') && document.querySelector('[role="dialog"]').textContent.includes("Variants")`);

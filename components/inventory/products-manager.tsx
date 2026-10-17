@@ -38,7 +38,6 @@ import {
   buildCombinations,
   buildLabel,
   MAX_VARIANT_COMBINATIONS,
-  skuToken,
   variantSkuBase,
 } from "@/lib/inventory/variant-combinations.ts";
 import {
@@ -64,6 +63,7 @@ import { ConfirmSheet, Sheet } from "@/components/ui/sheet.tsx";
 import { BRANDS_QUERY_KEY } from "./brands-manager.tsx";
 import { CATEGORIES_QUERY_KEY } from "./categories-manager.tsx";
 import { AddStockSheet, useSuppliers } from "./stock-manager.tsx";
+import { BarcodeLabelSheet } from "./barcode-label-sheet.tsx";
 import { variantsQueryKey } from "./variant-options-manager.tsx";
 
 /**
@@ -122,6 +122,7 @@ export function ProductsManager() {
   const [formTarget, setFormTarget] = useState<ProductResponse | "new" | null>(null);
   const [deleting, setDeleting] = useState<ProductResponse | null>(null);
   const [restocking, setRestocking] = useState<ProductResponse | null>(null);
+  const [labelProduct, setLabelProduct] = useState<ProductResponse | null>(null);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkAction, setBulkAction] = useState<BulkProductAction | null>(null);
@@ -215,7 +216,7 @@ export function ProductsManager() {
             setPage(1);
             clearSelection();
           }}
-          label="Search by name or SKU"
+          label="Scan or type SKU / barcode"
           className="sm:min-w-56 sm:flex-1"
         />
         <select
@@ -333,6 +334,7 @@ export function ProductsManager() {
               selecting={selecting}
               selected={selectedIds.has(product.id)}
               onToggle={() => toggleProduct(product.id)}
+              onPrint={() => setLabelProduct(product)}
               onEdit={() => setFormTarget(product)}
               onDelete={() => setDeleting(product)}
               onRestock={() => setRestocking(product)}
@@ -360,6 +362,8 @@ export function ProductsManager() {
           }}
         />
       ) : null}
+
+      <BarcodeLabelSheet product={labelProduct} onClose={() => setLabelProduct(null)} />
 
       <ProductFormSheet
         target={formTarget}
@@ -473,6 +477,7 @@ function ProductRow({
   onEdit,
   onDelete,
   onRestock,
+  onPrint,
   onRestore,
 }: {
   product: ProductResponse;
@@ -485,6 +490,7 @@ function ProductRow({
   onEdit: () => void;
   onDelete: () => void;
   onRestock: () => void;
+  onPrint: () => void;
   onRestore: () => void;
 }) {
   const daysLeft = product.expiryDate ? daysBetween(localToday(), product.expiryDate) : null;
@@ -553,7 +559,7 @@ function ProductRow({
             </p>
           ) : null}
         </div>
-        <div className={`grid w-full gap-small [&>button]:min-w-0 [&>button]:px-small ${canEdit && !product.isDeleted ? "grid-cols-3" : "grid-cols-1"} sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:[&>button]:px-control-button`}>
+        <div className={`grid w-full gap-small [&>button]:min-w-0 [&>button]:px-small ${canEdit && !product.isDeleted ? "grid-cols-2" : "grid-cols-1"} sm:flex sm:w-auto sm:flex-wrap sm:justify-end sm:[&>button]:px-control-button`}>
           {product.isDeleted ? (
             canEdit ? (
               <Button type="button" variant="ghost" aria-label={`Restore ${product.name}`} onClick={onRestore}>
@@ -570,6 +576,7 @@ function ProductRow({
                   <Button type="button" variant="ghost" aria-label={`Edit ${product.name}`} onClick={onEdit}>
                     Edit
                   </Button>
+                  <Button type="button" variant="ghost" aria-label={`Print labels for ${product.name}`} onClick={onPrint}>Print labels</Button>
                   <Button
                     type="button"
                     variant="ghost"
@@ -1111,7 +1118,6 @@ function ProductFormBody({
 
   const errors = form.formState.errors;
   const watchSku = useWatch({ control: form.control, name: "sku" }) ?? "";
-  const watchName = useWatch({ control: form.control, name: "name" }) ?? "";
   const defaultCostPrice = useWatch({ control: form.control, name: "costPrice" }) ?? "";
   const defaultSellPrice = useWatch({ control: form.control, name: "sellPrice" }) ?? "";
   const watchUnitId = useWatch({ control: form.control, name: "unitId" }) ?? "";
@@ -1234,7 +1240,6 @@ function ProductFormBody({
           comboCount={combos.ok ? combos.combos.length : combos.total}
           combosExceedCap={!combos.ok}
           selectedKinds={selectedKinds}
-          productName={watchName}
           productSku={watchSku}
           defaultCostPrice={defaultCostPrice}
           defaultSellPrice={defaultSellPrice}
@@ -1382,7 +1387,6 @@ function VariantBuilderSection({
   comboCount,
   combosExceedCap,
   selectedKinds,
-  productName,
   productSku,
   defaultCostPrice,
   defaultSellPrice,
@@ -1401,7 +1405,6 @@ function VariantBuilderSection({
   comboCount: number;
   combosExceedCap: boolean;
   selectedKinds: BuilderKind[];
-  productName: string;
   productSku: string;
   defaultCostPrice: string;
   defaultSellPrice: string;
@@ -1458,7 +1461,6 @@ function VariantBuilderSection({
                 {createdRows.length > 0 ? (
                   <CreatedVariantsPreview
                     rows={createdRows}
-                    productName={productName}
                     productSku={productSku}
                     defaultCostPrice={defaultCostPrice}
                     defaultSellPrice={defaultSellPrice}
@@ -1950,7 +1952,6 @@ function VariantQuantityList({
  */
 function CreatedVariantsPreview({
   rows,
-  productName,
   productSku,
   defaultCostPrice,
   defaultSellPrice,
@@ -1958,7 +1959,6 @@ function CreatedVariantsPreview({
   onRowChange,
 }: {
   rows: BuilderRow[];
-  productName: string;
   productSku: string;
   defaultCostPrice: string;
   defaultSellPrice: string;
@@ -1993,7 +1993,7 @@ function CreatedVariantsPreview({
               </div>
               <div className="flex min-h-9 items-center justify-between gap-item">
                 <span className="min-w-0 flex-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
-                  {row.sku.trim() !== "" ? row.sku.toUpperCase() : rowSkuPreview(row, productSku, productName) ?? "auto"}
+                  {row.sku.trim() !== "" ? row.sku.toUpperCase() : rowSkuPreview(row, productSku) ?? "auto"}
                 </span>
                 <Button
                   type="button"
@@ -2059,32 +2059,21 @@ function VariantSummaryBar({ count, units }: { count: number; units: number }) {
   );
 }
 
-/** Initials of the product name ("Runner Pro" → "RP"), for the SKU preview. */
-function nameSkuPrefix(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return "";
-  if (words.length === 1) return skuToken(words[0]!);
-  const initials = words
-    .map((word) => word[0]!.toUpperCase())
-    .join("")
-    .slice(0, 3);
-  return initials;
-}
-
 /** What the server will generate when the row's SKU is left blank. */
-function rowSkuPreview(row: BuilderRow, productSku: string, productName: string) {
+function rowSkuPreview(row: BuilderRow, productSku: string) {
   if (row.sku.trim() !== "" || row.label === "Default") return null;
   // The label joins the values in size, color, weight order — the same order
-  // the server's SKU generator uses. A blank product SKU falls back to the
-  // name initials for the preview; the shop code prefixes the saved rows.
-  const prefix = productSku.trim() !== "" ? productSku : nameSkuPrefix(productName);
+  // the server's SKU generator uses. Generated product codes are assigned on save.
+  if (productSku.trim() === "") return "Assigned on save";
+  const prefix = productSku;
   const parts = row.label.split(" / ");
+  let index = 0;
   const base = variantSkuBase(prefix, {
-    size: parts[0] ?? null,
-    color: parts[1] ?? null,
-    weight: parts[2] ?? null,
+    size: row.sizeId ? parts[index++] ?? null : null,
+    color: row.colorId ? parts[index++] ?? null : null,
+    weight: row.weightId ? parts[index++] ?? null : null,
   });
-  return base === "" ? null : `auto: ${base}`;
+  return base === "" ? null : `Suggested: ${base} (assigned on save)`;
 }
 
 function UnitSelect({
@@ -2438,7 +2427,6 @@ function EditVariantsSection({
                 {newRows.length > 0 ? (
                   <CreatedVariantsPreview
                     rows={newRows}
-                    productName={product.name}
                     productSku={product.sku}
                     defaultCostPrice={product.costPrice}
                     defaultSellPrice={product.sellPrice}

@@ -1,3 +1,4 @@
+import { lockCatalogCodes, catalogCodeConflict } from "@/lib/inventory/catalog-codes.ts";
 import { changedFields, recordAudit } from "@/lib/audit/log.ts";
 import { withTenantAuth, type TenantRequestContext } from "@/lib/api/guard.ts";
 import { apiError, apiSuccess, validationError } from "@/lib/api/response.ts";
@@ -80,6 +81,7 @@ export const PATCH = withTenantAuth(
     const parsed = productPatchSchema.safeParse(body.value);
     if (!parsed.success) return validationError(parsed.error);
     const patch = parsed.data;
+    await lockCatalogCodes(auth.scope);
 
     const current = await findProduct(auth.scope, id);
     if (!current) return apiError("NOT_FOUND", NOT_FOUND, 404);
@@ -123,6 +125,10 @@ export const PATCH = withTenantAuth(
       if (clash) return skuTaken(patch.sku, clash);
     }
 
+    if (patch.sku !== undefined && patch.sku !== current.sku) {
+      const conflict = await catalogCodeConflict(auth.scope, id, patch.sku, current.variants);
+      if (conflict) return apiError("CONFLICT", conflict, 409, { sku: [conflict] });
+    }
     const { costPrice, sellPrice, ...rest } = patch;
     try {
       await auth.scope.Product.where({ id }).update({

@@ -95,13 +95,15 @@ export function skuToken(value: string): string {
  * dropped, so a size-only variant is "LH-37".
  */
 export function variantSkuBase(prefix: string, combo: VariantCombo): string {
-  const segments = [
-    skuToken(prefix),
-    skuToken(combo.size ?? ""),
+  const optionToken = (value: string | null) => (value ?? "").toUpperCase().replace(/[^A-Z0-9]+/g, "").slice(0, 12);
+  const options = [
+    optionToken(combo.size),
     skuToken(combo.color ?? ""),
-    skuToken(combo.weight ?? ""),
+    optionToken(combo.weight),
   ].filter((segment) => segment !== "");
-  return segments.join("-");
+  const suffix = options.join("-");
+  const product = prefix.trim().toUpperCase().slice(0, 64 - (suffix ? suffix.length + 1 : 0));
+  return [product, suffix].filter(Boolean).join("-");
 }
 
 /**
@@ -116,7 +118,8 @@ export function generateUniqueSku(base: string, taken: Set<string>): string {
     return base;
   }
   for (let suffix = 2; ; suffix += 1) {
-    const candidate = `${base}-${suffix}`;
+    const tail = `-${suffix}`;
+    const candidate = `${base.slice(0, 64 - tail.length)}${tail}`;
     if (!taken.has(candidate)) {
       taken.add(candidate);
       return candidate;
