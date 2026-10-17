@@ -17,6 +17,7 @@ export interface CurrentTenantResponse {
     phone: string | null;
     address: string | null;
     currencySymbol: string;
+    invoiceType: string;
     vatPercentage: string;
     lowStockThreshold: number;
     subscriptionPlan: string;

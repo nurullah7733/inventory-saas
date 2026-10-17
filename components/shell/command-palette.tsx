@@ -29,7 +29,7 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", shortcut);
   }, []);
   return <Dialog.Root open={open} onOpenChange={(next) => { setOpen(next); if (next) setTerm(""); }}>
-    <Dialog.Trigger aria-label="Search" className="flex h-10 w-10 shrink-0 items-center justify-center gap-small rounded-full bg-surface-muted text-xs text-muted lg:h-11 lg:w-56 lg:px-item"><AppIcon name="search" className="shrink-0" /><span className="hidden flex-1 text-left lg:inline">Search pages…</span><kbd className="hidden shrink-0 rounded border border-border px-compact py-micro text-[10px] lg:inline">⌘/Ctrl K</kbd></Dialog.Trigger>
+    <Dialog.Trigger aria-label="Search pages" aria-keyshortcuts="Control+k Meta+k" title="Search pages (Ctrl/Cmd + K)" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted"><AppIcon name="search" /></Dialog.Trigger>
     <Dialog.Portal>
       <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40 motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 duration-150" />
       <Dialog.Content aria-describedby={undefined} className="fixed inset-0 z-40 m-auto flex flex-col gap-content w-[calc(100%-2rem)] max-w-lg h-fit rounded-xl border border-border bg-surface p-content text-foreground shadow-app outline-none motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:zoom-out-95 duration-150">

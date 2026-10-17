@@ -1,3 +1,4 @@
+import { findProduct } from "@/lib/inventory/product-queries.ts";
 import { variantIdFromLabel } from "@/lib/inventory/label-codes.ts";
 import { escapeLike } from "@/lib/inventory/master-data.ts";
 import { or } from "@prisma/orm-postgres/orm-client";
@@ -35,6 +36,17 @@ export const GET = withTenantAuth(async (request: Request, auth) => {
 
   if (matches.length > 1) return apiError("CONFLICT", "This scan code matches multiple variants. Resolve their SKU/barcode conflict before selling.", 409);
   const variant = matches[0];
+
+  // Optional parent-SKU resolution for the unified invoice field. Multi-variant
+  // products require a user choice; never silently select the first variant.
+  if (!variant && params.get("includeProduct") === "true") {
+    const parent = await auth.scope.Product.select("id").where({ sku: code, isDeleted: false }).first();
+    if (parent) {
+      const product = await findProduct(auth.scope, parent.id);
+      if (product?.variants.some((row) => row.isActive)) return apiSuccess({ product });
+    }
+  }
+
 
   if (!variant || !variant.product) {
     return apiError("NOT_FOUND", "No product variant with this SKU or barcode.", 404);

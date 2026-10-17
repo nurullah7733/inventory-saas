@@ -1,3 +1,4 @@
+import { nextScanQuantity } from "../lib/sales/scan-quantity.ts";
 import assert from "node:assert/strict";
 import { invoiceTotals, allocateLineCredits, returnCredit, settledAmounts } from "../lib/sales/calculations.ts";
 import { invoiceSchema, returnSchema } from "../lib/sales/schemas.ts";
@@ -32,3 +33,14 @@ assert.equal(invoiceSchema.safeParse({ status: "completed", items: [{ ...item, q
 assert.equal(invoiceSchema.safeParse({ status: "draft", items: [{ ...item, unitPrice: "NaN" }] }).success, false);
 assert.equal(returnSchema.safeParse({ saleItemId: item.productId, quantity: 0 }).success, false);
 console.log("Sales calculations and validation passed (including 300 allocation scenarios).");
+
+assert.equal(nextScanQuantity(0, 3), 1);
+assert.equal(nextScanQuantity(1, 3), 2);
+assert.equal(nextScanQuantity(0, 0.5), 0.5, "measured stock below one unit remains sellable");
+assert.equal(nextScanQuantity(0.3, 0.5), 0.5);
+assert.equal(nextScanQuantity(0.1, 1.2), 1.1, "increments do not accumulate floating-point drift");
+assert.throws(() => nextScanQuantity(3, 3), /No more stock/);
+assert.throws(() => nextScanQuantity(0, 0), /No more stock/);
+assert.throws(() => nextScanQuantity(Number.NaN, 3), /Correct/);
+assert.throws(() => nextScanQuantity(-1, 3), /Correct/);
+assert.throws(() => nextScanQuantity(0.0001, 3), /Correct/);

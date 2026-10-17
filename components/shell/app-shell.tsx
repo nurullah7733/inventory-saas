@@ -15,7 +15,6 @@ import { AppIcon } from "@/components/ui/app-icon.tsx";
 import { SidebarNavigation } from "./sidebar-navigation.tsx";
 import { SidebarPlanCard } from "./sidebar-plan-card.tsx";
 import { ThemeSwitch } from "./theme-switch.tsx";
-import { CommandPalette } from "./command-palette.tsx";
 import { NotificationMenu } from "./notification-menu.tsx";
 import { navigationLinks, isActiveRoute } from "@/lib/client/navigation.ts";
 import { canNavigate, canViewFinance } from "@/lib/dashboard/permissions.ts";
@@ -283,6 +282,7 @@ export function AppShell({
   // The server snapshot lets the shell paint the real workspace immediately;
   // the moment the browser session resolves, the real session data takes over.
   const viewerRole: UserRole | undefined = session?.user.role ?? initial?.role;
+  const showNewSale = !!viewerRole && viewerRole !== "super_admin" && pathname !== "/sales/create";
   const optimistic = status === "loading" && initial != null;
 
   if (status !== "authenticated" && !optimistic) {
@@ -437,7 +437,7 @@ export function AppShell({
               >
                 <AppIcon name="menu" />
               </button>
-              <div className="shrink-0 lg:hidden">
+              <div className={showNewSale ? "hidden shrink-0 sm:block lg:hidden" : "shrink-0 lg:hidden"}>
                 <TenantLogo
                   key={tenant?.logoUrl ?? "initial"}
                   name={tenant?.name ?? ""}
@@ -466,10 +466,10 @@ export function AppShell({
                 </p>
               </div>
               <div className="flex shrink-0 items-center justify-end gap-micro lg:gap-small">
+                {showNewSale && <Link href="/sales/create" aria-label="New sale" className="inline-flex min-h-10 shrink-0 items-center justify-center gap-tight rounded-lg bg-primary px-small text-xs font-medium text-surface sm:min-h-9 sm:px-item"><span aria-hidden="true">+</span>New sale</Link>}
                 <div className="hidden shrink-0 min-[400px]:block">
                   <ThemeSwitch />
                 </div>
-                <CommandPalette />
                 <NotificationMenu />
                 <ProfileMenu
                   key={pathname}

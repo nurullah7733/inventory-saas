@@ -14,6 +14,7 @@ import { fromCents, QUANTITY_PATTERN, toCents } from "@/lib/numeric.ts";
 import { returnCredit, settledAmounts } from "@/lib/sales/calculations.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 import { ErrorState, ListSkeleton } from "@/components/ui/list-controls.tsx";
+import { InvoicePrintButton } from "./invoice-print-button.tsx";
 import { InvoiceEditor, invalidateSales } from "./invoice-editor.tsx";
 
 function ReturnForm({ invoice }: { invoice: InvoiceData }) {
@@ -74,6 +75,13 @@ export function InvoiceDetail({ id }: { id: string }) {
     <h1 className="break-all text-xl font-semibold">{invoice.invoiceNo}</h1>
     <p>{invoice.status === "draft" ? "Draft invoice" : "Completed sale"} · {invoice.customer?.name ?? "Walk-in customer"}</p>
     {invoice.status === "draft" ? <InvoiceEditor key={invoice.id} invoice={invoice} /> : <>
+      <div className="ui-panel space-y-content">
+        <div className="flex flex-wrap items-center justify-between gap-item">
+          <h2 className="font-semibold">Sale completed</h2>
+          <Link href="/sales/create" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-control-button text-sm font-semibold text-surface">Next sale</Link>
+        </div>
+        <InvoicePrintButton id={invoice.id} />
+      </div>
       <div className="space-y-item">{invoice.items.map((item) => <article key={item.id} className="rounded-xl border border-zinc-200 p-content dark:border-zinc-800"><h2 className="font-semibold">{item.name}</h2><p className="text-sm text-zinc-500">{item.sku}</p><p>{item.quantity} × {currency} {item.unitPrice} = {currency} {item.subtotal}</p><p className="text-sm">Returned: {item.returnedQuantity} · Returnable: {item.returnableQuantity}</p></article>)}</div>
       <dl className="grid grid-cols-2 gap-item rounded-xl bg-zinc-100 p-content dark:bg-zinc-900">{[
         ["Subtotal", invoice.subtotal], ["Discount", invoice.discount], ["VAT", invoice.vatAmount], ["Original total", invoice.totalAmount],

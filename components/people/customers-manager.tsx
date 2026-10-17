@@ -7,15 +7,15 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
 import { useCanManageInventory } from "@/lib/client/current-tenant.ts";
 import { errorMessage, plural } from "@/lib/client/format.ts";
 import { useDebouncedValue } from "@/lib/client/use-debounced-value.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
-import { customerSchema, type CustomerResponse } from "@/lib/people/customers.ts";
+import { customerSchema, normalizePhone, type CustomerResponse } from "@/lib/people/customers.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
 import {
   Badge,
@@ -277,12 +277,14 @@ const FORM_FIELDS = ["name", "phone"] as const;
 const SAVE_CUSTOMER_MUTATION = ["people", "customer-save"] as const;
 
 /** The form remounts on every opening, so "Add" always starts blank. */
-function CustomerFormSheet({
+export function CustomerFormSheet({
   target,
   onClose,
+  onSaved,
 }: {
   target: CustomerResponse | "new" | null;
   onClose: () => void;
+  onSaved?: (customer: CustomerResponse) => void;
 }) {
   const saving = useIsMutating({ mutationKey: SAVE_CUSTOMER_MUTATION }) > 0;
   const editing = target !== null && target !== "new" ? target : null;
@@ -294,7 +296,7 @@ function CustomerFormSheet({
       }}
       title={editing ? "Edit customer" : "Add customer"}
     >
-      <CustomerFormBody editing={editing} onClose={onClose} />
+      <CustomerFormBody editing={editing} onClose={onClose} onSaved={onSaved} />
     </Sheet>
   );
 }
@@ -302,10 +304,14 @@ function CustomerFormSheet({
 function CustomerFormBody({
   editing,
   onClose,
+  onSaved,
 }: {
   editing: CustomerResponse | null;
   onClose: () => void;
+  onSaved?: (customer: CustomerResponse) => void;
 }) {
+  const submitting = useRef(false);
+  const [existing, setExisting] = useState<CustomerResponse | null>(null);
   const queryClient = useQueryClient();
 
   const form = useForm<CustomerForm>({
@@ -316,17 +322,26 @@ function CustomerFormBody({
     },
   });
 
+  const currentPhone = useWatch({ control: form.control, name: "phone" });
   const save = useMutation({
     mutationKey: SAVE_CUSTOMER_MUTATION,
     mutationFn: (values: CustomerForm) =>
       editing
         ? apiRequest<CustomerEnvelope>(`/customers/${editing.id}`, { method: "PATCH", body: values })
         : apiRequest<CustomerEnvelope>("/customers", { method: "POST", body: values }),
-    onSuccess: () => {
+    onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: CUSTOMERS_QUERY_KEY });
+      onSaved?.(result.customer);
       onClose();
     },
-    onError: (error) => {
+    onError: async (error, values) => {
+      if (onSaved && error instanceof ApiClientError && error.status === 409 && values.phone) {
+        try {
+          const phone = normalizePhone(values.phone);
+          const result = await apiRequest<ListEnvelope>(`/customers?status=all&pageSize=100&search=${encodeURIComponent(phone)}`);
+          setExisting(result.customers.find((customer) => customer.phone === phone) ?? null);
+        } catch { /* Keep the original save error visible; allow retry. */ }
+      }
       if (error instanceof ApiClientError && error.details) {
         for (const field of FORM_FIELDS) {
           const message = error.details[field]?.[0];
@@ -336,19 +351,25 @@ function CustomerFormBody({
     },
   });
 
-  const onSubmit = form.handleSubmit((values) => {
-    toast.promise(save.mutateAsync(values), {
+  const onSubmit = async (values: CustomerForm) => {
+    if (submitting.current) return;
+    submitting.current = true;
+    setExisting(null);
+    const promise = save.mutateAsync(values);
+    toast.promise(promise, {
       loading: editing ? "Saving customer…" : "Adding customer…",
       success: (result: CustomerEnvelope) =>
         editing ? `Saved "${result.customer.name}".` : `Added "${result.customer.name}".`,
       error: (error: unknown) => errorMessage(error, "Could not save."),
     });
-  });
+    try { await promise; } catch { /* Render mutation and field errors below. */ }
+    finally { submitting.current = false; }
+  };
 
   const errors = form.formState.errors;
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-content" noValidate>
+    <form onSubmit={(event) => { event.stopPropagation(); void form.handleSubmit(onSubmit)(event); }} className="flex flex-col gap-content" noValidate>
       <Field label="Name" error={errors.name?.message} required>
         {(props) => (
           <input
@@ -377,6 +398,13 @@ function CustomerFormBody({
         One phone number per customer in your shop. Spaces and dashes are ignored.
       </p>
 
+      {save.isError && <p role="alert" className="text-sm text-red-600">{save.error.message}</p>}
+      {existing && normalizePhone(currentPhone) === existing.phone && onSaved && (
+        <div className="space-y-small rounded-lg border border-border p-item">
+          <p className="text-sm">{existing.name} - {existing.phone}{existing.isActive ? "" : " (inactive; reactivate in Customers before selecting)"}</p>
+          {existing.isActive && <Button type="button" variant="ghost" onClick={() => { onSaved(existing); onClose(); }}>Select existing customer</Button>}
+        </div>
+      )}
       <div className="flex flex-col-reverse gap-small sm:flex-row sm:justify-end">
         <Button type="button" variant="ghost" disabled={save.isPending} onClick={onClose}>
           Cancel

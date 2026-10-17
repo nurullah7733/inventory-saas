@@ -1338,6 +1338,11 @@ async function catalogCodeChecks(a: Fixture, b: Fixture): Promise<void> {
   if (first.status !== 201) throw new Error(JSON.stringify(first.body));
   const product = first.body.data.product; const variant = product.variants[0];
   const scan = labelCode(variant.id);
+  const parentLookup = await call("/products/lookup?includeProduct=true&code=CATALOG-A", { token: a.ownerToken });
+  check(parentLookup.status === 200 && parentLookup.body.data?.product?.id === product.id, "unified invoice lookup resolves a parent SKU without silently choosing its variant");
+  check((await call("/products/lookup?code=CATALOG-A", { token: a.ownerToken })).status === 404, "strict barcode lookup retains its variant-only contract");
+  check((await call("/products/lookup?includeProduct=true&code=CATALOG-A", { token: b.ownerToken })).status === 404, "parent-SKU lookup is tenant isolated");
+
   const search = `/products?search=${scan}`;
   const found = await call(search, { token: a.staffToken });
   check(found.status === 200 && found.body.data?.total === 1 && found.body.data?.products[0]?.id === product.id, "Products search resolves a full internal barcode to its parent product");
