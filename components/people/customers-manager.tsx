@@ -1,5 +1,7 @@
 "use client";
 
+import { customersListOptions } from "@/lib/client/navigation-queries.ts";
+
 import {
   keepPreviousData,
   useIsMutating,
@@ -38,8 +40,6 @@ import { ConfirmSheet, Sheet } from "@/components/ui/sheet.tsx";
 
 export const CUSTOMERS_QUERY_KEY = ["people", "customers"] as const;
 
-const PAGE_SIZE = 20;
-
 interface ListEnvelope {
   customers: CustomerResponse[];
   page: number;
@@ -72,16 +72,7 @@ export function CustomersManager() {
   const term = useDebouncedValue(search.trim(), 300);
 
   const list = useQuery({
-    queryKey: [...CUSTOMERS_QUERY_KEY, "list", { term, filter, page }],
-    queryFn: () => {
-      const params = new URLSearchParams({
-        status: filter,
-        page: String(page),
-        pageSize: String(PAGE_SIZE),
-      });
-      if (term) params.set("search", term);
-      return apiRequest<ListEnvelope>(`/customers?${params}`);
-    },
+    ...customersListOptions({ term, filter, page }),
     placeholderData: keepPreviousData,
   });
 

@@ -169,7 +169,7 @@ export const POST = withPublicRoute(async (request: Request) => {
   await recordAudit({ tenantId: user.tenantId, userId: user.id,
     action: "auth.login", entityType: "user", entityId: user.id });
   const response = apiSuccess(payload);
-  // Mirror the refresh token for Server-Component first-paint reads; the API
+  // Retain the HttpOnly refresh-token mirror for the auth cookie lifecycle; the API
   // itself keeps authenticating with the bearer token only.
   setSessionCookie(response, session.refreshToken);
   return response;

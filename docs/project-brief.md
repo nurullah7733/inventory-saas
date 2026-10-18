@@ -36,7 +36,7 @@ This project has exactly **one API**, built as Next.js API routes under `/api/v1
 
 ### Frontend Stack
 
-- **Server state / data fetching**: TanStack Query — all API/DB-backed data (products, stock, sales, invoices, customers, reports, current-tenant info). Use Next.js Server Components + native `fetch` for the initial/first-paint data load; use TanStack Query in Client Components for anything the user creates/edits/filters afterward (mutations, refetch-on-invalidate, loading/error states).
+- **Server state / data fetching**: TanStack Query — all API/DB-backed data (products, stock, sales, invoices, customers, reports, current-tenant info). Pages and layouts are thin wrappers; load all authenticated data through TanStack Query client hooks with independent loading/error states.
 - **Client/UI state**: React `useState`/`useContext` for local or shallow state; Zustand only for small pieces of UI-only state shared across many components (e.g. mobile sidebar open/close, in-progress invoice cart before submit). Do not use Zustand for anything that comes from the database — that belongs in TanStack Query.
 - **Forms**: React Hook Form + Zod (share Zod schemas between client-side form validation and server-side API validation where practical)
 - **Styling/UI**: Tailwind CSS + Radix UI primitives (use shadcn/ui components built on Radix as the component layer)
@@ -437,7 +437,7 @@ created_at   timestamptz default now()
 
 22. Reports sharing: extend the existing PDF/Excel exports with a Share action using the native Web Share API where supported, with download fallback elsewhere. Share the same generated files and respect current date-range filters, tenant permissions, and loading/error states.
 
-23. Initial data loading: implement the brief's authenticated Server Component/native-fetch first-paint loading where appropriate, then hydrate TanStack Query for client-side filtering and mutations. Never share tenant data through a global server cache or rely on browser-only cookies as the API's authentication mechanism.
+23. Initial data loading: render the shell immediately and load data through authenticated client queries, including filtering and mutations. Never share tenant data through a global server cache or rely on browser-only cookies as the API's authentication mechanism.
 
 24. Shared component layer: align reusable controls, dialogs, menus, and forms with the brief's Radix/shadcn requirement while retaining existing spacing tokens, dark mode, keyboard/focus behavior, and mobile layouts. Migrate shared primitives first, then their consumers.
 

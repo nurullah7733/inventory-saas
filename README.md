@@ -121,3 +121,12 @@ npm run lint
 npx tsc --noEmit
 npm run build
 ```
+
+## Client data loading
+
+Pages and layouts render immediately without API or database reads. Browser
+TanStack Query hooks load authenticated data, with skeletons and independent
+dashboard sections. Proxy retains route redirects; APIs retain bearer auth and
+RLS. Session identity changes recreate the browser query cache. Sidebar hover
+and focus warm five primary list destinations using shared query options.
+See [the latency proposal](docs/perf-proposal.md) for further options.

@@ -16,7 +16,6 @@
     "db:verify": "prisma db verify",
     "db:smoke": "node --experimental-strip-types scripts/db-smoke-test.ts",
     "auth:smoke": "node --experimental-strip-types scripts/auth-smoke-test.ts",
-    "firstpaint:smoke": "node --experimental-strip-types scripts/firstpaint-smoke-test.ts",
     "tenant:smoke": "node --experimental-strip-types scripts/tenant-smoke-test.ts",
     "settings:smoke": "node --experimental-strip-types scripts/settings-smoke-test.ts",
     "inventory:smoke": "node --experimental-strip-types scripts/inventory-smoke-test.ts",

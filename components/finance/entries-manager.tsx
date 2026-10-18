@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/client/api.ts";
 import {
@@ -53,7 +53,7 @@ export function EntriesManager({
   if (filters.to) params.set("to", filters.to);
   if (filters.reference)
     params.set(expense ? "categoryId" : "supplierId", filters.reference);
-  const list = useQuery({
+  const list = useQuery({ placeholderData: keepPreviousData,
     queryKey: ["finance", kind, params.toString()],
     queryFn: () =>
       apiRequest<{

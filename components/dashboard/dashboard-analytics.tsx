@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { CardSkeleton } from "./dashboard-card.tsx";
 import { useState } from "react";
 import { useIsFetching, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -14,8 +16,16 @@ import { dashboardDay, type DashboardPeriod } from "@/lib/dashboard/types.ts";
 import type { InsightSection, InsightsResponse } from "@/lib/dashboard/insights-types.ts";
 import { DashboardFilters } from "./dashboard-filters.tsx";
 import { KpiCard } from "./kpi-card.tsx";
-import { SalesOverviewChart } from "./sales-overview-chart.tsx";
-import { CategoryDonut, DuesCard, RecentInvoicesCard, ReturnsSummary, StockAlertsCard, TopProductsTable, type CardState } from "./dashboard-detail-cards.tsx";
+import type { CardState } from "./dashboard-detail-cards.tsx";
+
+const loadingCard = () => <section className="ui-panel"><CardSkeleton /></section>;
+const SalesOverviewChart = dynamic(() => import("./sales-overview-chart.tsx").then((m) => m.SalesOverviewChart), { ssr: false, loading: loadingCard });
+const CategoryDonut = dynamic(() => import("./dashboard-detail-cards.tsx").then((m) => m.CategoryDonut), { ssr: false, loading: loadingCard });
+const DuesCard = dynamic(() => import("./dashboard-detail-cards.tsx").then((m) => m.DuesCard), { ssr: false, loading: loadingCard });
+const RecentInvoicesCard = dynamic(() => import("./dashboard-detail-cards.tsx").then((m) => m.RecentInvoicesCard), { ssr: false, loading: loadingCard });
+const ReturnsSummary = dynamic(() => import("./dashboard-detail-cards.tsx").then((m) => m.ReturnsSummary), { ssr: false, loading: loadingCard });
+const StockAlertsCard = dynamic(() => import("./dashboard-detail-cards.tsx").then((m) => m.StockAlertsCard), { ssr: false, loading: loadingCard });
+const TopProductsTable = dynamic(() => import("./dashboard-detail-cards.tsx").then((m) => m.TopProductsTable), { ssr: false, loading: loadingCard });
 
 export function DashboardAnalytics() {
   const [filter, setFilter] = useState<DashboardPeriod | null>(null);

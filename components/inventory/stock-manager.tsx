@@ -1,5 +1,7 @@
 "use client";
 
+import { stockListOptions } from "@/lib/client/navigation-queries.ts";
+
 import {
   keepPreviousData,
   useIsMutating,
@@ -18,7 +20,6 @@ import { isCalendarDate, localToday } from "@/lib/dates.ts";
 import { zodResolver } from "@/lib/forms/zod-resolver.ts";
 import { decimalQuantity, money, optionalRef, optionalText } from "@/lib/inventory/fields.ts";
 import type {
-  StockMovementListResponse,
   StockMovementResponse,
 } from "@/lib/inventory/stock.ts";
 import type { SupplierResponse } from "@/lib/inventory/suppliers.ts";
@@ -41,8 +42,6 @@ import { SUPPLIERS_QUERY_KEY } from "./suppliers-manager.tsx";
  * Any shop role can receive stock; each entry records who did it.
  */
 
-const PAGE_SIZE = 20;
-
 export function StockManager() {
   const currency = useCurrencySymbol();
   const [page, setPage] = useState(1);
@@ -52,12 +51,7 @@ export function StockManager() {
   const suppliers = useSuppliers();
 
   const list = useQuery({
-    queryKey: ["inventory", "stock-movements", { type: "in", supplierId, page }],
-    queryFn: () => {
-      const params = new URLSearchParams({ type: "in", page: String(page), pageSize: String(PAGE_SIZE) });
-      if (supplierId) params.set("supplierId", supplierId);
-      return apiRequest<StockMovementListResponse>(`/stock-movements?${params}`);
-    },
+    ...stockListOptions({ type: "in", supplierId, page }),
     placeholderData: keepPreviousData,
   });
 

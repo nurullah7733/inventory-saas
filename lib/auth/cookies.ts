@@ -1,17 +1,8 @@
 import type { NextResponse } from "next/server";
 import { refreshTokenTtlSeconds } from "../env.ts";
 
-/**
- * The web app's Server Components need to know who is asking on the very
- * first paint, but access tokens live only in browser memory — a server
- * render can never read them. These helpers mirror the CURRENT refresh token
- * into an HttpOnly cookie alongside the localStorage copy the client keeps.
- *
- * This is deliberately NOT an API authentication mechanism: every API route
- * keeps authenticating with `Authorization: Bearer`, exactly as mobile
- * clients do, and neither `proxy.ts` nor any guard ever reads this cookie.
- * Only `lib/server/first-paint.ts` reads it, to re-derive a short-lived
- * access token for first-paint fetches.
+/** HttpOnly refresh-token mirror retained for the existing auth cookie lifecycle.
+ * Pages and layouts do not read it; API authentication remains bearer-based.
  */
 export const SESSION_COOKIE = "refresh_token";
 
@@ -22,7 +13,7 @@ const cookieBase = {
   path: "/",
 } as const;
 
-/** Mirror a newly issued/rotated refresh token so RSC renders can use it. */
+/** Mirror a newly issued/rotated refresh token for the existing cookie lifecycle. */
 export function setSessionCookie(response: NextResponse, refreshToken: string) {
   response.cookies.set(SESSION_COOKIE, refreshToken, {
     ...cookieBase,

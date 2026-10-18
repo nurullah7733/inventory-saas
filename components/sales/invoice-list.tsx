@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/client/api.ts";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { formatDateTime } from "@/lib/client/format.ts";
 import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
 import { useDebouncedValue } from "@/lib/client/use-debounced-value.ts";
-import type { InvoiceList as InvoiceListData } from "@/lib/sales/types.ts";
+import { invoicesListOptions } from "@/lib/client/navigation-queries.ts";
 import { EmptyState, ErrorState, ListSkeleton, Pager, SearchInput } from "@/components/ui/list-controls.tsx";
 import { Field } from "@/components/ui/field.tsx";
 
@@ -25,7 +24,7 @@ export function InvoiceList({ status }: { status: "draft" | "completed" }) {
     end.setDate(end.getDate() + 1);
     params.set("to", end.toISOString());
   }
-  const query = useQuery({ queryKey: ["sales", "invoices", params.toString()], queryFn: () => apiRequest<InvoiceListData>(`/invoices?${params}`) });
+  const query = useQuery({ placeholderData: keepPreviousData, ...invoicesListOptions(params) });
   return <div className="space-y-content">
     <Link href="/sales/create" className="inline-flex min-h-11 items-center rounded-lg bg-zinc-900 px-content font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">Create invoice</Link>
     <SearchInput value={search} onChange={(value) => { setSearch(value); setPage(1); }} label="Search invoice number" />

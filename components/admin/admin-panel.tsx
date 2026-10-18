@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/client/api.ts";
 import { useRequireSession, useSession, useSignOut } from "@/lib/client/use-session.ts";
@@ -61,7 +61,7 @@ function PlatformDashboard() {
   const [access, setAccess] = useState("all"), [status, setStatus] = useState("all"), [page, setPage] = useState(1);
   const [selected, setSelected] = useState<string | null>(null);
   const params = new URLSearchParams({ search, access, status, page: String(page), pageSize: "20" });
-  const list = useQuery({ queryKey: ["admin", session?.user.id, "tenants", search, access, status, page], queryFn: () => apiRequest<TenantList>(`/admin/tenants?${params}`) });
+  const list = useQuery({ placeholderData: keepPreviousData, queryKey: ["admin", session?.user.id, "tenants", search, access, status, page], queryFn: () => apiRequest<TenantList>(`/admin/tenants?${params}`) });
   const revenue = useQuery({ queryKey: ["admin", session?.user.id, "revenue"], queryFn: () => apiRequest<RevenueSummary>("/admin/revenue"), staleTime: 60000, retry: false });
   return <div className="space-y-roomy">
     <section className="rounded-xl border border-zinc-200 p-section dark:border-zinc-800">

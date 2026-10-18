@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
 import { useSession } from "@/lib/client/use-session.ts";
@@ -27,9 +27,9 @@ export function PurchaseReturnsManager() {
   const params = new URLSearchParams({ page: String(page), pageSize: "20" });
   if (from) params.set("from", `${from}T00:00:00+06:00`);
   if (to) params.set("to", `${addDays(to, 1)}T00:00:00+06:00`);
-  const purchases = useQuery({ queryKey: ["inventory", "purchase-receipts", params.toString()],
+  const purchases = useQuery({ placeholderData: keepPreviousData, queryKey: ["inventory", "purchase-receipts", params.toString()],
     queryFn: () => apiRequest<PurchaseReceiptList>(`/purchase-returns/purchases?${params}`), enabled: tab === "purchases" && datesValid });
-  const history = useQuery({ queryKey: ["inventory", "purchase-returns", params.toString()],
+  const history = useQuery({ placeholderData: keepPreviousData, queryKey: ["inventory", "purchase-returns", params.toString()],
     queryFn: () => apiRequest<PurchaseReturnList>(`/purchase-returns?${params}`), enabled: tab === "returns" && datesValid });
   const query = tab === "purchases" ? purchases : history;
   return <div className="space-y-content">

@@ -10,29 +10,30 @@ export async function getDashboardSummary(auth: TenantRequestContext, period: Da
   const week = dashboardWeek(dashboardDay(now));
   const weekStart = `${week.from}T00:00:00+06:00`, weekEnd = `${addDays(week.to, 1)}T00:00:00+06:00`;
   const start = `${period.from}T00:00:00+06:00`, end = `${addDays(period.to, 1)}T00:00:00+06:00`;
-  const business = await auth.db.orm.public.Tenant.where({ id: tenantId }).select("currencySymbol").first();
-  if (!business) throw new Error("Authenticated shop missing.");
-  const sales = await tx.query(rawSql`SELECT to_char(created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
+  // Schedule independent reads together without opening another connection.
+  const [business, sales, returns, purchases, topProducts] = await Promise.all([
+    auth.db.orm.public.Tenant.where({ id: tenantId }).select("currencySymbol").first(),
+    tx.query(rawSql`SELECT to_char(created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
     COALESCE(SUM(total_amount), 0)::text AS sales, COUNT(*)::text AS invoices
     FROM public.sales WHERE tenant_id = ${tenantId}::uuid AND status = 'completed'
       AND ((created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz)
         OR (created_at >= ${weekStart}::timestamptz AND created_at < ${weekEnd}::timestamptz))
-    GROUP BY 1`.returnsRow({ date: "pg/text@1", sales: "pg/text@1", invoices: "pg/text@1" }).build());
-  const returns = await tx.query(rawSql`SELECT to_char(r.created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
+    GROUP BY 1`.returnsRow({ date: "pg/text@1", sales: "pg/text@1", invoices: "pg/text@1" }).build()),
+    tx.query(rawSql`SELECT to_char(r.created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
     COALESCE(SUM(r.refund_amount), 0)::text AS "salesReturns"
     FROM public.returns r JOIN public.sale_items i ON i.id = r.sale_item_id AND i.tenant_id = ${tenantId}::uuid
     JOIN public.sales s ON s.id = i.sale_id AND s.tenant_id = ${tenantId}::uuid AND s.status = 'completed'
     WHERE r.tenant_id = ${tenantId}::uuid AND ((r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz)
       OR (r.created_at >= ${weekStart}::timestamptz AND r.created_at < ${weekEnd}::timestamptz))
-    GROUP BY 1`.returnsRow({ date: "pg/text@1", salesReturns: "pg/text@1" }).build());
-  const purchases = await tx.query(rawSql`SELECT to_char(created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
+    GROUP BY 1`.returnsRow({ date: "pg/text@1", salesReturns: "pg/text@1" }).build()),
+    tx.query(rawSql`SELECT to_char(created_at AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD') AS date,
     COALESCE(SUM(ROUND(CASE WHEN type = 'in' THEN quantity::numeric * COALESCE(unit_cost, 0) ELSE 0 END, 2)), 0)::text AS purchases,
     COALESCE(SUM(ROUND(CASE WHEN type = 'purchase_return' THEN -quantity::numeric * COALESCE(unit_cost, 0) ELSE 0 END, 2)), 0)::text AS "purchaseReturns"
     FROM public.stock_movements WHERE tenant_id = ${tenantId}::uuid AND type IN ('in', 'purchase_return')
       AND ((created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz)
         OR (created_at >= ${weekStart}::timestamptz AND created_at < ${weekEnd}::timestamptz))
-    GROUP BY 1`.returnsRow({ date: "pg/text@1", purchases: "pg/text@1", purchaseReturns: "pg/text@1" }).build());
-  const topProducts = await tx.query(rawSql`WITH quantities AS (
+    GROUP BY 1`.returnsRow({ date: "pg/text@1", purchases: "pg/text@1", purchaseReturns: "pg/text@1" }).build()),
+    tx.query(rawSql`WITH quantities AS (
     SELECT i.product_id, SUM(i.quantity)::text AS sold, '0'::text AS returned
     FROM public.sale_items i JOIN public.sales s ON s.id = i.sale_id AND s.tenant_id = ${tenantId}::uuid
     WHERE i.tenant_id = ${tenantId}::uuid AND s.status = 'completed'
@@ -48,6 +49,8 @@ export async function getDashboardSummary(auth: TenantRequestContext, period: Da
     FROM quantities q JOIN public.products p ON p.id = q.product_id AND p.tenant_id = ${tenantId}::uuid
     GROUP BY p.id, p.name, p.sku, p.is_deleted HAVING SUM(q.sold::numeric) - SUM(q.returned::numeric) > 0
     ORDER BY SUM(q.sold::numeric) - SUM(q.returned::numeric) DESC, p.name ASC, p.id ASC LIMIT 5`
-    .returnsRow({ id: "pg/uuid@1", name: "pg/text@1", sku: "pg/text@1", isDeleted: "pg/bool@1", soldQuantity: "pg/text@1", returnedQuantity: "pg/text@1", netQuantity: "pg/text@1" }).build());
+    .returnsRow({ id: "pg/uuid@1", name: "pg/text@1", sku: "pg/text@1", isDeleted: "pg/bool@1", soldQuantity: "pg/text@1", returnedQuantity: "pg/text@1", netQuantity: "pg/text@1" }).build())
+  ]);
+  if (!business) throw new Error("Authenticated shop missing.");
   return buildDashboardSummary(period, { sales, returns, purchases, topProducts }, business.currencySymbol, now);
 }

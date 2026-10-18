@@ -22,10 +22,9 @@ function SessionQueryProvider({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // Settings change rarely; a short stale window keeps the screen
-            // from refetching on every tab focus while still picking up a
-            // change made from another device within the minute.
+            // Reuse recent data across navigation; explicit invalidation follows writes.
             staleTime: 60_000,
+            refetchOnWindowFocus: false,
             retry(failureCount, error) {
               // Retrying a 401/403/404/422 just repeats the same answer more
               // slowly. Only transient failures are worth a second attempt.

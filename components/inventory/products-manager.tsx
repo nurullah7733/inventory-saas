@@ -1,5 +1,7 @@
 "use client";
 
+import { productsListOptions } from "@/lib/client/navigation-queries.ts";
+
 import {
   keepPreviousData,
   useIsMutating,
@@ -31,7 +33,6 @@ import {
   type BulkProductsResponse,
   type ProductAttributes,
   type ProductEnvelope,
-  type ProductListResponse,
   type ProductResponse,
 } from "@/lib/inventory/products.ts";
 import {
@@ -71,7 +72,6 @@ import { variantsQueryKey } from "./variant-options-manager.tsx";
  * so search, the category filter and paging all run on the server.
  */
 
-const PAGE_SIZE = 20;
 const NEAR_EXPIRY_DAYS = 30;
 
 type StatusFilter = "active" | "deleted";
@@ -131,13 +131,7 @@ export function ProductsManager() {
   const categories = useCategories();
 
   const list = useQuery({
-    queryKey: [...PRODUCTS_KEY, "list", { term, categoryId, status, page }],
-    queryFn: () => {
-      const params = new URLSearchParams({ status, page: String(page), pageSize: String(PAGE_SIZE) });
-      if (term) params.set("search", term);
-      if (categoryId) params.set("categoryId", categoryId);
-      return apiRequest<ProductListResponse>(`/products?${params}`);
-    },
+    ...productsListOptions({ term, categoryId, status, page }),
     placeholderData: keepPreviousData,
   });
 

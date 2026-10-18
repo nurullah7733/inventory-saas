@@ -1,10 +1,4 @@
-/**
- * The query key and response shape for the authenticated "current tenant"
- * endpoint. Lives in a directive-free module so BOTH the client hook
- * (`lib/client/current-tenant.ts`) and Server Components read the identical
- * identity — a shared cache contract, exactly as the TanStack Query SSR guide
- * requires. Client-module exports cannot be read from an RSC.
- */
+/** Shared query key and response shape for the authenticated current-tenant client query. */
 export const CURRENT_TENANT_QUERY_KEY = ["currentTenant"] as const;
 
 export interface CurrentTenantResponse {

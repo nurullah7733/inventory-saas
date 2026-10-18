@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/client/api.ts";
 import { Button, Field } from "@/components/ui/field.tsx";
@@ -15,7 +15,7 @@ export function ReportsManager({ kind }: { kind: ReportKind }) {
   const [filter, setFilter] = useState(draft);
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
-  const query = useQuery({ queryKey: ["reports", kind, filter],
+  const query = useQuery({ placeholderData: keepPreviousData, queryKey: ["reports", kind, filter],
     queryFn: ({ signal }) => apiRequest<{ report: Report }>(`/reports/${kind}?${new URLSearchParams(filter)}`, { signal }) });
   const report = query.data?.report;
   async function download(format: "pdf" | "excel") {

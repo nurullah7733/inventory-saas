@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { apiRequest } from "@/lib/client/api.ts";
 import { useDebouncedValue } from "@/lib/client/use-debounced-value.ts";
@@ -55,6 +55,7 @@ export function ProductPicker({
   const term = useDebouncedValue(search.trim(), 250);
 
   const results = useQuery({
+    placeholderData: keepPreviousData,
     queryKey: ["inventory", "products", "picker", term],
     queryFn: () =>
       apiRequest<ProductListResponse>(

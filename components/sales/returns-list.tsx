@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/client/api.ts";
 import { formatDateTime } from "@/lib/client/format.ts";
 import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
@@ -12,7 +12,7 @@ import { EmptyState, ErrorState, ListSkeleton, Pager } from "@/components/ui/lis
 export function ReturnsList() {
   const [page, setPage] = useState(1);
   const currency = useCurrencySymbol();
-  const query = useQuery({ queryKey: ["sales", "returns", page], queryFn: () => apiRequest<ReturnList>(`/returns?page=${page}&pageSize=20`) });
+  const query = useQuery({ placeholderData: keepPreviousData, queryKey: ["sales", "returns", page], queryFn: () => apiRequest<ReturnList>(`/returns?page=${page}&pageSize=20`) });
   return <div className="space-y-content">
     <Link href="/sales/invoices" className="inline-flex min-h-11 items-center rounded-lg bg-zinc-900 px-content font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">Add return from an invoice</Link>
     {query.isLoading && <ListSkeleton label="Loading returns" />}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { lockSession } from "@/lib/client/session.ts";
@@ -244,21 +245,7 @@ function ProfileMenu({
   );
 }
 
-export interface ShellInitialSnapshot {
-  workspaceName: string;
-  logoUrl: string | null;
-  role: UserRole;
-}
-
-export function AppShell({
-  children,
-  initial,
-}: {
-  children: React.ReactNode;
-  /** Server-Component snapshot for the very first paint, before the browser
-   * session store has read localStorage. Null on signed-out renders. */
-  initial?: ShellInitialSnapshot | null;
-}) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   const cache = useQueryClient();
   const { status, session } = useRequireSession();
   const pathname = usePathname();
@@ -279,20 +266,10 @@ export function AppShell({
     return () => desktop.removeEventListener("change", closeOnDesktop);
   }, [navigationOpen]);
 
-  // The server snapshot lets the shell paint the real workspace immediately;
-  // the moment the browser session resolves, the real session data takes over.
-  const viewerRole: UserRole | undefined = session?.user.role ?? initial?.role;
+  const viewerRole: UserRole | undefined = session?.user.role;
   const showNewSale = !!viewerRole && viewerRole !== "super_admin" && pathname !== "/sales/create";
-  const optimistic = status === "loading" && initial != null;
 
-  if (status !== "authenticated" && !optimistic) {
-    // `useRequireSession` is already redirecting; this is the frame in between.
-    return (
-      <div className="flex flex-1 items-center justify-center p-large text-sm text-zinc-500">
-        Checking your session…
-      </div>
-    );
-  }
+  if (status !== "authenticated" && status !== "loading") return null;
 
   if (viewerRole === "super_admin") {
     return (
@@ -334,7 +311,6 @@ export function AppShell({
 
   const workspaceName =
     tenant?.name ??
-    initial?.workspaceName ??
     (currentTenant.isError ? "Workspace unavailable" : "Loading workspace…");
   const navigation = (
     <SidebarNavigation
@@ -348,17 +324,15 @@ export function AppShell({
       }}
     />
   );
+  const workspaceLoading = !tenant && !currentTenant.isError;
+  const logo = workspaceLoading ? <Skeleton className="h-10 w-10 shrink-0 rounded-xl" /> : <TenantLogo name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} />;
   const brand = (
     <Link href="/dashboard">
       <div className="flex min-w-0 items-center gap-item">
-        <TenantLogo
-          key={tenant?.logoUrl ?? "initial"}
-          name={tenant?.name ?? ""}
-          logoUrl={tenant?.logoUrl ?? null}
-        />
+        {logo}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold" title={workspaceName}>
-            {workspaceName}
+            {workspaceLoading ? <Skeleton className="h-4 w-32" /> : workspaceName}
           </p>
           <p className="text-[11px] text-muted">Inventory &amp; accounting</p>
         </div>
@@ -384,10 +358,7 @@ export function AppShell({
             >
               {sidebarCollapsed ? (
                 <Link href="/dashboard">
-                  <TenantLogo
-                    name={tenant?.name ?? ""}
-                    logoUrl={tenant?.logoUrl ?? null}
-                  />
+                  {logo}
                 </Link>
               ) : (
                 brand
@@ -438,11 +409,7 @@ export function AppShell({
                 <AppIcon name="menu" />
               </button>
               <div className={showNewSale ? "hidden shrink-0 sm:block lg:hidden" : "shrink-0 lg:hidden"}>
-                <TenantLogo
-                  key={tenant?.logoUrl ?? "initial"}
-                  name={tenant?.name ?? ""}
-                  logoUrl={tenant?.logoUrl ?? null}
-                />
+                {logo}
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="truncate text-sm font-medium tracking-tight sm:text-lg">
@@ -462,7 +429,7 @@ export function AppShell({
                 <p className="mt-micro hidden truncate text-xs text-muted sm:block">
                   {pathname === "/dashboard"
                     ? `Welcome, ${currentTenant.data?.viewer.name ?? session?.user.name ?? ""}. Your business, at a glance.`
-                    : workspaceName}
+                    : workspaceLoading ? <Skeleton className="h-3 w-32" /> : workspaceName}
                 </p>
               </div>
               <div className="flex shrink-0 items-center justify-end gap-micro lg:gap-small">

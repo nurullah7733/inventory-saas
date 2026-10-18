@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ApiClientError, apiRequest } from "@/lib/client/api.ts";
@@ -83,9 +83,9 @@ export function InvoiceEditor({ invoice }: { invoice?: InvoiceDetail }) {
   const [productNotice, setProductNotice] = useState("");
   const [scanBusy, setScanBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState<string | null>(null);
-  const products = useQuery({ queryKey: ["inventory", "products", "sale-picker", productTerm], queryFn: ({ signal }) => apiRequest<ProductListResponse>(`/products?pageSize=8&search=${encodeURIComponent(productTerm)}`, { signal }) });
+  const products = useQuery({ placeholderData: keepPreviousData, queryKey: ["inventory", "products", "sale-picker", productTerm], queryFn: ({ signal }) => apiRequest<ProductListResponse>(`/products?pageSize=8&search=${encodeURIComponent(productTerm)}`, { signal }) });
   const searchIsCurrent = productSearch.trim() === productTerm;
-  const customers = useQuery({ queryKey: ["people", "customers", "sale-picker", customerTerm], queryFn: () => apiRequest<{ customers: CustomerResponse[] }>(`/customers?status=active&pageSize=8&search=${encodeURIComponent(customerTerm)}`) });
+  const customers = useQuery({ placeholderData: keepPreviousData, queryKey: ["people", "customers", "sale-picker", customerTerm], queryFn: () => apiRequest<{ customers: CustomerResponse[] }>(`/customers?status=active&pageSize=8&search=${encodeURIComponent(customerTerm)}`) });
   const currency = tenant.data?.tenant.currencySymbol ?? "BDT";
   const vat = tenant.data?.tenant.vatPercentage ?? "0.00";
   let totals: ReturnType<typeof invoiceTotals> | undefined;
