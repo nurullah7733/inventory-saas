@@ -1,4 +1,6 @@
 "use client";
+
+import { PlatformLogo } from "@/components/ui/platform-logo.tsx";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -24,6 +26,7 @@ export function BillingManager() {
   const busy = checkout.isPending || portal.isPending;
   const date = (value: string | null) => value ? new Date(value).toLocaleDateString() : "—";
   return <div className="flex flex-col gap-section">
+    <PlatformLogo />
     <div><h1 className="text-xl font-semibold">Subscription & billing</h1><p className="mt-tight text-sm text-zinc-500">Choose a plan and manage your shop subscription.</p></div>
     {returning && <p role="status" className="rounded-xl border p-content text-sm">Checkout finished. Your subscription status updates after payment confirmation. Refresh if the status has not updated yet.</p>}
     {params.get("checkout") === "cancelled" && <p role="status" className="text-sm text-zinc-500">Checkout was cancelled. You can choose a plan again.</p>}

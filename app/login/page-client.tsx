@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { PlatformLogo } from "@/components/ui/platform-logo.tsx";
 import { Suspense, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -48,7 +49,9 @@ function LoginForm() {
       const destination = safeAccountDestination(next, payload.user.role);
 
       toast.success(`Welcome back, ${payload.user.name}.`);
-      router.replace(payload.user.emailVerifiedAt === null ? "/verify-email" : destination);
+      router.replace(
+        payload.user.emailVerifiedAt === null ? "/verify-email" : destination,
+      );
     } catch (error) {
       const message =
         error instanceof ApiClientError
@@ -68,6 +71,9 @@ function LoginForm() {
       onSubmit={onSubmit}
       className="flex w-full max-w-sm flex-col gap-content rounded-xl border border-zinc-200 bg-white p-roomy shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
     >
+      <center>
+        <PlatformLogo />
+      </center>
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Sign in</h1>
         <p className="mt-tight text-sm text-zinc-500 dark:text-zinc-400">
@@ -75,7 +81,11 @@ function LoginForm() {
         </p>
       </div>
 
-      <Field label="Email" error={form.formState.errors.email?.message} required>
+      <Field
+        label="Email"
+        error={form.formState.errors.email?.message}
+        required
+      >
         {(props) => (
           <input
             {...props}
@@ -103,12 +113,23 @@ function LoginForm() {
         )}
       </Field>
 
-      <Link href="/forgot-password" className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline">Forgot password?</Link>
+      <Link
+        href="/forgot-password"
+        className="inline-flex min-h-11 items-center text-sm font-medium text-primary underline"
+      >
+        Forgot password?
+      </Link>
       <Button type="submit" disabled={submitting}>
         {submitting ? "Signing in…" : "Sign in"}
       </Button>
       <p className="text-center text-sm text-zinc-500">
-        New here? <Link href="/signup" className="inline-flex min-h-11 items-center font-medium text-emerald-700 underline dark:text-emerald-400">Create your shop account</Link>
+        New here?{" "}
+        <Link
+          href="/signup"
+          className="inline-flex min-h-11 items-center font-medium text-emerald-700 underline dark:text-emerald-400"
+        >
+          Create your shop account
+        </Link>
       </p>
     </form>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PlatformLogo } from "@/components/ui/platform-logo.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -327,16 +328,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const workspaceLoading = !tenant && !currentTenant.isError;
   const logo = workspaceLoading ? <Skeleton className="h-10 w-10 shrink-0 rounded-xl" /> : <TenantLogo name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} />;
   const brand = (
-    <Link href="/dashboard">
-      <div className="flex min-w-0 items-center gap-item">
-        {logo}
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold" title={workspaceName}>
-            {workspaceLoading ? <Skeleton className="h-4 w-32" /> : workspaceName}
-          </p>
-          <p className="text-[11px] text-muted">Inventory &amp; accounting</p>
-        </div>
-      </div>
+    <Link href="/dashboard" aria-label="STOCK dashboard" className="min-w-0">
+      <PlatformLogo />
     </Link>
   );
 
@@ -357,8 +350,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={`flex min-h-20 shrink-0 items-center border-b border-border ${sidebarCollapsed ? "justify-center" : "px-section"}`}
             >
               {sidebarCollapsed ? (
-                <Link href="/dashboard">
-                  {logo}
+                <Link href="/dashboard" aria-label="STOCK dashboard">
+                  <PlatformLogo compact />
                 </Link>
               ) : (
                 brand
