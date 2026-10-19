@@ -33,9 +33,9 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'1d881a839b5f90e6a79f87fff477b7275be59769550f1acf1ea97adab9aaa424'>;
+  StorageHashBase<'5124a86dd5a151c66ac58686cce3bf7936f661d629a38a6f9350a3bf4f6c2f8f'>;
 export type ExecutionHash =
-  ExecutionHashBase<'d09d06d6618b7cda5b499a9aa286ef637e3de35622590f540510f694b1da1b9a'>;
+  ExecutionHashBase<'e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5'>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
 
@@ -241,6 +241,14 @@ type DefaultLiteralValue<CodecId extends string, Encoded> = CodecId extends keyo
 
 export type FieldOutputTypes = {
   readonly public: {
+    readonly ArticleLabel: {
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly tenantId: CodecTypes['pg/uuid@1']['output'];
+      readonly variantId: CodecTypes['pg/uuid@1']['output'];
+      readonly articleNumber: CodecTypes['pg/int4@1']['output'];
+      readonly batchId: CodecTypes['pg/uuid@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly AuditLog: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly tenantId: CodecTypes['pg/uuid@1']['output'] | null;
@@ -358,6 +366,7 @@ export type FieldOutputTypes = {
       readonly status: 'draft' | 'completed';
       readonly subtotal: Numeric<10, 2>;
       readonly discount: Numeric<10, 2>;
+      readonly discountPercentage: Numeric<5, 2> | null;
       readonly vatAmount: Numeric<10, 2>;
       readonly totalAmount: Numeric<10, 2>;
       readonly paidAmount: Numeric<10, 2>;
@@ -522,6 +531,14 @@ export type FieldOutputTypes = {
 };
 export type FieldInputTypes = {
   readonly public: {
+    readonly ArticleLabel: {
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly tenantId: CodecTypes['pg/uuid@1']['input'];
+      readonly variantId: CodecTypes['pg/uuid@1']['input'];
+      readonly articleNumber: CodecTypes['pg/int4@1']['input'];
+      readonly batchId: CodecTypes['pg/uuid@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
     readonly AuditLog: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly tenantId: CodecTypes['pg/uuid@1']['input'] | null;
@@ -639,6 +656,7 @@ export type FieldInputTypes = {
       readonly status: 'draft' | 'completed';
       readonly subtotal: CodecTypes['pg/numeric@1']['input'];
       readonly discount: CodecTypes['pg/numeric@1']['input'];
+      readonly discountPercentage: CodecTypes['pg/numeric@1']['input'] | null;
       readonly vatAmount: CodecTypes['pg/numeric@1']['input'];
       readonly totalAmount: CodecTypes['pg/numeric@1']['input'];
       readonly paidAmount: CodecTypes['pg/numeric@1']['input'];
@@ -803,6 +821,14 @@ export type FieldInputTypes = {
 };
 export type StorageColumnTypes = {
   readonly public: {
+    readonly article_labels: {
+      readonly article_number: CodecTypes['pg/int4@1']['output'];
+      readonly batch_id: CodecTypes['pg/uuid@1']['output'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly tenant_id: CodecTypes['pg/uuid@1']['output'];
+      readonly variant_id: CodecTypes['pg/uuid@1']['output'];
+    };
     readonly audit_logs: {
       readonly action: CodecTypes['pg/text@1']['output'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -938,6 +964,7 @@ export type StorageColumnTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly customer_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly discount: Numeric<10, 2>;
+      readonly discount_percentage: Numeric<5, 2> | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly invoice_no: CodecTypes['pg/text@1']['output'];
       readonly paid_amount: Numeric<10, 2>;
@@ -1084,6 +1111,14 @@ export type StorageColumnTypes = {
 };
 export type StorageColumnInputTypes = {
   readonly public: {
+    readonly article_labels: {
+      readonly article_number: CodecTypes['pg/int4@1']['input'];
+      readonly batch_id: CodecTypes['pg/uuid@1']['input'];
+      readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly tenant_id: CodecTypes['pg/uuid@1']['input'];
+      readonly variant_id: CodecTypes['pg/uuid@1']['input'];
+    };
     readonly audit_logs: {
       readonly action: CodecTypes['pg/text@1']['input'];
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -1219,6 +1254,7 @@ export type StorageColumnInputTypes = {
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly customer_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly discount: CodecTypes['pg/numeric@1']['input'];
+      readonly discount_percentage: CodecTypes['pg/numeric@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly invoice_no: CodecTypes['pg/text@1']['input'];
       readonly paid_amount: CodecTypes['pg/numeric@1']['input'];
@@ -1381,6 +1417,95 @@ type ContractBase = Omit<
         readonly kind: 'postgres-schema';
         readonly entries: {
           readonly table: {
+            readonly article_labels: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly tenant_id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly variant_id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly article_number: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly batch_id: {
+                  readonly nativeType: 'uuid';
+                  readonly codecId: 'pg/uuid@1';
+                  readonly nullable: false;
+                };
+                readonly created_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['tenant_id', 'article_number'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'article_labels_tenant_id_batch_id_idx_e3fa2dcf';
+                  readonly prefix: 'article_labels_tenant_id_batch_id_idx';
+                  readonly columns: readonly ['tenant_id', 'batch_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'article_labels_tenant_id_variant_id_idx_cef0b336';
+                  readonly prefix: 'article_labels_tenant_id_variant_id_idx';
+                  readonly columns: readonly ['tenant_id', 'variant_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'article_labels_tenant_id_idx_41c0d441';
+                  readonly prefix: 'article_labels_tenant_id_idx';
+                  readonly columns: readonly ['tenant_id'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'article_labels_variant_id_idx_4a7fac73';
+                  readonly prefix: 'article_labels_variant_id_idx';
+                  readonly columns: readonly ['variant_id'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'article_labels';
+                    readonly columns: readonly ['tenant_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'tenants';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'article_labels';
+                    readonly columns: readonly ['variant_id'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'product_variants';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
             readonly audit_logs: {
               columns: {
                 readonly id: {
@@ -2810,6 +2935,12 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/numeric@1';
                   readonly nullable: false;
                   readonly typeParams: { readonly precision: 10; readonly scale: 2 };
+                };
+                readonly discount_percentage: {
+                  readonly nativeType: 'numeric';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly nullable: true;
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
                 };
                 readonly vat_amount: {
                   readonly nativeType: 'numeric';
@@ -4272,6 +4403,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'ProductVariant';
     };
+    readonly article_labels: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'ArticleLabel';
+    };
     readonly stock_movements: {
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'StockMovement';
@@ -4296,6 +4431,73 @@ type ContractBase = Omit<
     readonly namespaces: {
       readonly public: {
         readonly models: {
+          readonly ArticleLabel: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly tenantId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly variantId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly articleNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly batchId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly tenant: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Tenant';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['tenantId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly variant: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'ProductVariant';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['variantId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'article_labels';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly tenantId: { readonly column: 'tenant_id' };
+                readonly variantId: { readonly column: 'variant_id' };
+                readonly articleNumber: { readonly column: 'article_number' };
+                readonly batchId: { readonly column: 'batch_id' };
+                readonly createdAt: { readonly column: 'created_at' };
+              };
+            };
+          };
           readonly AuditLog: {
             readonly fields: {
               readonly id: {
@@ -5205,6 +5407,14 @@ type ContractBase = Omit<
                   readonly typeParams: { readonly precision: 10; readonly scale: 2 };
                 };
               };
+              readonly discountPercentage: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/numeric@1';
+                  readonly typeParams: { readonly precision: 5; readonly scale: 2 };
+                };
+              };
               readonly vatAmount: {
                 readonly nullable: false;
                 readonly type: {
@@ -5295,6 +5505,7 @@ type ContractBase = Omit<
                 readonly status: { readonly column: 'status' };
                 readonly subtotal: { readonly column: 'subtotal' };
                 readonly discount: { readonly column: 'discount' };
+                readonly discountPercentage: { readonly column: 'discount_percentage' };
                 readonly vatAmount: { readonly column: 'vat_amount' };
                 readonly totalAmount: { readonly column: 'total_amount' };
                 readonly paidAmount: { readonly column: 'paid_amount' };
@@ -6578,6 +6789,14 @@ type ContractBase = Omit<
     readonly executionHash: ExecutionHash;
     readonly mutations: {
       readonly defaults: readonly [
+        {
+          readonly ref: {
+            readonly namespace: 'public';
+            readonly table: 'article_labels';
+            readonly column: 'id';
+          };
+          readonly onCreate: { readonly kind: 'generator'; readonly id: 'uuidv4' };
+        },
         {
           readonly ref: {
             readonly namespace: 'public';

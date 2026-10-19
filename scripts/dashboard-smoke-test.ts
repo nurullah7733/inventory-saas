@@ -122,6 +122,7 @@ async function main() {
       await tx.orm.public.Sale.where({ tenantId }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId, type: "purchase_return" }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
+      await tx.orm.public.ArticleLabel.where({ tenantId }).deleteAll();
       await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
 await tx.orm.public.Product.where({ tenantId }).deleteAll();
       await tx.orm.public.Supplier.where({ tenantId }).deleteAll();

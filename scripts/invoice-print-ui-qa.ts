@@ -117,6 +117,7 @@ async function cleanup() {
     await orm.SaleItem.where({ tenantId: id }).deleteAll();
     await orm.Sale.where({ tenantId: id }).deleteAll();
     await orm.Customer.where({ tenantId: id }).deleteAll();
+    await orm.ArticleLabel.where({ tenantId: id }).deleteAll();
     await orm.ProductVariant.where({ tenantId: id }).deleteAll();
     await orm.Product.where({ tenantId: id }).deleteAll();
     await orm.VariantSize.where({ tenantId: id }).deleteAll();

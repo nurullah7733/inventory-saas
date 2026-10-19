@@ -18,6 +18,7 @@ export interface TenantScope {
   readonly Supplier: ReturnType<typeof supplierFor>;
   readonly Product: ReturnType<typeof productFor>;
   readonly ProductVariant: ReturnType<typeof productVariantFor>;
+  readonly ArticleLabel: ReturnType<typeof articleLabelFor>;
   readonly StockMovement: ReturnType<typeof stockMovementFor>;
   readonly Wastage: ReturnType<typeof wastageFor>;
 
@@ -84,6 +85,8 @@ const productFor = (tenantId: string) =>
   ormFor(tenantId).Product.where({ tenantId });
 const productVariantFor = (tenantId: string) =>
   ormFor(tenantId).ProductVariant.where({ tenantId });
+const articleLabelFor = (tenantId: string) =>
+  ormFor(tenantId).ArticleLabel.where({ tenantId });
 const stockMovementFor = (tenantId: string) =>
   ormFor(tenantId).StockMovement.where({ tenantId });
 const wastageFor = (tenantId: string) =>
@@ -148,6 +151,9 @@ export function tenantScope(tenantId: string): TenantScope {
     get ProductVariant() {
       return productVariantFor(tenantId);
     },
+    get ArticleLabel() {
+      return articleLabelFor(tenantId);
+    },
     get StockMovement() {
       return stockMovementFor(tenantId);
     },
@@ -197,6 +203,7 @@ export const TENANT_SCOPED_TABLES = [
   "suppliers",
   "products",
   "product_variants",
+  "article_labels",
   "stock_movements",
   "wastage",
   "customers",

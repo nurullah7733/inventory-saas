@@ -1,0 +1,405 @@
+[
+  {
+    "id": "table.article_labels",
+    "label": "Create table \"article_labels\"",
+    "summary": "Creates table \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"article_labels\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"article_labels\"",
+        "sql": "CREATE TABLE \"public\".\"article_labels\" (\n  \"article_number\" int4 NOT NULL,\n  \"batch_id\" uuid NOT NULL,\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"tenant_id\" uuid NOT NULL,\n  \"variant_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"article_labels\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.article_labels.article_labels_tenant_id_article_number_key",
+    "label": "Add unique constraint on \"article_labels\" (tenant_id, article_number)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "article_labels_tenant_id_article_number_key",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"article_labels_tenant_id_article_number_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "article_labels_tenant_id_article_number_key",
+          "public",
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"article_labels_tenant_id_article_number_key\"",
+        "sql": "ALTER TABLE \"public\".\"article_labels\" ADD CONSTRAINT \"article_labels_tenant_id_article_number_key\" UNIQUE (\"tenant_id\", \"article_number\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"article_labels_tenant_id_article_number_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "article_labels_tenant_id_article_number_key",
+          "public",
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.article_labels.article_labels_tenant_id_batch_id_idx_e3fa2dcf",
+    "label": "Create index \"article_labels_tenant_id_batch_id_idx_e3fa2dcf\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "article_labels_tenant_id_batch_id_idx_e3fa2dcf",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"article_labels_tenant_id_batch_id_idx_e3fa2dcf\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_tenant_id_batch_id_idx_e3fa2dcf\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"article_labels_tenant_id_batch_id_idx_e3fa2dcf\"",
+        "sql": "CREATE INDEX \"article_labels_tenant_id_batch_id_idx_e3fa2dcf\" ON \"public\".\"article_labels\" (\"tenant_id\", \"batch_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"article_labels_tenant_id_batch_id_idx_e3fa2dcf\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_tenant_id_batch_id_idx_e3fa2dcf\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.article_labels.article_labels_tenant_id_idx_41c0d441",
+    "label": "Create index \"article_labels_tenant_id_idx_41c0d441\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "article_labels_tenant_id_idx_41c0d441",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"article_labels_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"article_labels_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"article_labels_tenant_id_idx_41c0d441\" ON \"public\".\"article_labels\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"article_labels_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.article_labels.article_labels_tenant_id_variant_id_idx_cef0b336",
+    "label": "Create index \"article_labels_tenant_id_variant_id_idx_cef0b336\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "article_labels_tenant_id_variant_id_idx_cef0b336",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"article_labels_tenant_id_variant_id_idx_cef0b336\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"article_labels_tenant_id_variant_id_idx_cef0b336\"",
+        "sql": "CREATE INDEX \"article_labels_tenant_id_variant_id_idx_cef0b336\" ON \"public\".\"article_labels\" (\"tenant_id\", \"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"article_labels_tenant_id_variant_id_idx_cef0b336\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_tenant_id_variant_id_idx_cef0b336\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.article_labels.article_labels_variant_id_idx_4a7fac73",
+    "label": "Create index \"article_labels_variant_id_idx_4a7fac73\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "article_labels_variant_id_idx_4a7fac73",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"article_labels_variant_id_idx_4a7fac73\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"article_labels_variant_id_idx_4a7fac73\"",
+        "sql": "CREATE INDEX \"article_labels_variant_id_idx_4a7fac73\" ON \"public\".\"article_labels\" (\"variant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"article_labels_variant_id_idx_4a7fac73\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"article_labels_variant_id_idx_4a7fac73\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.article_labels.article_labels_tenant_id_fkey",
+    "label": "Add foreign key \"article_labels_tenant_id_fkey\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "article_labels_tenant_id_fkey",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"article_labels_tenant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "article_labels_tenant_id_fkey",
+          "public",
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"article_labels_tenant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"article_labels\"\nADD CONSTRAINT \"article_labels_tenant_id_fkey\"\nFOREIGN KEY (\"tenant_id\")\nREFERENCES \"public\".\"tenants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"article_labels_tenant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "article_labels_tenant_id_fkey",
+          "public",
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.article_labels.article_labels_variant_id_fkey",
+    "label": "Add foreign key \"article_labels_variant_id_fkey\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "article_labels_variant_id_fkey",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"article_labels_variant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "article_labels_variant_id_fkey",
+          "public",
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"article_labels_variant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"article_labels\"\nADD CONSTRAINT \"article_labels_variant_id_fkey\"\nFOREIGN KEY (\"variant_id\")\nREFERENCES \"public\".\"product_variants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"article_labels_variant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "article_labels_variant_id_fkey",
+          "public",
+          "\"public\".\"article_labels\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.article_labels",
+    "label": "Enable row-level security on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"article_labels\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "article_labels"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"article_labels\"",
+        "sql": "ALTER TABLE \"public\".\"article_labels\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"article_labels\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "article_labels"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.article_labels.tenant_isolation_article_labels_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_article_labels_ffe271ab\" on \"article_labels\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_article_labels_ffe271ab",
+        "table": "article_labels"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_article_labels_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "article_labels",
+          "tenant_isolation_article_labels_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_article_labels_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_article_labels_ffe271ab\" ON \"public\".\"article_labels\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_article_labels_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "article_labels",
+          "tenant_isolation_article_labels_ffe271ab"
+        ]
+      }
+    ]
+  }
+]

@@ -4,6 +4,8 @@ import { rawSql, rlsDb } from "../db/rls.ts";
 import { numeric } from "../numeric.ts";
 import type { TenantScope } from "../tenant/scope.ts";
 import { escapeLike } from "./master-data.ts";
+import { lockCatalogCodes } from "./catalog-codes.ts";
+import { allocateStockArticles } from "./article-labels.ts";
 import type {
   AlertProduct,
   MovementType,
@@ -47,6 +49,8 @@ export async function applyStockDelta(
   delta: number,
   options: { costPrice?: string } = {},
 ): Promise<number | null> {
+  // Match product/variant edits: catalog lock before stock row locks.
+  if (delta > 0) await lockCatalogCodes(scope);
   // Two statements rather than one with a nullable parameter: a raw template
   // binds literals only, so "leave cost_price alone" is spelled by omission.
   // stock_qty is numeric(12,3) — fractional for measured units.
@@ -240,7 +244,7 @@ export async function recordStockIn(
     note: string | null;
   },
 ): Promise<{ id: string }> {
-  return scope.StockMovement.select("id").create(
+  const movement = await scope.StockMovement.select("id").create(
     scope.own({
       productId: input.productId,
       variantId: input.variantId,
@@ -253,6 +257,15 @@ export async function recordStockIn(
       ...(input.receivedAt ? { createdAt: input.receivedAt } : {}),
     }),
   );
+  const unit = await productUnit(scope, input.productId);
+  if (unit?.measured) {
+    // Measurements aren't a package count. Keep one stable variant code.
+    const existing = await scope.ArticleLabel.select("id").where({ variantId: input.variantId }).first();
+    if (!existing) await allocateStockArticles(scope, input.variantId, 1, movement.id);
+  } else {
+    await allocateStockArticles(scope, input.variantId, input.quantity, movement.id);
+  }
+  return movement;
 }
 
 // --- Stock movements --------------------------------------------------------
@@ -302,6 +315,7 @@ export async function listMovements(
   scope: TenantScope,
   filter: MovementFilter,
   page: { offset: number; pageSize: number },
+  groupByProduct = false,
 ): Promise<{ movements: StockMovementResponse[]; total: number }> {
   let query = scope.StockMovement;
   if (filter.type !== "all") query = query.where({ type: filter.type });
@@ -314,6 +328,32 @@ export async function listMovements(
   if (filter.to) {
     const to = filter.to;
     query = query.where((m) => m.createdAt.lt(to));
+  }
+
+  if (groupByProduct) {
+    // Page products first so a product's entries never straddle pages.
+    const groups = await rlsDb().query(rawSql`SELECT product_id AS "productId", count(*) OVER ()::int AS total
+      FROM public.stock_movements
+      WHERE tenant_id = ${scope.tenantId}::uuid
+        AND (${filter.type} = 'all' OR type = ${filter.type})
+        AND (${filter.productId ?? ""} = '' OR product_id::text = ${filter.productId ?? ""})
+        AND (${filter.supplierId ?? ""} = '' OR supplier_id::text = ${filter.supplierId ?? ""})
+        AND created_at >= ${filter.from ?? "0001-01-01T00:00:00Z"}::timestamptz
+        AND created_at < ${filter.to ?? "9999-12-31T23:59:59Z"}::timestamptz
+      GROUP BY product_id
+      ORDER BY max(created_at) DESC, product_id DESC
+      OFFSET ${page.offset} LIMIT ${page.pageSize}`
+      .returnsRow({ productId: "pg/uuid@1", total: "pg/int4@1" }).build());
+    if (!groups.length) {
+      const count = await query.groupBy("productId").aggregate((a) => ({ entries: a.count() }));
+      return { movements: [], total: count.length };
+    }
+    const productIds = groups.map((group) => group.productId);
+    const rows = await selectMovements(query.where((m) => m.productId.in(productIds)))
+      .orderBy([(m) => m.createdAt.desc(), (m) => m.id.desc()]).all();
+    const rank = new Map(productIds.map((id, index) => [id, index]));
+    rows.sort((a, b) => (rank.get(a.product?.id ?? "") ?? 0) - (rank.get(b.product?.id ?? "") ?? 0));
+    return { movements: rows.map(toMovementResponse), total: groups[0].total };
   }
 
   const [rows, count] = await Promise.all([

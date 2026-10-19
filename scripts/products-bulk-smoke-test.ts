@@ -342,6 +342,7 @@ async function cleanup(tenantIds: string[]): Promise<void> {
       const statements = [
         rawSql`DELETE FROM "public"."audit_logs" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."stock_movements" WHERE "tenant_id" = ${tenantId}::uuid`,
+        rawSql`DELETE FROM "public"."article_labels" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."product_variants" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."products" WHERE "tenant_id" = ${tenantId}::uuid`,
         rawSql`DELETE FROM "public"."suppliers" WHERE "tenant_id" = ${tenantId}::uuid`,

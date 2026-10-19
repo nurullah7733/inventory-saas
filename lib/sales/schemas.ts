@@ -6,6 +6,8 @@ export const invoiceSchema = z.object({
   customerId: optionalRef("customer").default(null),
   status: z.enum(["draft", "completed"]),
   discount: money("Discount").default("0.00"),
+  discountPercentage: money("Discount percentage")
+    .refine((value) => Number(value) <= 100, "Discount percentage must be between 0 and 100.").optional(),
   paidAmount: money("Paid amount").default("0.00"),
   paymentMethod: z.enum(["cash", "card", "bank", "mobile"]).nullable().default(null),
   items: z.array(z.object({

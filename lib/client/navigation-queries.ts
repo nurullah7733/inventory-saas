@@ -23,9 +23,9 @@ export function customersListOptions(filters = { term: "", filter: "active" as S
 }
 export function stockListOptions(filters = { type: "in" as const, supplierId: "", page: 1 }) {
   const { supplierId, page } = filters;
-  const params = new URLSearchParams({ type: "in", page: String(page), pageSize: "20" });
+  const params = new URLSearchParams({ type: "in", groupBy: "product", page: String(page), pageSize: "20" });
   if (supplierId) params.set("supplierId", supplierId);
-  return queryOptions({ queryKey: ["inventory", "stock-movements", filters], queryFn: ({ signal }) => apiRequest<StockMovementListResponse>(`/stock-movements?${params}`, { signal }) });
+  return queryOptions({ queryKey: ["inventory", "stock-movements", "by-product", filters], queryFn: ({ signal }) => apiRequest<StockMovementListResponse>(`/stock-movements?${params}`, { signal }) });
 }
 export function invoicesListOptions(params: URLSearchParams) {
   return queryOptions({ queryKey: ["sales", "invoices", params.toString()], queryFn: ({ signal }) => apiRequest<InvoiceList>(`/invoices?${params}`, { signal }) });

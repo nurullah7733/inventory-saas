@@ -435,6 +435,26 @@ model ProductVariant {
   @@rls
 }
 
+/// Permanent article numbers assigned with stock receipts, one per physical
+/// unit. Never recycle a number. batchId identifies its original receipt;
+/// old print-issued numbers remain valid for existing labels.
+model ArticleLabel {
+  id Uuid @id @default(uuid())
+  tenantId Uuid @map("tenant_id")
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  variantId Uuid @map("variant_id")
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  articleNumber Int @map("article_number")
+  batchId Uuid @map("batch_id")
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@unique([tenantId, articleNumber])
+  @@index([tenantId, batchId])
+  @@index([tenantId, variantId])
+  @@map("article_labels")
+  @@rls
+}
+
 // --- Inventory movement -----------------------------------------------------
 
 /// Append-only ledger of every stock change: in / out / adjustment / return /
@@ -553,6 +573,7 @@ model Sale {
   status        sale_status       @default(completed)
   subtotal      Numeric(10, 2)
   discount      Numeric(10, 2)
+  discountPercentage Numeric(5, 2)? @map("discount_percentage")
   vatAmount     Numeric(10, 2)    @map("vat_amount")
   totalAmount   Numeric(10, 2)    @map("total_amount")
   paidAmount    Numeric(10, 2)    @map("paid_amount")
@@ -812,6 +833,12 @@ policy_all tenant_isolation_products {
 policy_all tenant_isolation_product_variants {
   target    = ProductVariant
   using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_article_labels {
+  target = ArticleLabel
+  using = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
   withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
 }
 

@@ -4,6 +4,7 @@ import { escapeLike } from "@/lib/inventory/master-data.ts";
 import { or } from "@prisma/orm-postgres/orm-client";
 import { withTenantAuth } from "@/lib/api/guard.ts";
 import { apiError, apiSuccess } from "@/lib/api/response.ts";
+import { isArticleNumber } from "@/lib/inventory/article-numbers.ts";
 
 /**
  * Exact SKU / barcode lookup for POS scanning.
@@ -23,7 +24,10 @@ export const GET = withTenantAuth(async (request: Request, auth) => {
     });
   }
 
-  const labelId = variantIdFromLabel(code);
+  const article = isArticleNumber(code)
+    ? await auth.scope.ArticleLabel.select("variantId").where({ articleNumber: Number(code) }).first()
+    : null;
+  const labelId = article?.variantId ?? variantIdFromLabel(code);
   const matches = await auth.scope.ProductVariant
     .select("id", "sku", "label", "sellPrice", "stockQty")
     .include("product", (p) =>

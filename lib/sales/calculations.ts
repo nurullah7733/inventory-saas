@@ -1,15 +1,16 @@
-import { fromCents, MAX_MONEY_CENTS, moneyTimesQuantity, toCents, toScaledQuantity } from "../numeric.ts";
+import { fromCents, MAX_MONEY_CENTS, MONEY_PATTERN, moneyTimesQuantity, toCents, toScaledQuantity } from "../numeric.ts";
 
 const ZERO = BigInt(0);
 function roundedDivide(value: bigint, divisor: bigint) {
   return (value + divisor / BigInt(2)) / divisor;
 }
 
-/** VAT applies after the fixed invoice discount; round half up once, in cents. */
+/** Percentage discounts round half-up to cents before VAT. Fixed amounts remain supported for historical invoices. */
 export function invoiceTotals(
   items: readonly { quantity: number; unitPrice: string }[],
   discount: string,
   vatPercentage: string,
+  discountPercentage?: string,
 ) {
   // Quantities may be fractional (measured units); moneyTimesQuantity rounds
   // each line half-up to exact cents before summing.
@@ -17,7 +18,14 @@ export function invoiceTotals(
     (sum, item) => sum + toCents(moneyTimesQuantity(item.unitPrice, item.quantity)),
     ZERO,
   );
-  const reduction = toCents(discount);
+  let reduction: bigint;
+  if (discountPercentage !== undefined) {
+    if (!MONEY_PATTERN.test(discountPercentage) || toCents(discountPercentage) > BigInt(10000)) {
+      throw new Error("Discount percentage must be between 0 and 100, with up to two decimals.");
+    }
+    reduction = roundedDivide(subtotal * toCents(discountPercentage), BigInt(10000));
+  } else reduction = toCents(discount);
+  if (reduction < ZERO) throw new Error("Discount cannot be negative.");
   if (reduction > subtotal) throw new Error("Discount cannot exceed the subtotal.");
   const vat = roundedDivide((subtotal - reduction) * toCents(vatPercentage), BigInt(10000));
   const total = subtotal - reduction + vat;

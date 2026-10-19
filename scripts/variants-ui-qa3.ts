@@ -142,6 +142,7 @@ async function main() {
       const tenantId = stray.id;
       await orm.AuditLog.where({ tenantId }).deleteAll();
       await orm.StockMovement.where({ tenantId }).deleteAll();
+      await orm.ArticleLabel.where({ tenantId }).deleteAll();
       await orm.ProductVariant.where({ tenantId }).deleteAll();
       await orm.Product.where({ tenantId }).deleteAll();
       await orm.VariantColor.where({ tenantId }).deleteAll();

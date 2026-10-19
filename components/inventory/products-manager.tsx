@@ -357,7 +357,7 @@ export function ProductsManager() {
         />
       ) : null}
 
-      <BarcodeLabelSheet product={labelProduct} onClose={() => setLabelProduct(null)} />
+      <BarcodeLabelSheet key={labelProduct?.id ?? "closed"} product={labelProduct} onClose={() => setLabelProduct(null)} />
 
       <ProductFormSheet
         target={formTarget}

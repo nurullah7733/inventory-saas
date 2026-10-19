@@ -4,6 +4,10 @@
   "target": "postgres",
   "profileHash": "3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2",
   "roots": {
+    "article_labels": {
+      "model": "ArticleLabel",
+      "namespace": "public"
+    },
     "audit_logs": {
       "model": "AuditLog",
       "namespace": "public"
@@ -208,6 +212,108 @@
           }
         },
         "models": {
+          "ArticleLabel": {
+            "fields": {
+              "articleNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "batchId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "variantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "tenant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
+              },
+              "variant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "variantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "ProductVariant",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "articleNumber": {
+                  "column": "article_number"
+                },
+                "batchId": {
+                  "column": "batch_id"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "tenantId": {
+                  "column": "tenant_id"
+                },
+                "variantId": {
+                  "column": "variant_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "article_labels"
+            }
+          },
           "AuditLog": {
             "fields": {
               "action": {
@@ -1587,6 +1693,17 @@
                   }
                 }
               },
+              "discountPercentage": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -1744,6 +1861,9 @@
                 },
                 "discount": {
                   "column": "discount"
+                },
+                "discountPercentage": {
+                  "column": "discount_percentage"
                 },
                 "id": {
                   "column": "id"
@@ -3712,6 +3832,18 @@
               "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on'",
               "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on'"
             },
+            "tenant_isolation_article_labels": {
+              "kind": "policy",
+              "name": "tenant_isolation_article_labels_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_article_labels",
+              "roles": [],
+              "tableName": "article_labels",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
             "tenant_isolation_audit_logs": {
               "kind": "policy",
               "name": "tenant_isolation_audit_logs_ffe271ab",
@@ -3990,6 +4122,11 @@
             }
           },
           "rls": {
+            "article_labels": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "article_labels"
+            },
             "audit_logs": {
               "kind": "rls",
               "namespaceId": "public",
@@ -4112,6 +4249,129 @@
             }
           },
           "table": {
+            "article_labels": {
+              "columns": {
+                "article_number": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "batch_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "tenant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "variant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "tenant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "article_labels"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenants"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "variant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "article_labels"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product_variants"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "tenant_id",
+                    "batch_id"
+                  ],
+                  "name": "article_labels_tenant_id_batch_id_idx_e3fa2dcf",
+                  "prefix": "article_labels_tenant_id_batch_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "article_labels_tenant_id_idx_41c0d441",
+                  "prefix": "article_labels_tenant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "variant_id"
+                  ],
+                  "name": "article_labels_tenant_id_variant_id_idx_cef0b336",
+                  "prefix": "article_labels_tenant_id_variant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "variant_id"
+                  ],
+                  "name": "article_labels_variant_id_idx_4a7fac73",
+                  "prefix": "article_labels_variant_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "tenant_id",
+                    "article_number"
+                  ]
+                }
+              ]
+            },
             "audit_logs": {
               "columns": {
                 "action": {
@@ -5991,6 +6251,15 @@
                   "nullable": false,
                   "typeParams": {
                     "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "discount_percentage": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": true,
+                  "typeParams": {
+                    "precision": 5,
                     "scale": 2
                   }
                 },
@@ -7963,12 +8232,23 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "1d881a839b5f90e6a79f87fff477b7275be59769550f1acf1ea97adab9aaa424"
+    "storageHash": "5124a86dd5a151c66ac58686cce3bf7936f661d629a38a6f9350a3bf4f6c2f8f"
   },
   "execution": {
-    "executionHash": "d09d06d6618b7cda5b499a9aa286ef637e3de35622590f540510f694b1da1b9a",
+    "executionHash": "e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5",
     "mutations": {
       "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "article_labels"
+          }
+        },
         {
           "onCreate": {
             "id": "uuidv4",

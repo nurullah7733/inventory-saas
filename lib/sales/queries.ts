@@ -1,19 +1,23 @@
 import type { TenantScope } from "../tenant/scope.ts";
 import { escapeLike } from "../inventory/master-data.ts";
-import { fromCents, toCents } from "../numeric.ts";
+import { MONEY_PATTERN, fromCents, toCents } from "../numeric.ts";
 import { allocateLineCredits, settledAmounts } from "./calculations.ts";
 import type { InvoiceDetail, InvoiceSummary, ReturnEntry } from "./types.ts";
+import { supportsDiscountPercentage } from "./schema-compatibility.ts";
 
-function selectInvoices(query: TenantScope["Sale"]) {
-  return query.select("id", "invoiceNo", "status", "subtotal", "discount", "vatAmount", "totalAmount", "paidAmount", "paymentMethod", "createdAt", "updatedAt")
+function selectInvoices(query: TenantScope["Sale"], withPercentage: boolean) {
+  const columns = ["id", "invoiceNo", "status", "subtotal", "discount", "vatAmount", "totalAmount", "paidAmount", "paymentMethod", "createdAt", "updatedAt"] as const;
+  const selected = withPercentage ? query.select(...columns, "discountPercentage") : query.select(...columns);
+  return selected
     .include("customer", (c) => c.select("id", "name", "phone"));
 }
 type SaleRow = NonNullable<Awaited<ReturnType<ReturnType<typeof selectInvoices>["first"]>>>;
 
-function invoiceSummary(row: SaleRow, creditAmount: string): InvoiceSummary {
+function invoiceSummary(row: SaleRow, creditAmount: string, fallbackPercentage: string | null): InvoiceSummary {
   return {
     ...row,
     subtotal: String(row.subtotal), discount: String(row.discount), vatAmount: String(row.vatAmount),
+    discountPercentage: "discountPercentage" in row && row.discountPercentage != null ? String(row.discountPercentage) : fallbackPercentage,
     totalAmount: String(row.totalAmount), paidAmount: String(row.paidAmount), creditAmount,
     ...settledAmounts(String(row.totalAmount), String(row.paidAmount), creditAmount),
   };
@@ -33,11 +37,24 @@ async function summaries(scope: TenantScope, rows: SaleRow[]) {
     const saleId = itemToSale.get(group.saleItemId);
     if (saleId) credits.set(saleId, (credits.get(saleId) ?? BigInt(0)) + toCents(String(group.credit ?? "0.00")));
   }
-  return rows.map((row) => invoiceSummary(row, fromCents(credits.get(row.id) ?? BigInt(0))));
+  // Retain the exact percentage across draft edits while an additive migration is pending.
+  const missing = rows.filter((row) => !("discountPercentage" in row) || row.discountPercentage == null).map((row) => row.id);
+  const audits = missing.length ? await scope.AuditLog.where({ entityType: "sale" })
+    .where((a) => a.entityId.in(missing)).select("entityId", "metadata")
+    .orderBy((a) => a.createdAt.desc()).all() : [];
+  const percentages = new Map<string, string | null>();
+  for (const audit of audits) {
+    if (!audit.entityId || percentages.has(audit.entityId)) continue;
+    const metadata = audit.metadata;
+    const value = metadata && typeof metadata === "object" && !Array.isArray(metadata) && "discountPercentage" in metadata ? metadata.discountPercentage : null;
+    percentages.set(audit.entityId, typeof value === "string" && MONEY_PATTERN.test(value) && toCents(value) <= BigInt(10000)
+      ? fromCents(toCents(value)) : null);
+  }
+  return rows.map((row) => invoiceSummary(row, fromCents(credits.get(row.id) ?? BigInt(0)), percentages.get(row.id) ?? null));
 }
 
 export async function getInvoice(scope: TenantScope, id: string): Promise<InvoiceDetail | null> {
-  const row = await selectInvoices(scope.Sale.where({ id })).first();
+  const row = await selectInvoices(scope.Sale.where({ id }), await supportsDiscountPercentage()).first();
   if (!row) return null;
   const lines = await scope.SaleItem.where({ saleId: id })
     .select("id", "productId", "variantId", "quantity", "unitPrice", "unitCost", "subtotal")
@@ -70,7 +87,7 @@ export async function listInvoices(scope: TenantScope, filter: {
   if (filter.search) query = query.where((s) => s.invoiceNo.ilike(`%${escapeLike(filter.search)}%`));
   if (filter.from) { const from = filter.from; query = query.where((s) => s.createdAt.gte(from)); }
   if (filter.to) { const to = filter.to; query = query.where((s) => s.createdAt.lt(to)); }
-  const rows = await selectInvoices(query).orderBy([(s) => s.createdAt.desc(), (s) => s.id.desc()])
+  const rows = await selectInvoices(query, await supportsDiscountPercentage()).orderBy([(s) => s.createdAt.desc(), (s) => s.id.desc()])
     .offset(page.offset).limit(page.pageSize).all();
   const count = await query.aggregate((a) => ({ total: a.count() }));
   return { invoices: await summaries(scope, rows), total: count.total };

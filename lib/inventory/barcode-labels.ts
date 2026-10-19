@@ -1,5 +1,6 @@
 import JsBarcode from "jsbarcode";
 import { labelCode, labelCopies, MAX_LABELS } from "./label-codes.ts";
+import { isArticleNumber } from "./article-numbers.ts";
 
 export interface LabelItem {
   variantId: string;
@@ -8,6 +9,7 @@ export interface LabelItem {
   options: string;
   sellPrice: string;
   copies: string;
+  articleNumber?: string;
 }
 
 export function labelTotal(items: LabelItem[]): number {
@@ -23,9 +25,11 @@ export function labelTotal(items: LabelItem[]): number {
 
 /** Delegate encoding/checksum to JsBarcode; keep the SVG geometry identical
  * in the preview and isolated print document. Quiet zones are included. */
-export function barcodeGeometry(variantId: string) {
+export function barcodeGeometry(code: string) {
   const encoded: { encodings?: { data: string }[] } = {};
-  JsBarcode(encoded, labelCode(variantId), { format: "CODE128C", displayValue: false });
+  // CODE128 supports short numbers of either odd or even length without
+  // silently padding the scanned value. Keep legacy UUID geometry supported.
+  JsBarcode(encoded, isArticleNumber(code) ? code : labelCode(code), { format: "CODE128", displayValue: false });
   const data = encoded.encodings?.map((encoding) => encoding.data).join("");
   if (!data || !/^[01]+$/.test(data)) throw new Error("Could not encode this barcode.");
   const bars: { x: number; width: number }[] = [];
@@ -42,6 +46,9 @@ export type LabelPaper = "roll70" | "roll100" | "a4";
 
 export async function printBarcodeLabels(items: LabelItem[], currency: string, paper: LabelPaper): Promise<void> {
   if (labelTotal(items) === 0) throw new Error("Choose at least one label to print.");
+  if (items.some((item) => !item.articleNumber || !isArticleNumber(item.articleNumber) || item.copies !== "1")) {
+    throw new Error("Prepare a separate article number for each label before printing.");
+  }
   document.querySelector("iframe[data-barcode-print]")?.remove();
   const frame = document.createElement("iframe");
   frame.dataset.barcodePrint = "true";
@@ -61,9 +68,10 @@ export async function printBarcodeLabels(items: LabelItem[], currency: string, p
       main { ${paper === "a4" ? "display:grid;grid-template-columns:70mm 70mm;gap:3mm;align-content:start;" : "display:block;"} }
       article { width:${width}mm;height:${height}mm;padding:2mm;overflow:hidden;break-inside:avoid;${paper !== "a4" ? "break-after:page;" : ""} }
       article:last-child { break-after:auto; } p { margin:0;overflow-wrap:anywhere; }
-      .name { font-size:9pt;font-weight:bold;line-height:1.15;height:7.5mm;overflow:hidden; }
-      .options { font-size:7pt;height:4mm;overflow:hidden; } .price { font-size:11pt;font-weight:bold;height:5mm; }
-      svg { display:block;width:100%;height:14mm; } .sku { font-size:7pt;line-height:1.1;overflow-wrap:anywhere; }
+      .name { font-size:9pt;font-weight:bold;line-height:1.15;height:6mm;overflow:hidden; }
+      .options { font-size:7pt;height:3mm;overflow:hidden; } .price { font-size:11pt;font-weight:bold;height:5mm; }
+      svg { display:block;width:100%;height:13mm; } .article { font-size:9pt;font-weight:bold;height:4mm;text-align:center; }
+      .sku { font-size:7pt;line-height:1.1;overflow-wrap:anywhere; }
       @media screen { article { outline:1px solid #ddd; } }`;
     doc.head.append(style);
     doc.title = "Product barcode labels";
@@ -71,7 +79,7 @@ export async function printBarcodeLabels(items: LabelItem[], currency: string, p
     for (const item of items) {
       const count = labelCopies(item.copies)!;
       if (!count) continue;
-      const geometry = barcodeGeometry(item.variantId);
+      const geometry = barcodeGeometry(item.articleNumber!);
       const label = doc.createElement("article");
       for (const [className, value] of [["name", item.productName], ["options", item.options], ["price", `${currency} ${item.sellPrice}`]]) {
         const p = doc.createElement("p"); p.className = className; p.textContent = value; label.append(p);
@@ -86,6 +94,7 @@ export async function printBarcodeLabels(items: LabelItem[], currency: string, p
         svg.append(rect);
       }
       label.append(svg);
+      const article = doc.createElement("p"); article.className = "article"; article.textContent = item.articleNumber!; label.append(article);
       const sku = doc.createElement("p"); sku.className = "sku"; sku.textContent = item.sku; label.append(sku);
       for (let i = 0; i < count; i++) main.append(label.cloneNode(true));
     }

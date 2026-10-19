@@ -11,6 +11,13 @@ assert.equal(invoiceTotals([{ quantity: 1, unitPrice: "0.10" }], "0", "5").vatAm
 assert.throws(() => invoiceTotals([{ quantity: 1, unitPrice: "10" }], "11", "0"));
 assert.throws(() => invoiceTotals([{ quantity: 2, unitPrice: "99999999.99" }], "0", "0"));
 assert.equal(invoiceTotals([{ quantity: 1, unitPrice: "10" }], "10", "15").totalAmount, "0.00");
+assert.deepEqual(invoiceTotals([{ quantity: 1, unitPrice: "560.00" }], "0", "2", "2"), {
+  subtotal: "560.00", discount: "11.20", vatAmount: "10.98", totalAmount: "559.78",
+});
+assert.equal(invoiceTotals([{ quantity: 1, unitPrice: "10" }], "0", "15", "100").totalAmount, "0.00");
+assert.equal(invoiceTotals([{ quantity: 1, unitPrice: "0.05" }], "0", "0", "10").discount, "0.01", "percentage discount rounds half-up before VAT");
+assert.equal(invoiceTotals([{ quantity: 1, unitPrice: "100" }], "99", "0", "2.25").discount, "2.25", "percentage takes precedence over legacy amount");
+for (const invalid of ["100.01", "-1", "NaN", "1.001"]) assert.throws(() => invoiceTotals([{ quantity: 1, unitPrice: "100" }], "0", "0", invalid));
 // Exhaustively check penny allocation over uneven lines and partial returns.
 for (let cents = 0; cents < 300; cents++) {
   const total = `${Math.floor(cents / 100)}.${String(cents % 100).padStart(2, "0")}`;
@@ -32,7 +39,10 @@ assert.equal(invoiceSchema.safeParse({ status: "completed", items: [{ ...item, q
 assert.equal(invoiceSchema.safeParse({ status: "completed", items: [{ ...item, quantity: 1.5001 }] }).success, false, "more than 3 decimals are refused");
 assert.equal(invoiceSchema.safeParse({ status: "draft", items: [{ ...item, unitPrice: "NaN" }] }).success, false);
 assert.equal(returnSchema.safeParse({ saleItemId: item.productId, quantity: 0 }).success, false);
-console.log("Sales calculations and validation passed (including 300 allocation scenarios).");
+assert.equal(invoiceSchema.safeParse({ status: "draft", discountPercentage: "2", items: [item] }).success, true);
+assert.equal(invoiceSchema.safeParse({ status: "draft", discountPercentage: "100", items: [item] }).success, true);
+for (const invalid of ["100.01", "-1", "NaN", "1.001"]) assert.equal(invoiceSchema.safeParse({ status: "draft", discountPercentage: invalid, items: [item] }).success, false);
+console.log("Sales calculations and validation passed (percentage discounts, legacy invoices and 300 allocation scenarios).");
 
 assert.equal(nextScanQuantity(0, 3), 1);
 assert.equal(nextScanQuantity(1, 3), 2);

@@ -19,7 +19,7 @@ export function invoicePrintDocument(invoice: InvoiceDetail, business: InvoiceBu
   const date = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(invoice.createdAt));
   const rows = invoice.items.map((item, index) => `<tr><td><strong>${index + 1}. ${escape(item.name)}</strong>${item.variantLabel !== "Default" ? `<span>${escape(item.variantLabel)}</span>` : ""}<span>SKU: ${escape(item.sku)}</span>${item.returnedQuantity > 0 ? `<span>Returned: ${escape(item.returnedQuantity)}</span>` : ""}</td><td class="number">${escape(item.quantity)}</td><td class="number">${money(item.unitPrice)}</td><td class="number">${money(item.subtotal)}</td></tr>`).join("");
   const totals = [
-    ["Subtotal", invoice.subtotal], ["Discount", invoice.discount], ["VAT", invoice.vatAmount], ["Grand total", invoice.totalAmount],
+    ["Subtotal", invoice.subtotal], [invoice.discountPercentage != null ? `Discount (${invoice.discountPercentage}%)` : "Discount", invoice.discount], ["VAT", invoice.vatAmount], ["Grand total", invoice.totalAmount],
     ["Paid", invoice.paidAmount], ...(hasReturns ? [["Return credit", invoice.creditAmount], ["Net after returns", invoice.netAmount], ["Cash refund", invoice.cashRefundAmount]] : []), ["Amount due", invoice.dueAmount],
   ].map(([label, amount]) => `<div${label === "Grand total" || label === "Amount due" ? ' class="emphasis"' : ""}><dt>${label}</dt><dd>${money(amount)}</dd></div>`).join("");
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ${escape(invoice.invoiceNo)}</title><style>
@@ -35,7 +35,7 @@ export function invoicePrintDocument(invoice: InvoiceDetail, business: InvoiceBu
     dt,dd { margin:0; } dd { text-align:right; } .emphasis { font-weight:bold; border-top:1px solid #444; }
     footer { margin-top:5mm; border-top:1px solid #ddd; padding-top:3mm; text-align:center; font-size:0.85em; }
     p,strong { overflow-wrap:anywhere; } @media screen { body { padding:5mm; } }
-  </style></head><body><main><header><h1>${escape(business.name)}</h1>${business.address ? `<p>${escape(business.address)}</p>` : ""}${business.phone ? `<p>Phone: ${escape(business.phone)}</p>` : ""}<p>${escape(business.email)}</p></header>
+  </style></head><body><main><header><h1>${escape(business.name)}</h1>${business.address ? `<p>${escape(business.address)}</p>` : ""}${business.phone ? `<p>Phone: ${escape(business.phone)}</p>` : ""}</header>
   <section class="meta"><h2>Sales invoice</h2><p>Invoice: <strong>${escape(invoice.invoiceNo)}</strong></p><p>Date: ${escape(date)}</p><p>Customer: ${escape(invoice.customer?.name ?? "Walk-in customer")}</p>${invoice.customer?.phone ? `<p>Phone: ${escape(invoice.customer.phone)}</p>` : ""}${invoice.paymentMethod ? `<p>Payment method: ${escape(invoice.paymentMethod)}</p>` : ""}</section>
   <table><thead><tr><th scope="col">Item</th><th scope="col" class="number">Qty</th><th scope="col" class="number">Price</th><th scope="col" class="number">Amount</th></tr></thead><tbody>${rows}</tbody></table><dl>${totals}</dl>
   <footer><p>Thank you for shopping with us.</p>${hasReturns ? "<p>Includes returns recorded against this invoice.</p>" : ""}</footer></main></body></html>`;

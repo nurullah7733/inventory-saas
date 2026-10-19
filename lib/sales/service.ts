@@ -9,6 +9,7 @@ import type { TenantScope } from "../tenant/scope.ts";
 import { invoiceTotals, returnCredit } from "./calculations.ts";
 import { getInvoice, getReturn } from "./queries.ts";
 import type { InvoiceInput, ReturnInput } from "./schemas.ts";
+import { supportsDiscountPercentage } from "./schema-compatibility.ts";
 
 function invalid(message: string): never { throw new ApiProblem("VALIDATION_ERROR", message, 422); }
 
@@ -42,7 +43,7 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
   const tenant = await rlsDb().orm.public.Tenant.where({ id: scope.tenantId }).select("vatPercentage").first();
   if (!tenant) throw new ApiProblem("NOT_FOUND", "Workspace not found.", 404);
   let totals;
-  try { totals = invoiceTotals(input.items, input.discount, String(tenant.vatPercentage)); }
+  try { totals = invoiceTotals(input.items, input.discount, String(tenant.vatPercentage), input.discountPercentage); }
   catch (error) { invalid(error instanceof Error ? error.message : "Invalid totals."); }
   if (toCents(input.paidAmount) > toCents(totals.totalAmount)) invalid("Paid amount cannot exceed the invoice total.");
   if (input.status === "completed" && !input.customerId && toCents(input.paidAmount) < toCents(totals.totalAmount)) {
@@ -78,14 +79,17 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
   const values = {
     customerId: input.customerId, status: input.status, subtotal: numeric<10, 2>(totals.subtotal),
     discount: numeric<10, 2>(totals.discount), vatAmount: numeric<10, 2>(totals.vatAmount),
+    ...(await supportsDiscountPercentage() ? {
+      discountPercentage: input.discountPercentage === undefined ? null : numeric<5, 2>(input.discountPercentage),
+    } : {}),
     totalAmount: numeric<10, 2>(totals.totalAmount), paidAmount: numeric<10, 2>(input.paidAmount),
     paymentMethod: input.paymentMethod, soldBy: userId,
   };
   if (existingId) {
-    await scope.Sale.where({ id }).update(values);
+    await scope.Sale.where({ id }).select("id").update(values);
     await scope.SaleItem.where({ saleId: id }).delete();
   } else {
-    await scope.Sale.create(scope.own({ ...values, id, invoiceNo: `INV-${id.toUpperCase()}` }));
+    await scope.Sale.select("id").create(scope.own({ ...values, id, invoiceNo: `INV-${id.toUpperCase()}` }));
   }
   for (const item of lines) {
     await scope.SaleItem.create(scope.own({ saleId: id, productId: item.productId, variantId: item.variantId, quantity: numeric<12, 3>(item.quantity),
@@ -96,7 +100,7 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
     }
   }
   await recordAudit({ tenantId: scope.tenantId, userId, action: input.status === "completed" ? "sale.complete" : existingId ? "sale.update" : "sale.create",
-    entityType: "sale", entityId: id, metadata: { status: input.status, ...totals } });
+    entityType: "sale", entityId: id, metadata: { status: input.status, ...totals, discountPercentage: input.discountPercentage ?? null } });
   const invoice = await getInvoice(scope, id);
   if (!invoice) throw new Error("Saved invoice could not be read.");
   return invoice;

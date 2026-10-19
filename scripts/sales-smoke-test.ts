@@ -119,6 +119,7 @@ async function cleanup() {
         rawSql`DELETE FROM public.sale_items WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.sales WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.wastage WHERE tenant_id = ${tenantId}::uuid`,
+        rawSql`DELETE FROM public.article_labels WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.product_variants WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.products WHERE tenant_id = ${tenantId}::uuid`,
         rawSql`DELETE FROM public.customers WHERE tenant_id = ${tenantId}::uuid`,

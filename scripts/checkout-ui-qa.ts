@@ -101,7 +101,7 @@ async function main() {
     await enter("COFFEE-0"); await waitFor(quantity(0, 1));
     await click("Full payment");
     await waitFor(`document.querySelector('input[name="paidAmount"]').value === "20.00"`);
-    await setValue('input[name="discount"]', "2.00");
+    await setValue('input[name="discountPercentage"]', "10.00");
     await waitFor(`document.querySelector('input[name="paidAmount"]').value === "18.00"`);
     await setValue('input[name="paidAmount"]', "50.00");
     await waitFor(`document.body.innerText.includes("Change: BDT 32.00")`);
@@ -128,6 +128,8 @@ async function main() {
     const detail = await (await fetch(`${base}/api/v1/invoices/${salePath.split("/").at(-1)}`, { headers: { authorization: `Bearer ${browserToken}` } })).json();
     assert.ok(detail.ok, JSON.stringify(detail));
     assert.equal(detail.data.invoice.paidAmount, "18.00", "change is not recorded as payment");
+    assert.equal(detail.data.invoice.discountPercentage, "10.00");
+    assert.equal(detail.data.invoice.discount, "2.00", "ten percent of twenty is saved as two in currency");
     assert.equal(detail.data.invoice.dueAmount, "0.00");
     assert.equal(detail.data.invoice.status, "completed");
     if (width === 675) {
@@ -172,6 +174,7 @@ async function cleanup() {
     await orm.SaleItem.where({ tenantId: id }).deleteAll();
     await orm.Sale.where({ tenantId: id }).deleteAll();
     await orm.Customer.where({ tenantId: id }).deleteAll();
+    await orm.ArticleLabel.where({ tenantId: id }).deleteAll();
     await orm.ProductVariant.where({ tenantId: id }).deleteAll();
     await orm.Product.where({ tenantId: id }).deleteAll();
     await orm.VariantSize.where({ tenantId: id }).deleteAll();

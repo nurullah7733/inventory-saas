@@ -108,6 +108,7 @@ async function main() {
       mailUsers.push(...(await tx.orm.public.User.select("id").where({ tenantId }).all()).map((user) => user.id));
       await tx.orm.public.AuditLog.where({ tenantId }).deleteAll();
       await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
+      await tx.orm.public.ArticleLabel.where({ tenantId }).deleteAll();
       await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
 await tx.orm.public.Product.where({ tenantId }).deleteAll();
       await tx.orm.public.RefreshSession.where({ tenantId }).deleteAll();

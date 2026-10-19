@@ -56,6 +56,13 @@ export function StockManager() {
   });
 
   const movements = list.data?.movements ?? [];
+  const groups = new Map<string, StockMovementResponse[]>();
+  for (const movement of movements) {
+    const key = movement.product?.id ?? movement.id;
+    const entries = groups.get(key) ?? [];
+    entries.push(movement);
+    groups.set(key, entries);
+  }
 
   return (
     <div className="flex flex-col gap-content pb-dock sm:pb-0">
@@ -95,8 +102,29 @@ export function StockManager() {
         </EmptyState>
       ) : (
         <ul className="flex flex-col gap-item">
-          {movements.map((movement) => (
-            <MovementRow key={movement.id} movement={movement} currency={currency} />
+          {Array.from(groups, ([productId, entries]) => (
+            <li key={productId}>
+              <details className="group rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <summary className="flex cursor-pointer list-none items-center gap-item rounded-xl p-content [&::-webkit-details-marker]:hidden">
+                  <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" className="h-5 w-5 shrink-0 text-zinc-500 transition-transform group-open:rotate-90">
+                    <path d="m7 4 6 6-6 6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words font-semibold text-zinc-900 dark:text-zinc-100">{entries[0].product?.name ?? "Unknown product"}</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                      {entries[0].product?.sku} · {entries.length} {entries.length === 1 ? "entry" : "entries"} · {new Set(entries.map((entry) => entry.variant?.id ?? "default")).size} variants
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-right">
+                    <span className="block font-semibold text-emerald-700 dark:text-emerald-400">+{Number(entries.reduce((total, entry) => total + entry.quantity, 0).toFixed(3))}</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">received</span>
+                  </span>
+                </summary>
+                <ul aria-label={`Stock entries for ${entries[0].product?.name ?? "unknown product"}`} className="flex flex-col gap-small border-t border-zinc-200 p-item dark:border-zinc-800">
+                  {entries.map((movement) => <MovementRow key={movement.id} movement={movement} currency={currency} />)}
+                </ul>
+              </details>
+            </li>
           ))}
         </ul>
       )}
@@ -132,11 +160,10 @@ function MovementRow({
     <li className="flex flex-col gap-tight rounded-xl border border-zinc-200 bg-white p-item shadow-sm sm:flex-row sm:items-center sm:gap-content dark:border-zinc-800 dark:bg-zinc-900">
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-zinc-900 dark:text-zinc-100">
-          {movement.product?.name ?? "Unknown product"}
+          {movement.variant?.name ?? "Default"}
         </p>
         <p className="text-xs text-zinc-500 dark:text-zinc-400">
           {movement.product?.sku}
-          {movement.variant && movement.variant.name !== "Default" ? ` · ${movement.variant.name}` : ""}
           {movement.supplier ? ` · from ${movement.supplier.name}` : ""}
         </p>
         {movement.note ? (

@@ -4,6 +4,7 @@ import type { TenantScope } from "../tenant/scope.ts";
 import { INTERNAL_LABEL_PATTERN } from "./label-codes.ts";
 import { escapeLike } from "./master-data.ts";
 import { generateUniqueSku } from "./variant-combinations.ts";
+import { isArticleNumber } from "./article-numbers.ts";
 
 /** Serialize code claims across both tables for this tenant. The request's
  * transaction holds this lock until commit/rollback, including failed writes. */
@@ -53,6 +54,12 @@ export async function catalogCodeConflict(scope: TenantScope, productId: string 
   }
   if (INTERNAL_LABEL_PATTERN.test(productSku)) return "This SKU is reserved for internal barcode labels.";
   const codes = [...new Set([productSku, ...owner.keys()])];
+  const articleNumbers = codes.filter(isArticleNumber).map(Number);
+  if (articleNumbers.length) {
+    const article = await scope.ArticleLabel.select("articleNumber")
+      .where((label) => label.articleNumber.in(articleNumbers)).first();
+    if (article) return `Code ${article.articleNumber} is reserved for a printed article label.`;
+  }
   const ids = new Set(rows.flatMap((row) => row.id ? [row.id] : []));
   const [products, variants] = await Promise.all([
     scope.Product.select("id", "sku").where((p) => p.sku.in(codes)).all(),

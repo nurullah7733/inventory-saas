@@ -9,6 +9,8 @@ import { signAccessToken } from "../lib/auth/jwt.ts";
 import { issueSession } from "../lib/auth/session.ts";
 import { hashPassword } from "../lib/auth/password.ts";
 import { numeric } from "../lib/numeric.ts";
+import { allocateStockArticles } from "../lib/inventory/article-labels.ts";
+import { tenantScope } from "../lib/tenant/scope.ts";
 
 const base = process.env.SMOKE_BASE_URL ?? "http://localhost:3000";
 const endpoint = process.env.BROWSER_CDP_URL ?? "http://127.0.0.1:9222";
@@ -40,17 +42,22 @@ async function main() {
       const row = await tx.orm.public.VariantWeight.select("id").create(own({ name }));
       weights[name] = row.id;
     }
-    const heel = await tx.orm.public.Product.select("id").create(own({ name: "Ladies Heel", sku: "LH", stockQty: numeric<12, 3>(9), costPrice: numeric("550.00"), sellPrice: numeric("600.00") }));
+    const heel = await tx.orm.public.Product.select("id").create(own({ name: "Ladies Heel", sku: "LH", stockQty: numeric<12, 3>(27), costPrice: numeric("550.00"), sellPrice: numeric("600.00") }));
     for (const [sizeName, sizeId] of Object.entries(sizes)) {
       if (sizeName === "40") continue;
       for (const [colorName, colorId] of Object.entries(colors)) {
         const sku = `LH-${sizeName}-${colorName.toUpperCase().slice(0, 3)}`;
-        await tx.orm.public.ProductVariant.select("id").create(own({ productId: heel.id, sku, label: `${sizeName} / ${colorName}`, sizeId, colorId, stockQty: numeric<12, 3>(3), costPrice: numeric("12345678.90"), sellPrice: numeric("87654321.09") }));
+        const variant = await tx.orm.public.ProductVariant.select("id").create(own({ productId: heel.id, sku, label: `${sizeName} / ${colorName}`, sizeId, colorId, stockQty: numeric<12, 3>(3), costPrice: numeric("12345678.90"), sellPrice: numeric("87654321.09") }));
+        await allocateStockArticles(tenantScope(tenant.id), variant.id, 3, randomUUID());
       }
     }
-    // A second product so the list has more than one row.
+    // Simulate two numbers left behind by the old print-time allocator.
+    const oldVariant = await tx.orm.public.ProductVariant.select("id").where({ productId: heel.id }).first();
+    await allocateStockArticles(tenantScope(tenant.id), oldVariant!.id, 2, randomUUID());
+    // A second product so product filtering cannot pass on an empty fixture.
     await tx.orm.public.Product.select("id").create(own({ name: "Runner Pro", sku: "RP", stockQty: numeric<12, 3>(2), costPrice: numeric("150.00"), sellPrice: numeric("180.00") }));
-    await tx.orm.public.ProductVariant.select("id").create(own({ productId: (await tx.orm.public.Product.where({ sku: "RP", tenantId: tenant.id }).select("id").first())!.id, sku: "RP", label: "Default", stockQty: numeric<12, 3>(2), costPrice: numeric("150.00"), sellPrice: numeric("180.00") }));
+    const runnerVariant = await tx.orm.public.ProductVariant.select("id").create(own({ productId: (await tx.orm.public.Product.where({ sku: "RP", tenantId: tenant.id }).select("id").first())!.id, sku: "RP", label: "Default", stockQty: numeric<12, 3>(2), costPrice: numeric("150.00"), sellPrice: numeric("180.00") }));
+    await allocateStockArticles(tenantScope(tenant.id), runnerVariant.id, 2, randomUUID());
     return { tenantId: tenant.id, user };
   });
 
@@ -99,7 +106,7 @@ async function main() {
     }
     let context = "";
     try {
-      context = String(await evaluate(`location.href + " :: " + document.body.innerText.replace(/\\n/g, " | ").slice(0, 200)`));
+      context = String(await evaluate(`location.href + " :: " + (document.querySelector('[role="dialog"]')?.textContent ?? document.body.innerText).replace(/\\n/g, " | ").slice(0, 1600)`));
     } catch {
       context = "no document";
     }
@@ -143,24 +150,34 @@ async function main() {
     await waitFor(`document.body.innerText.includes("Ladies Heel")`);
     report(`${width}: page scrollWidth fits = ${await evaluate("document.documentElement.scrollWidth <= innerWidth")}`);
 
-    // Labels use the same stable ID for every copy; mock only the OS print dialog.
+    // Each physical item has a saved number; mock only the OS print dialog.
     await evaluate(`document.querySelector('[aria-label="Print labels for Ladies Heel"]').click()`);
     await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 27 labels")`);
-    await clickButton("Clear copies", '[role="dialog"]');
-    await setValue('[role="dialog"] input[aria-label^="Label copies for"]', "2");
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] label')).find((label) => label.textContent.includes("Show older saved numbers for reprints")).querySelector('input').click()`);
+    await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 29 labels")`);
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] label')).find((label) => label.textContent.includes("Show older saved numbers for reprints")).querySelector('input').click()`);
+    await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 27 labels")`);
+    report(`${width}: current stock and older reprint numbers are separate = true`);
+    await clickButton("Clear selection", '[role="dialog"]');
+    await evaluate(`Array.from(document.querySelectorAll('[role="dialog"] input[aria-label^="Print number "]')).slice(0, 2).forEach((checkbox) => checkbox.click())`);
     await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 2 labels")`);
     await evaluate(`(() => {
       const original = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "contentWindow");
       Object.defineProperty(HTMLIFrameElement.prototype, "contentWindow", { configurable: true, get() {
         const win = original.get.call(this);
-        if (win) win.print = () => { window.__printedLabels = { count: win.document.querySelectorAll("article").length, svg: win.document.querySelectorAll("article svg").length, text: win.document.body.textContent, page: win.document.querySelector("style").textContent }; };
+        if (win) win.print = () => { window.__printedLabels = { count: win.document.querySelectorAll("article").length, svg: win.document.querySelectorAll("article svg").length, text: win.document.body.textContent, numbers: Array.from(win.document.querySelectorAll("article .article")).map((p) => p.textContent), page: win.document.querySelector("style").textContent }; };
         return win;
       }});
     })()`);
     await clickButton("Print 2 labels", '[role="dialog"]');
     await waitFor(`window.__printedLabels?.count === 2`);
     assert.ok(await evaluate(`window.__printedLabels.svg === 2 && window.__printedLabels.text.includes("Ladies Heel") && window.__printedLabels.text.includes("87654321.09") && window.__printedLabels.page.includes("70mm 40mm")`), "print document includes barcode, current price and paper dimensions");
-    report(`${width}: barcode preview and two-copy print document = true`);
+    assert.ok(await evaluate(`window.__printedLabels.numbers.every((value) => /^[1-9][0-9]*$/.test(value)) && new Set(window.__printedLabels.numbers).size === 2`), "each label displays only its distinct saved number");
+    await evaluate(`window.__firstArticleNumbers = window.__printedLabels.numbers.join(","); window.__printedLabels = null`);
+    await clickButton("Print 2 labels", '[role="dialog"]');
+    await waitFor(`window.__printedLabels?.count === 2`);
+    assert.ok(await evaluate(`window.__printedLabels.numbers.join(",") === window.__firstArticleNumbers`), "reprint uses exactly the same saved numbers");
+    report(`${width}: barcode preview and two-item print document = true`);
     if (width === 360) {
       for (const paper of ["roll100", "a4"]) {
         await evaluate(`(() => { const field = document.querySelector('[role="dialog"] select'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value").set.call(field, ${JSON.stringify(paper)}); field.dispatchEvent(new Event("change", { bubbles: true })); window.__printedLabels = null; })()`);
@@ -175,6 +192,18 @@ async function main() {
     await shot(path.join(`barcode-labels-${width}.png`));
     await evaluate(`document.querySelector('[role="dialog"] button[aria-label="Close"]').click()`);
     await waitFor(`!document.querySelector('[role="dialog"]')`);
+
+    await evaluate(`document.querySelector('[aria-label="Print labels for Runner Pro"]').click()`);
+    await waitFor(`Array.from(document.querySelectorAll('[role="dialog"] button')).some((b) => b.textContent.trim() === "Print 2 labels")`);
+    assert.ok(await evaluate(`!document.querySelector('[role="dialog"]').textContent.includes("Ladies Heel") && document.querySelectorAll('[role="dialog"] input[aria-label^="Print number "]').length === 2`), "switching products only shows that product's two labels");
+    await clickButton("Print 2 labels", '[role="dialog"]');
+    await waitFor(`window.__printedLabels?.text.includes("Runner Pro")`);
+    assert.ok(await evaluate(`!window.__printedLabels.text.includes("Ladies Heel") && window.__printedLabels.numbers.join(",") === "2029,2030"`), "printed labels cannot include another product's units");
+    await evaluate(`document.querySelector('[role="dialog"] button[aria-label="Close"]').click()`);
+    await waitFor(`!document.querySelector('[role="dialog"]')`);
+    report(`${width}: product label isolation and switching = true`);
+
+    if (process.argv.includes("--labels-only")) continue;
 
     // --- Add product modal --------------------------------------------------
     await evaluate(`Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Add product").click()`);
@@ -295,6 +324,7 @@ async function cleanupFixture() {
     const orm = tx.orm.public;
     await orm.AuditLog.where({ tenantId }).deleteAll();
     await orm.StockMovement.where({ tenantId }).deleteAll();
+    await orm.ArticleLabel.where({ tenantId }).deleteAll();
     await orm.ProductVariant.where({ tenantId }).deleteAll();
     await orm.Product.where({ tenantId }).deleteAll();
     await orm.VariantColor.where({ tenantId }).deleteAll();

@@ -4,6 +4,7 @@ import type { RlsSession } from "../db/rls.ts";
 import type { TenantScope } from "../tenant/scope.ts";
 import { escapeLike } from "./master-data.ts";
 import { variantIdFromLabel } from "./label-codes.ts";
+import { isArticleNumber } from "./article-numbers.ts";
 import {
   PRODUCT_REFS,
   VARIANT_REFS,
@@ -174,15 +175,17 @@ export interface ProductListFilter {
 export function filterProducts(
   collection: ProductCollection,
   filter: ProductListFilter,
+  articleVariantId?: string,
 ): ProductCollection {
   let query = collection;
   if (filter.status !== "all") {
     query = query.where({ isDeleted: filter.status === "deleted" });
   }
   if (filter.categoryId) query = query.where({ categoryId: filter.categoryId });
+  if (articleVariantId) return query.where((p) => p.variants.some((v) => v.id.eq(articleVariantId)));
   if (filter.search !== "") {
     const pattern = `%${escapeLike(filter.search)}%`;
-    const labelVariantId = variantIdFromLabel(filter.search.trim());
+    const labelVariantId = articleVariantId ?? variantIdFromLabel(filter.search.trim());
     query = query.where((p) => or(
       p.name.ilike(pattern),
       p.sku.ilike(pattern),
@@ -201,7 +204,11 @@ export async function listProducts(
   filter: ProductListFilter,
   page: { offset: number; pageSize: number },
 ): Promise<{ products: ProductResponse[]; total: number }> {
-  const filtered = filterProducts(scope.Product, filter);
+  const code = filter.search.trim();
+  const article = isArticleNumber(code)
+    ? await scope.ArticleLabel.select("variantId").where({ articleNumber: Number(code) }).first()
+    : null;
+  const filtered = filterProducts(scope.Product, filter, article?.variantId);
 
   const [rows, count] = await Promise.all([
     selectProducts(filtered)

@@ -57,6 +57,7 @@ export function InvoiceEditor({ invoice }: { invoice?: InvoiceDetail }) {
     resolver: zodResolver(invoiceSchema),
     defaultValues: {
       customerId: invoice?.customer?.id ?? null, status: "draft", discount: invoice?.discount ?? "0.00",
+      discountPercentage: invoice ? invoice.discountPercentage ?? undefined : "0.00",
       paidAmount: "0.00", paymentMethod: "cash",
       items: invoice?.items.map((item) => ({ productId: item.productId, variantId: item.variantId, quantity: item.quantity, unitPrice: item.unitPrice })) ?? [],
     },
@@ -93,7 +94,7 @@ export function InvoiceEditor({ invoice }: { invoice?: InvoiceDetail }) {
   const valid = invoiceSchema.safeParse({ ...values, paidAmount: "0.00", status: "completed" });
   if (!valid.success && values.items?.length) totalError = valid.error.issues.map((issue) => issue.message).join(" ");
   if (valid.success && tenant.data) {
-    try { totals = invoiceTotals(valid.data.items, valid.data.discount, vat); }
+    try { totals = invoiceTotals(valid.data.items, valid.data.discount, vat, valid.data.discountPercentage); }
     catch (error) { totalError = error instanceof Error ? error.message : "Invalid total."; }
   }
   const received = fullPayment ? totals?.totalAmount ?? "0.00" : values.paidAmount ?? "0.00";
@@ -315,10 +316,11 @@ export function InvoiceEditor({ invoice }: { invoice?: InvoiceDetail }) {
       </div>
       <aside ref={checkoutPanel} tabIndex={-1} aria-label="Checkout" className="ui-panel min-w-0 scroll-mt-dock space-y-content outline-none xl:sticky xl:top-section">
         <h2 className="font-semibold">Checkout</h2>
-        <Field label={`Invoice discount (${currency})`} error={form.formState.errors.discount?.message}>{(props) => <input {...props} inputMode="decimal" {...form.register("discount")} />}</Field>
+        <Field label="Invoice discount (%)" error={form.formState.errors.discountPercentage?.message}>{(props) => <input {...props} type="number" min="0" max="100" step="0.01" inputMode="decimal" placeholder="0" {...form.register("discountPercentage", { setValueAs: (value: string) => value === "" ? "0.00" : value })} />}</Field>
+        {invoice && invoice.discount !== "0.00" && values.discountPercentage === undefined ? <p className="text-xs text-muted">Existing discount: {currency} {invoice.discount}. Enter a percentage to replace it.</p> : null}
         <div className="space-y-small rounded-lg bg-surface-muted p-item" aria-live="polite">
           <p>Subtotal: {currency} {totals?.subtotal ?? "--"}</p>
-          <p>Discount: {currency} {totals?.discount ?? "--"}</p>
+          <p>Discount{valid.success && valid.data.discountPercentage !== undefined ? ` (${valid.data.discountPercentage}%)` : ""}: {currency} {totals?.discount ?? "--"}</p>
           <p>VAT ({vat}%): {currency} {totals?.vatAmount ?? "--"}</p>
           <p className="text-lg font-semibold">Grand total: {currency} {totals?.totalAmount ?? "--"}</p>
         </div>

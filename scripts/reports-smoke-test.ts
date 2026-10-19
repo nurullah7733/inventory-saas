@@ -50,6 +50,7 @@ async function cleanup() {
     await tx.orm.public.StockMovement.where({ tenantId }).deleteAll();
     await tx.orm.public.SupplierPayment.where({ tenantId }).deleteAll();
     await tx.orm.public.Expense.where({ tenantId }).deleteAll();
+    await tx.orm.public.ArticleLabel.where({ tenantId }).deleteAll();
     await tx.orm.public.ProductVariant.where({ tenantId }).deleteAll();
 await tx.orm.public.Product.where({ tenantId }).deleteAll();
     await tx.orm.public.Customer.where({ tenantId }).deleteAll();

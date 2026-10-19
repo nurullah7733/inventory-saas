@@ -11,8 +11,8 @@ export default function StockPage() {
       <div>
         <h1 className="text-xl font-semibold tracking-tight">Stock</h1>
         <p className="mt-tight text-sm text-zinc-500 dark:text-zinc-400">
-          Every delivery you have received. Adding stock raises the product&apos;s
-          quantity and records the supplier, unit cost and who received it.
+          Deliveries grouped by product. Expand a product to see its sizes,
+          colors, received quantities and delivery details.
         </p>
       </div>
 

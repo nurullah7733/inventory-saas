@@ -335,6 +335,8 @@ async function variantChecks(a: Fixture, b: Fixture): Promise<void> {
   );
 
   await withRlsBypass(async (tx) => {
+    await tx.execute(rawSql`DELETE FROM public.article_labels WHERE variant_id IN
+      (SELECT id FROM public.product_variants WHERE product_id = ${product.id}::uuid)`.affectedCount().build());
     await tx.orm.public.ProductVariant.where({ productId: product.id }).delete();
     await tx.orm.public.Product.where({ id: product.id }).delete();
   });

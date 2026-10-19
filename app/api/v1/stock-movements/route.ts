@@ -32,6 +32,7 @@ function invalidField(field: string, message: string) {
  *   ?supplierId=  everything bought from one supplier
  *   ?from=&to=    ISO timestamps, [from, to)
  *   ?page=&pageSize=
+ *   ?groupBy=product  paginate whole products; total counts products
  *
  * The Stocks screen asks for `type=in`.
  */
@@ -41,6 +42,8 @@ export const GET = withTenantAuth(
 
     const type = parseEnumParam(params, "type", [...MOVEMENT_TYPES, "all"] as const, "all");
     if (!type.ok) return type.response;
+    const groupBy = parseEnumParam(params, "groupBy", ["none", "product"] as const, "none");
+    if (!groupBy.ok) return groupBy.response;
     const productId = parseUuidParam(params, "productId");
     if (!productId.ok) return productId.response;
     const supplierId = parseUuidParam(params, "supplierId");
@@ -62,6 +65,7 @@ export const GET = withTenantAuth(
         to: to.value,
       },
       page.value,
+      groupBy.value === "product",
     );
 
     return apiSuccess({

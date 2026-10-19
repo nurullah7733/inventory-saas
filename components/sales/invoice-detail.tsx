@@ -84,7 +84,7 @@ export function InvoiceDetail({ id }: { id: string }) {
       </div>
       <div className="space-y-item">{invoice.items.map((item) => <article key={item.id} className="rounded-xl border border-zinc-200 p-content dark:border-zinc-800"><h2 className="font-semibold">{item.name}</h2><p className="text-sm text-zinc-500">{item.sku}</p><p>{item.quantity} × {currency} {item.unitPrice} = {currency} {item.subtotal}</p><p className="text-sm">Returned: {item.returnedQuantity} · Returnable: {item.returnableQuantity}</p></article>)}</div>
       <dl className="grid grid-cols-2 gap-item rounded-xl bg-zinc-100 p-content dark:bg-zinc-900">{[
-        ["Subtotal", invoice.subtotal], ["Discount", invoice.discount], ["VAT", invoice.vatAmount], ["Original total", invoice.totalAmount],
+        ["Subtotal", invoice.subtotal], [invoice.discountPercentage != null ? `Discount (${invoice.discountPercentage}%)` : "Discount", invoice.discount], ["VAT", invoice.vatAmount], ["Original total", invoice.totalAmount],
         ["Original payment", invoice.paidAmount], ["Return credit", invoice.creditAmount], ["Net after returns", invoice.netAmount], ["Remaining due", invoice.dueAmount], ["Total cash refund", invoice.cashRefundAmount],
       ].map(([label, amount]) => <div key={label}><dt className="text-sm text-zinc-500">{label}</dt><dd className="font-semibold">{currency} {amount}</dd></div>)}</dl>
       <ReturnForm invoice={invoice} />

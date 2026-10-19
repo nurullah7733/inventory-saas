@@ -5,6 +5,7 @@ export interface InvoiceSummary {
   customer: { id: string; name: string; phone: string | null } | null;
   subtotal: string;
   discount: string;
+  discountPercentage?: string | null;
   vatAmount: string;
   totalAmount: string;
   paidAmount: string;
