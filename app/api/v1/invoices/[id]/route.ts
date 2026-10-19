@@ -4,9 +4,15 @@ import { isUuid } from "@/lib/inventory/master-data.ts";
 import { readTenantSafeJsonBody } from "@/lib/tenant/request.ts";
 import { getInvoice } from "@/lib/sales/queries.ts";
 import { invoiceSchema } from "@/lib/sales/schemas.ts";
-import { saveInvoice } from "@/lib/sales/service.ts";
+import { deleteDraftInvoice, saveInvoice } from "@/lib/sales/service.ts";
 
 type Context = { params: Promise<{ id: string }> };
+export const DELETE = withTenantAuth<Context>(async (_request, auth, context) => {
+  const { id } = await context.params;
+  if (!isUuid(id)) return apiError("NOT_FOUND", "Invoice not found.", 404);
+  await deleteDraftInvoice(auth.scope, auth.user.id, id);
+  return apiSuccess({ deleted: true });
+});
 export const GET = withTenantAuth<Context>(async (_request, auth, context) => {
   const { id } = await context.params;
   if (!isUuid(id)) return apiError("NOT_FOUND", "Invoice not found.", 404);

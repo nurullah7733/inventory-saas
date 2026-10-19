@@ -102,6 +102,21 @@ async function main() {
   check(await stock() === 9, "create retries decrement stock once");
   const audit = await withRlsBypass((tx) => tx.orm.public.AuditLog.where({ tenantId: a.tenantId }).select("action").all());
   check(audit.filter((row) => row.action === "sale.complete").length === 2 && audit.filter((row) => row.action === "return.create").length === 2, "successful sales and returns audited once");
+  const disposable = await call<{ invoice: InvoiceDetail }>("/invoices", a.token, "POST", input);
+  check(disposable.status === 201, "create disposable draft");
+  const disposableId = disposable.data.invoice.id;
+  check((await call(`/invoices/${disposableId}`, "", "DELETE")).status === 401, "draft deletion requires authentication");
+  check((await call(`/invoices/${disposableId}`, b.token, "DELETE")).status === 404, "other tenant cannot delete draft");
+  check((await call(`/invoices/${draft.id}`, a.token, "DELETE")).status === 409, "completed invoice cannot be deleted");
+  const beforeDelete = await stock();
+  check((await call(`/invoices/${disposableId}`, a.token, "DELETE")).status === 200, "staff can delete a draft");
+  check(await stock() === beforeDelete, "draft deletion leaves stock unchanged");
+  check((await call(`/invoices/${disposableId}`, a.token)).status === 404, "deleted draft is no longer readable");
+  check((await call(`/invoices/${disposableId}`, a.token, "DELETE")).status === 404, "repeat deletion reports not found");
+  const deletedItems = await withRlsBypass((tx) => tx.orm.public.SaleItem.where({ saleId: disposableId }).select("id").all());
+  check(deletedItems.length === 0, "draft deletion removes its cart items");
+  const deletionAudit = await withRlsBypass((tx) => tx.orm.public.AuditLog.where({ tenantId: a.tenantId, entityId: disposableId, action: "sale.delete" }).select("id").all());
+  check(deletionAudit.length === 1, "draft deletion is audited once");
   for (const path of ["/sales/create", "/sales/invoices", "/sales/drafts", `/sales/invoices/${draft.id}`, "/inventory/returns"]) {
     const response = await fetch(`${base}${path}`, { headers: { cookie: "has_session=1" }, signal: AbortSignal.timeout(90000) });
     check(response.status === 200, `${path} renders`);

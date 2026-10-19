@@ -106,6 +106,20 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
   return invoice;
 }
 
+/** Share the draft-edit lock so deletion cannot race an invoice completion. */
+export async function deleteDraftInvoice(scope: TenantScope, userId: string, id: string) {
+  await lockSale(scope, id);
+  const invoice = await scope.Sale.where({ id }).select("status", "invoiceNo").first();
+  if (!invoice) throw new ApiProblem("NOT_FOUND", "Invoice not found.", 404);
+  if (invoice.status !== "draft") {
+    throw new ApiProblem("CONFLICT", "Only draft invoices can be deleted. This invoice has already been completed.", 409);
+  }
+  await scope.SaleItem.where({ saleId: id }).select("id").deleteAll();
+  await scope.Sale.where({ id, status: "draft" }).select("id").delete();
+  await recordAudit({ tenantId: scope.tenantId, userId, action: "sale.delete", entityType: "sale", entityId: id,
+    metadata: { invoiceNo: invoice.invoiceNo, status: "draft" } });
+}
+
 export async function createReturn(scope: TenantScope, userId: string, input: ReturnInput) {
   const id = input.requestId ?? randomUUID();
   await lockRequest(scope, "return", id);

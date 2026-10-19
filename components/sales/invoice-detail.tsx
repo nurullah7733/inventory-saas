@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { DeleteDraftButton } from "./delete-draft-button.tsx";
 import { useRef, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -64,6 +66,7 @@ function ReturnForm({ invoice }: { invoice: InvoiceData }) {
 }
 
 export function InvoiceDetail({ id }: { id: string }) {
+  const router = useRouter();
   const currency = useCurrencySymbol();
   const query = useQuery({ queryKey: ["sales", "invoice", id], queryFn: () => apiRequest<{ invoice: InvoiceData }>(`/invoices/${id}`) });
   if (query.isLoading) return <ListSkeleton label="Loading invoice" />;
@@ -74,6 +77,7 @@ export function InvoiceDetail({ id }: { id: string }) {
     <Link href={invoice.status === "draft" ? "/sales/drafts" : "/sales/invoices"} className="inline-flex min-h-11 items-center underline">Back to {invoice.status === "draft" ? "drafts" : "invoices"}</Link>
     <h1 className="break-all text-xl font-semibold">{invoice.invoiceNo}</h1>
     <p>{invoice.status === "draft" ? "Draft invoice" : "Completed sale"} · {invoice.customer?.name ?? "Walk-in customer"}</p>
+    {invoice.status === "draft" && <DeleteDraftButton id={invoice.id} invoiceNo={invoice.invoiceNo} onDeleted={() => router.replace("/sales/drafts")} />}
     {invoice.status === "draft" ? <InvoiceEditor key={invoice.id} invoice={invoice} /> : <>
       <div className="ui-panel space-y-content">
         <div className="flex flex-wrap items-center justify-between gap-item">
