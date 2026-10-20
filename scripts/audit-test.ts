@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { auditJson, changedFields } from "../lib/audit/metadata.ts";
 
-const input = { password: "private", nested: [{ pin: "1234", STRIPE_SECRET_KEY: "private", BLOB_READ_WRITE_TOKEN: "private", pinEnabled: true }], zero: 0 };
-assert.deepEqual(auditJson(input), { nested: [{ BLOB_READ_WRITE_TOKEN: "[REDACTED]", STRIPE_SECRET_KEY: "[REDACTED]", pin: "[REDACTED]", pinEnabled: true }], password: "[REDACTED]", zero: 0 });
+const input = { password: "private", nested: [{ pin: "1234", BKASH_APP_SECRET: "private", BLOB_READ_WRITE_TOKEN: "private", pinEnabled: true }], zero: 0 };
+assert.deepEqual(auditJson(input), { nested: [{ BLOB_READ_WRITE_TOKEN: "[REDACTED]", BKASH_APP_SECRET: "[REDACTED]", pin: "[REDACTED]", pinEnabled: true }], password: "[REDACTED]", zero: 0 });
 assert.equal(input.password, "private", "Redaction must not mutate the business input");
 assert.deepEqual(changedFields({ attributes: { size: 40, color: "red" } }, { attributes: { color: "red", size: 40 } }).changed, [], "JSON key order is not a change");
 assert.deepEqual(changedFields({ attributes: { size: 40 } }, { attributes: { size: 41 } }).changed, ["attributes"], "Nested attributes must not compare as [object Object]");

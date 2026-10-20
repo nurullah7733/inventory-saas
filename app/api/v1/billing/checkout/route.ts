@@ -9,5 +9,5 @@ export const POST = withTenantAuth(async (request, auth) => {
   if (!limit.allowed) return apiError("RATE_LIMITED", "Please wait before starting another checkout.", 429);
   const body = await readTenantSafeJsonBody(request); if (!body.ok) return body.response;
   const parsed = checkoutSchema.safeParse(body.value); if (!parsed.success) return validationError(parsed.error);
-  return apiSuccess(await createCheckout(auth, parsed.data.plan));
+  return apiSuccess(await createCheckout(auth, parsed.data.plan, parsed.data.interval));
 }, { roles: ["shop_owner"], verifySession: true });

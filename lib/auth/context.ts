@@ -1,4 +1,5 @@
 import { rlsDb } from "../db/rls.ts";
+import { subscriptionStatus } from "../billing/access.ts";
 import {
   InvalidTokenError,
   readBearerToken,
@@ -139,7 +140,7 @@ export async function authenticate(
         name: row.tenant.name,
         isActive: row.tenant.isActive,
         subscriptionPlan: row.tenant.subscriptionPlan,
-        subscriptionStatus: row.tenant.subscriptionStatus,
+        subscriptionStatus: subscriptionStatus(row.tenant),
         trialEndsAt: row.tenant.trialEndsAt,
         subscriptionEndsAt: row.tenant.subscriptionEndsAt,
       } satisfies AuthTenant)

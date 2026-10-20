@@ -2485,10 +2485,31 @@
                   }
                 }
               },
+              "callbackToken": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkoutUrl": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "durationMonths": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -2503,6 +2524,20 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "paidAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "paymentId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -2539,24 +2574,17 @@
                   "plane": "domain"
                 }
               },
-              "stripeCustomerId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
-              "stripeSubscriptionId": {
-                "nullable": true,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "tenantId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "transactionId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               }
@@ -2583,14 +2611,29 @@
                 "amount": {
                   "column": "amount"
                 },
+                "callbackToken": {
+                  "column": "callback_token"
+                },
+                "checkoutUrl": {
+                  "column": "checkout_url"
+                },
                 "createdAt": {
                   "column": "created_at"
+                },
+                "durationMonths": {
+                  "column": "duration_months"
                 },
                 "endsAt": {
                   "column": "ends_at"
                 },
                 "id": {
                   "column": "id"
+                },
+                "paidAt": {
+                  "column": "paid_at"
+                },
+                "paymentId": {
+                  "column": "payment_id"
                 },
                 "plan": {
                   "column": "plan"
@@ -2601,14 +2644,11 @@
                 "status": {
                   "column": "status"
                 },
-                "stripeCustomerId": {
-                  "column": "stripe_customer_id"
-                },
-                "stripeSubscriptionId": {
-                  "column": "stripe_subscription_id"
-                },
                 "tenantId": {
                   "column": "tenant_id"
+                },
+                "transactionId": {
+                  "column": "transaction_id"
                 }
               },
               "namespaceId": "public",
@@ -6807,6 +6847,16 @@
                     "scale": 2
                   }
                 },
+                "callback_token": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "checkout_url": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -6814,6 +6864,15 @@
                     "kind": "function"
                   },
                   "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "duration_months": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": 1
+                  },
+                  "nativeType": "int4",
                   "nullable": false
                 },
                 "ends_at": {
@@ -6825,6 +6884,16 @@
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
                   "nullable": false
+                },
+                "paid_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "payment_id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "plan": {
                   "codecId": "pg/text@1",
@@ -6853,20 +6922,15 @@
                     "plane": "storage"
                   }
                 },
-                "stripe_customer_id": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
-                "stripe_subscription_id": {
-                  "codecId": "pg/text@1",
-                  "nativeType": "text",
-                  "nullable": true
-                },
                 "tenant_id": {
                   "codecId": "pg/uuid@1",
                   "nativeType": "uuid",
                   "nullable": false
+                },
+                "transaction_id": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -6889,14 +6953,6 @@
                 }
               ],
               "indexes": [
-                {
-                  "columns": [
-                    "stripe_subscription_id"
-                  ],
-                  "name": "subscriptions_stripe_subscription_id_idx_2362abe2",
-                  "prefix": "subscriptions_stripe_subscription_id_idx",
-                  "unique": false
-                },
                 {
                   "columns": [
                     "tenant_id",
@@ -6929,7 +6985,18 @@
                   "id"
                 ]
               },
-              "uniques": []
+              "uniques": [
+                {
+                  "columns": [
+                    "payment_id"
+                  ]
+                },
+                {
+                  "columns": [
+                    "transaction_id"
+                  ]
+                }
+              ]
             },
             "supplier_payments": {
               "columns": {
@@ -8232,7 +8299,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5124a86dd5a151c66ac58686cce3bf7936f661d629a38a6f9350a3bf4f6c2f8f"
+    "storageHash": "7c70a2e5af82a02526b86c46422200810d5e4500661d2827d1e6e437d4b88db5"
   },
   "execution": {
     "executionHash": "e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5",

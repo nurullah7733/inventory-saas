@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5124a86dd5a151c66ac58686cce3bf7936f661d629a38a6f9350a3bf4f6c2f8f'>;
+  StorageHashBase<'7c70a2e5af82a02526b86c46422200810d5e4500661d2827d1e6e437d4b88db5'>;
 export type ExecutionHash =
   ExecutionHashBase<'e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5'>;
 export type ProfileHash =
@@ -414,8 +414,12 @@ export type FieldOutputTypes = {
     readonly Subscription: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
       readonly tenantId: CodecTypes['pg/uuid@1']['output'];
-      readonly stripeCustomerId: CodecTypes['pg/text@1']['output'] | null;
-      readonly stripeSubscriptionId: CodecTypes['pg/text@1']['output'] | null;
+      readonly paymentId: CodecTypes['pg/text@1']['output'] | null;
+      readonly transactionId: CodecTypes['pg/text@1']['output'] | null;
+      readonly callbackToken: CodecTypes['pg/text@1']['output'] | null;
+      readonly checkoutUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly paidAt: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly durationMonths: CodecTypes['pg/int4@1']['output'];
       readonly plan: 'trial' | 'basic' | 'pro';
       readonly status: 'trial' | 'active' | 'past_due' | 'cancelled';
       readonly amount: Numeric<10, 2>;
@@ -704,8 +708,12 @@ export type FieldInputTypes = {
     readonly Subscription: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
       readonly tenantId: CodecTypes['pg/uuid@1']['input'];
-      readonly stripeCustomerId: CodecTypes['pg/text@1']['input'] | null;
-      readonly stripeSubscriptionId: CodecTypes['pg/text@1']['input'] | null;
+      readonly paymentId: CodecTypes['pg/text@1']['input'] | null;
+      readonly transactionId: CodecTypes['pg/text@1']['input'] | null;
+      readonly callbackToken: CodecTypes['pg/text@1']['input'] | null;
+      readonly checkoutUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly paidAt: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly durationMonths: CodecTypes['pg/int4@1']['input'];
       readonly plan: 'trial' | 'basic' | 'pro';
       readonly status: 'trial' | 'active' | 'past_due' | 'cancelled';
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -993,15 +1001,19 @@ export type StorageColumnTypes = {
     };
     readonly subscriptions: {
       readonly amount: Numeric<10, 2>;
+      readonly callback_token: CodecTypes['pg/text@1']['output'] | null;
+      readonly checkout_url: CodecTypes['pg/text@1']['output'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly duration_months: CodecTypes['pg/int4@1']['output'];
       readonly ends_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly paid_at: CodecTypes['pg/timestamptz-string@1']['output'] | null;
+      readonly payment_id: CodecTypes['pg/text@1']['output'] | null;
       readonly plan: 'trial' | 'basic' | 'pro';
       readonly started_at: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly status: 'trial' | 'active' | 'past_due' | 'cancelled';
-      readonly stripe_customer_id: CodecTypes['pg/text@1']['output'] | null;
-      readonly stripe_subscription_id: CodecTypes['pg/text@1']['output'] | null;
       readonly tenant_id: CodecTypes['pg/uuid@1']['output'];
+      readonly transaction_id: CodecTypes['pg/text@1']['output'] | null;
     };
     readonly supplier_payments: {
       readonly amount: Numeric<10, 2>;
@@ -1283,15 +1295,19 @@ export type StorageColumnInputTypes = {
     };
     readonly subscriptions: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
+      readonly callback_token: CodecTypes['pg/text@1']['input'] | null;
+      readonly checkout_url: CodecTypes['pg/text@1']['input'] | null;
       readonly created_at: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly duration_months: CodecTypes['pg/int4@1']['input'];
       readonly ends_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly paid_at: CodecTypes['pg/timestamptz-string@1']['input'] | null;
+      readonly payment_id: CodecTypes['pg/text@1']['input'] | null;
       readonly plan: 'trial' | 'basic' | 'pro';
       readonly started_at: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly status: 'trial' | 'active' | 'past_due' | 'cancelled';
-      readonly stripe_customer_id: CodecTypes['pg/text@1']['input'] | null;
-      readonly stripe_subscription_id: CodecTypes['pg/text@1']['input'] | null;
       readonly tenant_id: CodecTypes['pg/uuid@1']['input'];
+      readonly transaction_id: CodecTypes['pg/text@1']['input'] | null;
     };
     readonly supplier_payments: {
       readonly amount: CodecTypes['pg/numeric@1']['input'];
@@ -3296,15 +3312,39 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
                 };
-                readonly stripe_customer_id: {
+                readonly payment_id: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
                 };
-                readonly stripe_subscription_id: {
+                readonly transaction_id: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
                   readonly nullable: true;
+                };
+                readonly callback_token: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly checkout_url: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly paid_at: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: true;
+                };
+                readonly duration_months: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/int4@1', 1>;
+                  };
                 };
                 readonly plan: {
                   readonly nativeType: 'text';
@@ -3340,7 +3380,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [];
+              uniques: readonly [
+                { readonly columns: readonly ['payment_id'] },
+                { readonly columns: readonly ['transaction_id'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'subscriptions_tenant_id_id_idx_621bc114';
@@ -3352,12 +3395,6 @@ type ContractBase = Omit<
                   readonly name: 'subscriptions_tenant_id_created_at_idx_282da036';
                   readonly prefix: 'subscriptions_tenant_id_created_at_idx';
                   readonly columns: readonly ['tenant_id', 'created_at'];
-                  readonly unique: false;
-                },
-                {
-                  readonly name: 'subscriptions_stripe_subscription_id_idx_2362abe2';
-                  readonly prefix: 'subscriptions_stripe_subscription_id_idx';
-                  readonly columns: readonly ['stripe_subscription_id'];
                   readonly unique: false;
                 },
                 {
@@ -5887,13 +5924,32 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
-              readonly stripeCustomerId: {
+              readonly paymentId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly stripeSubscriptionId: {
+              readonly transactionId: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly callbackToken: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly checkoutUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly paidAt: {
+                readonly nullable: true;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly durationMonths: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
               readonly plan: {
                 readonly nullable: false;
@@ -5952,8 +6008,12 @@ type ContractBase = Omit<
               readonly fields: {
                 readonly id: { readonly column: 'id' };
                 readonly tenantId: { readonly column: 'tenant_id' };
-                readonly stripeCustomerId: { readonly column: 'stripe_customer_id' };
-                readonly stripeSubscriptionId: { readonly column: 'stripe_subscription_id' };
+                readonly paymentId: { readonly column: 'payment_id' };
+                readonly transactionId: { readonly column: 'transaction_id' };
+                readonly callbackToken: { readonly column: 'callback_token' };
+                readonly checkoutUrl: { readonly column: 'checkout_url' };
+                readonly paidAt: { readonly column: 'paid_at' };
+                readonly durationMonths: { readonly column: 'duration_months' };
                 readonly plan: { readonly column: 'plan' };
                 readonly status: { readonly column: 'status' };
                 readonly amount: { readonly column: 'amount' };

@@ -47,7 +47,7 @@ function TenantInspector({ id, close }: { id: string; close: () => void }) {
       <div><p className="text-sm font-medium">Owners</p>{data.owners.map((o) => <p className="break-words text-sm text-zinc-500" key={o.id}>{o.name} · {o.email}</p>)}</div>
       {!confirm ? <Button disabled={change.isPending} variant="ghost" onClick={() => setConfirm(true)}>{data.tenant.isActive ? "Suspend workspace" : "Reactivate workspace"}</Button> :
         <form className="space-y-item rounded-lg bg-zinc-100 p-content dark:bg-zinc-900" onSubmit={(event) => { event.preventDefault(); if (reason.trim().length >= 3) change.mutate(); }}>
-          <p className="text-sm">{data.tenant.isActive ? "Suspend this workspace and sign out all its users?" : "Reactivate this workspace? Users will need to sign in again."} Stripe billing continues independently.</p>
+          <p className="text-sm">{data.tenant.isActive ? "Suspend this workspace and sign out all its users?" : "Reactivate this workspace? Users will need to sign in again."}</p>
           <Field label="Reason" required hint="Recorded in the platform audit log.">{(props) => <textarea {...props} required minLength={3} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />}</Field>
           <div className="flex flex-wrap gap-small"><Button type="submit" disabled={change.isPending || reason.trim().length < 3}>{change.isPending ? "Updating…" : "Confirm change"}</Button><Button type="button" variant="ghost" disabled={change.isPending} onClick={() => setConfirm(false)}>Cancel</Button></div>
         </form>}
@@ -65,9 +65,9 @@ function PlatformDashboard() {
   const revenue = useQuery({ queryKey: ["admin", session?.user.id, "revenue"], queryFn: () => apiRequest<RevenueSummary>("/admin/revenue"), staleTime: 60000, retry: false });
   return <div className="space-y-roomy">
     <section className="rounded-xl border border-zinc-200 p-section dark:border-zinc-800">
-      <div className="flex items-center justify-between gap-item"><h2 className="text-lg font-semibold">Recurring revenue</h2><Button variant="ghost" disabled={revenue.isFetching} onClick={() => void revenue.refetch()}>Refresh MRR</Button></div>
-      <p className="mt-tight text-sm text-zinc-500">Base MRR before discounts, tax and fees. Annual prices are normalized to a month. Suspended workspaces remain billable until their Stripe subscription ends.</p>
-      {revenue.isPending && <p role="status" className="mt-item">Loading Stripe revenue…</p>}
+      <div className="flex items-center justify-between gap-item"><h2 className="text-lg font-semibold">Revenue</h2><Button variant="ghost" disabled={revenue.isFetching} onClick={() => void revenue.refetch()}>Refresh revenue</Button></div>
+      <p className="mt-tight text-sm text-zinc-500">bKash plans use prepaid monthly payments.</p>
+      {revenue.isPending && <p role="status" className="mt-item">Loading revenue…</p>}
       <ErrorMessage error={revenue.error} retry={() => void revenue.refetch()} />
       {revenue.data && <div className="mt-content space-y-item">
         {!revenue.data.available ? <p role="status" className="text-sm text-amber-700 dark:text-amber-400">{revenue.data.message}</p> : revenue.data.currencies.length === 0 ? <p className="text-sm">No eligible active paid subscriptions. Base MRR is zero.</p> :

@@ -213,13 +213,17 @@ model RefreshSession {
   @@rls
 }
 
-/// Billing history / Stripe log. One row per subscription period.
+/// Billing history. Each bKash checkout is persisted before redirecting.
 model Subscription {
   id                   Uuid                @id @default(uuid())
   tenantId             Uuid                @map("tenant_id")
   tenant               Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  stripeCustomerId     String?             @map("stripe_customer_id")
-  stripeSubscriptionId String?             @map("stripe_subscription_id")
+  paymentId            String?             @unique @map("payment_id")
+  transactionId        String?             @unique @map("transaction_id")
+  callbackToken        String?             @map("callback_token")
+  checkoutUrl          String?             @map("checkout_url")
+  paidAt               TimestamptzString?   @map("paid_at")
+  durationMonths       Int                 @default(1) @map("duration_months")
   plan                 subscription_plan
   status               subscription_status
   amount               Numeric(10, 2)
@@ -229,7 +233,6 @@ model Subscription {
 
   @@index([tenantId, id])
   @@index([tenantId, createdAt])
-  @@index([stripeSubscriptionId])
   @@map("subscriptions")
   @@rls
 }
@@ -688,7 +691,7 @@ model AuditLog {
   id         Uuid              @id @default(uuid())
   tenantId   Uuid?             @map("tenant_id")
   tenant     Tenant?           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  /// Null only for explicitly identified automated events (e.g. Stripe sync).
+  /// Null only for explicitly identified automated events (e.g. bKash confirmation).
   userId     Uuid?             @map("user_id")
   user       User?             @relation(fields: [userId], references: [id], onDelete: Restrict)
   action     String

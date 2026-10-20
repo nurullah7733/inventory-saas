@@ -1,0 +1,419 @@
+[
+  {
+    "id": "dropColumn.subscriptions.stripe_customer_id",
+    "label": "Drop column \"stripe_customer_id\" from \"subscriptions\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "stripe_customer_id",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"stripe_customer_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "stripe_customer_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"stripe_customer_id\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" DROP COLUMN \"stripe_customer_id\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"stripe_customer_id\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "stripe_customer_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropIndex.subscriptions.subscriptions_stripe_subscription_id_idx_2362abe2",
+    "label": "Drop index \"subscriptions_stripe_subscription_id_idx_2362abe2\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "subscriptions_stripe_subscription_id_idx_2362abe2",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"subscriptions_stripe_subscription_id_idx_2362abe2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"subscriptions_stripe_subscription_id_idx_2362abe2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop index \"subscriptions_stripe_subscription_id_idx_2362abe2\"",
+        "sql": "DROP INDEX \"public\".\"subscriptions_stripe_subscription_id_idx_2362abe2\"",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"subscriptions_stripe_subscription_id_idx_2362abe2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"subscriptions_stripe_subscription_id_idx_2362abe2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dropColumn.subscriptions.stripe_subscription_id",
+    "label": "Drop column \"stripe_subscription_id\" from \"subscriptions\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "stripe_subscription_id",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"stripe_subscription_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "stripe_subscription_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop column \"stripe_subscription_id\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" DROP COLUMN \"stripe_subscription_id\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"stripe_subscription_id\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "stripe_subscription_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.subscriptions.callback_token",
+    "label": "Add column \"callback_token\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "callback_token",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"callback_token\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "callback_token"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"callback_token\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"callback_token\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"callback_token\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "callback_token"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.subscriptions.checkout_url",
+    "label": "Add column \"checkout_url\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "checkout_url",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"checkout_url\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "checkout_url"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"checkout_url\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"checkout_url\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"checkout_url\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "checkout_url"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.subscriptions.paid_at",
+    "label": "Add column \"paid_at\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "paid_at",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"paid_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "paid_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"paid_at\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"paid_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"paid_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "paid_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.subscriptions.payment_id",
+    "label": "Add column \"payment_id\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "payment_id",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"payment_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "payment_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"payment_id\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"payment_id\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"payment_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "payment_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.subscriptions.transaction_id",
+    "label": "Add column \"transaction_id\" to \"subscriptions\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "transaction_id",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"transaction_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "transaction_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"transaction_id\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD COLUMN \"transaction_id\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"transaction_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "subscriptions",
+          "transaction_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.subscriptions.subscriptions_payment_id_key",
+    "label": "Add unique constraint on \"subscriptions\" (payment_id)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "subscriptions_payment_id_key",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"subscriptions_payment_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "subscriptions_payment_id_key",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"subscriptions_payment_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD CONSTRAINT \"subscriptions_payment_id_key\" UNIQUE (\"payment_id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"subscriptions_payment_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "subscriptions_payment_id_key",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.subscriptions.subscriptions_transaction_id_key",
+    "label": "Add unique constraint on \"subscriptions\" (transaction_id)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "subscriptions_transaction_id_key",
+        "table": "subscriptions"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"subscriptions_transaction_id_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "subscriptions_transaction_id_key",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"subscriptions_transaction_id_key\"",
+        "sql": "ALTER TABLE \"public\".\"subscriptions\" ADD CONSTRAINT \"subscriptions_transaction_id_key\" UNIQUE (\"transaction_id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"subscriptions_transaction_id_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "subscriptions_transaction_id_key",
+          "public",
+          "\"public\".\"subscriptions\""
+        ]
+      }
+    ]
+  }
+]

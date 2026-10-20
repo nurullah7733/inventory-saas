@@ -1,82 +1,84 @@
 import assert from "node:assert/strict";
-import Stripe from "stripe";
+import { bkashCheckoutUrl, bkashGateway, type BkashPayment } from "../lib/billing/bkash.ts";
+import { billingConfig, billingConfigured, type BillingConfig } from "../lib/billing/config.ts";
+import { verifyPayment, nextMonth } from "../lib/billing/payments.ts";
 import { checkoutSchema } from "../lib/billing/types.ts";
-import { billingConfig, planLimits, type BillingConfig } from "../lib/billing/config.ts";
-import { localStatus, projectSubscription, stripeAmount, validatePrice } from "../lib/billing/subscriptions.ts";
-import { subscriptionIdFromEvent } from "../lib/billing/events.ts";
-import { stripeGateway, STRIPE_API_VERSION, verifyStripeEvent, BILLING_APP, type BillingSubscription } from "../lib/billing/stripe.ts";
+import { subscriptionStatus } from "../lib/billing/access.ts";
 
-const config: BillingConfig = { secretKey: "sk_test_mock", webhookSecret: "whsec_mock", appUrl: "http://localhost:3000",
-  prices: { basic: "price_basic", pro: "price_pro" }, limits: { basic: { maxProducts: 100, maxStaff: 5 }, pro: { maxProducts: 1000, maxStaff: 20 } } };
-const subscription: BillingSubscription = { id: "sub_test", customerId: "cus_test", status: "active", created: 1,
-  metadata: { app: BILLING_APP, tenantId: "tenant" }, trialEnd: null, canceledAt: null, cancelAtPeriodEnd: false, pauseCollection: false,
-  items: [{ price: { id: "price_pro", active: true, amount: 2500, currency: "usd", interval: "month", intervalCount: 1, usage: "licensed" }, quantity: 1, start: 1790812800, end: 1793491200 }] };
-assert.equal(checkoutSchema.safeParse({ plan: "pro" }).success, true);
-for (const body of [{ plan: "trial" }, { plan: "pro", priceId: "price_cheap" }, { plan: "basic", tenantId: "other" }, { plan: "basic", successUrl: "https://evil.example" }]) assert.equal(checkoutSchema.safeParse(body).success, false);
-assert.equal(localStatus("active"), "active"); assert.equal(localStatus("trialing"), "trial");
-for (const status of ["incomplete", "past_due", "unpaid", "paused"] as const) assert.equal(localStatus(status), "past_due");
-for (const status of ["canceled", "incomplete_expired"] as const) assert.equal(localStatus(status), "cancelled");
-assert.equal(localStatus("active", true), "past_due", "Paused collection must not grant paid access");
-assert.equal(stripeAmount(1299, "usd"), "12.99"); assert.equal(stripeAmount(1200, "jpy"), "1200.00");
-assert.equal(stripeAmount(500, "isk"), "5.00"); assert.equal(stripeAmount(500, "ugx"), "5.00");
-assert.throws(() => stripeAmount(-1, "usd")); assert.throws(() => stripeAmount(0.5, "usd"));
-assert.throws(() => validatePrice({ ...subscription.items[0].price, interval: null }));
-assert.throws(() => validatePrice({ ...subscription.items[0].price, usage: "metered" }));
-assert.throws(() => validatePrice({ ...subscription.items[0].price, amount: null }));
-const projection = projectSubscription(subscription, config);
-assert.equal(projection.plan, "pro"); assert.equal(projection.amount, "25.00"); assert.equal(projection.maxProducts, 1000);
-assert.equal(projectSubscription({ ...subscription, cancelAtPeriodEnd: true }, config).status, "active", "Scheduled cancellation retains access through the paid period");
-assert.equal(projectSubscription({ ...subscription, status: "canceled", canceledAt: 1790899200 }, config).endsAt, "2026-10-02T00:00:00.000Z");
-assert.throws(() => projectSubscription({ ...subscription, items: [...subscription.items, ...subscription.items] }, config));
-assert.throws(() => projectSubscription(subscription, { ...config, prices: { basic: "price_other", pro: "price_unknown" } }));
-function event(type: string, object: unknown) { return { id: "evt_test", type, data: { object } } as Stripe.Event; }
-assert.equal(subscriptionIdFromEvent(event("checkout.session.completed", { subscription: "sub_test" })), "sub_test");
-assert.equal(subscriptionIdFromEvent(event("customer.subscription.updated", { id: "sub_test" })), "sub_test");
-assert.equal(subscriptionIdFromEvent(event("invoice.paid", { parent: { type: "subscription_details", subscription_details: { subscription: "sub_test" } } })), "sub_test");
-assert.equal(subscriptionIdFromEvent(event("invoice.payment_failed", { subscription: "sub_legacy" })), "sub_legacy");
-assert.equal(subscriptionIdFromEvent(event("payment_intent.succeeded", { id: "pi_test" })), null);
-const payload = JSON.stringify(event("customer.subscription.updated", { id: "sub_test" }));
-const header = Stripe.webhooks.generateTestHeaderString({ payload, secret: config.webhookSecret });
-assert.equal(verifyStripeEvent(payload, header, config.webhookSecret).id, "evt_test");
-assert.throws(() => verifyStripeEvent(payload + " ", header, config.webhookSecret), "Raw-body modification invalidates the signature");
-assert.throws(() => verifyStripeEvent(payload, header, "whsec_wrong"));
-const stale = Stripe.webhooks.generateTestHeaderString({ payload, secret: config.webhookSecret, timestamp: 1 });
-assert.throws(() => verifyStripeEvent(payload, stale, config.webhookSecret));
+const config: BillingConfig = { username: "test-user", password: "test-password", appKey: "test-key", appSecret: "test-secret",
+  appUrl: "http://localhost:3000", baseUrl: "https://tokenized.sandbox.bka.sh/v1.2.0-beta", prices: { basic: { monthly: "100.00", yearly: "1000.00" }, pro: { monthly: "200.00", yearly: "2000.00" } },
+  limits: { basic: { maxProducts: 100, maxStaff: 5 }, pro: { maxProducts: 1000, maxStaff: 20 } } };
+const expected = { id: "invoice-a", paymentId: "payment-a", amount: "100.00" };
+const checkoutResponse = { statusCode: "0000", paymentID: "payment-a" };
+for (const host of ["sandbox.payment.bkash.com", "tokenized.sandbox.bka.sh"])
+  assert.equal(bkashCheckoutUrl({ ...checkoutResponse, bkashURL: `https://${host}/checkout` }, true), `https://${host}/checkout`);
+assert.equal(bkashCheckoutUrl({ ...checkoutResponse, bkashURL: "https://payment.bkash.com/" }, false), "https://payment.bkash.com/");
+for (const url of ["https://sandbox.payment.bkash.com.evil.test/", "https://evil.test/", "http://sandbox.payment.bkash.com/",
+  "https://user:pass@sandbox.payment.bkash.com/", "https://sandbox.payment.bkash.com:444/", "https://payment.bkash.com/", "javascript:alert(1)"])
+  assert.throws(() => bkashCheckoutUrl({ ...checkoutResponse, bkashURL: url }, true), /checkout URL/);
+assert.throws(() => bkashCheckoutUrl({ ...checkoutResponse, bkashURL: "https://sandbox.payment.bkash.com/" }, false), /checkout URL/);
+assert.throws(() => bkashCheckoutUrl({ statusCode: "2001" }, true), /code 2001/);
+const paid: BkashPayment = { statusCode: "0000", transactionStatus: "Completed", paymentID: "payment-a", trxID: "trx-a",
+  merchantInvoiceNumber: "invoice-a", amount: "100", currency: "BDT" };
+assert.equal(verifyPayment(paid, expected), "trx-a");
+for (const patch of [{ statusCode: "9999" }, { transactionStatus: "Initiated" }, { paymentID: "other" },
+  { merchantInvoiceNumber: "other" }, { amount: "1.00" }, { amount: "100.001" }, { currency: "USD" }, { trxID: undefined }])
+  assert.throws(() => verifyPayment({ ...paid, ...patch }, expected), /not been verified/);
+assert.equal(nextMonth(new Date("2028-01-31T12:30:00Z")), "2028-02-29T12:30:00.000Z");
+assert.equal(nextMonth(new Date("2027-01-31T12:30:00Z")), "2027-02-28T12:30:00.000Z");
+assert.equal(nextMonth(new Date("2026-12-20T12:30:00Z")), "2027-01-20T12:30:00.000Z");
+const expiry = Date.parse("2026-11-20T12:30:00Z");
+const tenant = { subscriptionStatus: "active" as const, subscriptionEndsAt: new Date(expiry).toISOString(), trialEndsAt: null };
+assert.equal(subscriptionStatus(tenant, expiry - 1), "active");
+assert.equal(subscriptionStatus(tenant, expiry), "past_due", "Prepaid access must stop at expiry without a webhook");
+assert.equal(subscriptionStatus({ ...tenant, subscriptionStatus: "trial", trialEndsAt: tenant.subscriptionEndsAt }, expiry), "past_due");
+assert.equal(subscriptionStatus({ ...tenant, subscriptionStatus: "cancelled" }, expiry - 1), "cancelled");
+assert.equal(checkoutSchema.safeParse({ plan: "basic" }).success, true);
+assert.equal(checkoutSchema.parse({ plan: "basic" }).interval, "monthly");
+assert.equal(checkoutSchema.parse({ plan: "pro", interval: "yearly" }).interval, "yearly");
+assert.equal(checkoutSchema.safeParse({ plan: "basic", interval: "weekly" }).success, false);
+assert.equal(checkoutSchema.safeParse({ plan: "basic", interval: "yearly", durationMonths: 1 }).success, false);
+assert.equal(nextMonth(new Date("2028-02-29T12:30:00Z"), 12), "2029-02-28T12:30:00.000Z");
+assert.equal(nextMonth(new Date("2026-10-20T12:30:00Z"), 12), "2027-10-20T12:30:00.000Z");
+assert.throws(() => nextMonth(new Date(), 2), /Invalid billing duration/);
+assert.throws(() => verifyPayment(paid, { ...expected, amount: "1000.00" }), /not been verified/);
+assert.equal(verifyPayment({ ...paid, amount: "1000.00" }, { ...expected, amount: "1000.00" }), "trx-a");
+for (const input of [{ plan: "trial" }, { plan: "basic", amount: "1" }, { plan: "pro", tenantId: "other" }, { plan: "basic", callbackURL: "https://evil.test" }])
+  assert.equal(checkoutSchema.safeParse(input).success, false);
 const saved = { ...process.env };
 try {
-  Object.assign(process.env, { STRIPE_SECRET_KEY: config.secretKey, STRIPE_WEBHOOK_SECRET: config.webhookSecret,
-    STRIPE_BASIC_PRICE_ID: config.prices.basic, STRIPE_PRO_PRICE_ID: config.prices.pro, APP_URL: config.appUrl });
-  assert.equal(billingConfig().appUrl, config.appUrl);
-  process.env.APP_URL = "https://app.example.com/path"; assert.throws(billingConfig);
-  process.env.APP_URL = "http://remote.example.com"; assert.throws(billingConfig);
-  process.env.APP_URL = config.appUrl;
-  process.env.BILLING_PRO_MAX_STAFF = "20bad"; assert.throws(planLimits);
+  Object.assign(process.env, { BKASH_ENV: "sandbox", BKASH_USERNAME: "user", BKASH_PASSWORD: "password", BKASH_APP_KEY: "key",
+    BKASH_APP_SECRET: "secret", APP_URL: "http://localhost:3000", BILLING_BASIC_PRICE_BDT: "100", BILLING_PRO_PRICE_BDT: "200", BILLING_BASIC_YEARLY_PRICE_BDT: "1000", BILLING_PRO_YEARLY_PRICE_BDT: "2000" });
+  assert.equal(billingConfigured(), true); assert.equal(billingConfig().prices.basic.monthly, "100.00");
+  assert.equal(billingConfig().prices.basic.yearly, "1000.00");
+  process.env.BILLING_PRO_YEARLY_PRICE_BDT = ""; assert.equal(billingConfigured(), false);
+  process.env.BILLING_PRO_YEARLY_PRICE_BDT = "2000";
+  process.env.BKASH_ENV = "live"; assert.equal(billingConfigured(), false, "Live callbacks require HTTPS");
+  process.env.APP_URL = "https://shop.example"; assert.equal(billingConfigured(), true);
+  process.env.BILLING_BASIC_PRICE_BDT = "0"; assert.equal(billingConfigured(), false);
+  process.env.BILLING_BASIC_PRICE_BDT = "-1"; assert.equal(billingConfigured(), false);
 } finally { process.env = saved; }
-// Exercise the real SDK's form encoding and response mapping using an in-memory HTTP transport.
-const requests: { url: string; headers: Headers; body: URLSearchParams }[] = [];
-const stripe = new Stripe(config.secretKey, { apiVersion: STRIPE_API_VERSION,
-  httpClient: Stripe.createFetchHttpClient(async (url, init) => {
-    requests.push({ url: String(url), headers: new Headers(init?.headers), body: new URLSearchParams(String(init?.body ?? "")) });
-    const path = new URL(String(url)).pathname;
-    let response: object;
-    if (path === "/v1/customers") response = { id: "cus_sdk", object: "customer" };
-    else if (path === "/v1/checkout/sessions") response = { id: "cs_sdk", object: "checkout.session", url: "https://checkout.stripe.com/c/pay/cs_sdk" };
-    else if (path === "/v1/billing_portal/sessions") response = { id: "bps_sdk", object: "billing_portal.session", url: "https://billing.stripe.com/p/session/sdk" };
-    else throw new Error(`Unexpected SDK request ${path}`);
-    return new Response(JSON.stringify(response), { status: 200, headers: { "content-type": "application/json" } });
-  }) });
-const provider = stripeGateway(config, stripe);
-assert.equal(await provider.customer({ tenantId: "tenant", name: "Shop", email: "shop@example.com" }), "cus_sdk");
-assert.equal(requests[0].headers.get("Idempotency-Key"), "inventory-customer-tenant");
-assert.equal(requests[0].body.get("metadata[tenantId]"), "tenant");
-await provider.checkout({ tenantId: "tenant", customerId: "cus_sdk", plan: "pro", priceId: "price_pro", appUrl: config.appUrl });
-assert.equal(requests[1].body.get("mode"), "subscription");
-assert.equal(requests[1].body.get("line_items[0][price]"), "price_pro");
-assert.equal(requests[1].body.get("subscription_data[metadata][tenantId]"), "tenant");
-assert.equal(requests[1].body.get("allowed_payment_method_types[0]"), "card");
-assert.equal(requests[1].body.get("success_url"), "http://localhost:3000/settings/billing?checkout=success");
-assert.equal(requests[1].headers.get("Stripe-Version"), STRIPE_API_VERSION);
-await provider.portal("cus_sdk", config.appUrl);
-assert.equal(requests[2].body.get("customer"), "cus_sdk");
-assert.equal(requests[2].body.get("return_url"), "http://localhost:3000/settings/billing");
-console.log("Billing tests passed: plans, price validation, status mapping, current period, currency, events, signature, replay tolerance and redirect config.");
+const calls: { url: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [];
+const responses: BkashPayment[] = [{ statusCode: "0000", id_token: "test-token" },
+  { statusCode: "0000", paymentID: "payment-a", bkashURL: "https://tokenized.sandbox.bka.sh/checkout/test" }, paid,
+  { ...paid, merchantInvoiceNumber: undefined, merchantInvoice: expected.id }];
+const transport: typeof fetch = async (input, init) => {
+  calls.push({ url: String(input), body: JSON.parse(String(init?.body)), headers: init?.headers as Record<string, string> });
+  assert.equal(init?.redirect, "error"); assert.equal(init?.cache, "no-store");
+  return Response.json(responses.shift());
+};
+const gateway = bkashGateway(config, transport);
+await gateway.create(expected.id, "100.00", "https://shop.example/api/v1/billing/callback?token=test");
+await gateway.execute("payment-a");
+const queried = await gateway.query("payment-a");
+assert.equal(verifyPayment(queried, expected), "trx-a", "Query must normalize bKash's merchantInvoice field");
+assert.equal(calls.length, 4, "Token is reused within the operation");
+assert.deepEqual(calls[0].body, { app_key: config.appKey, app_secret: config.appSecret });
+assert.equal(calls[1].body.amount, "100.00"); assert.equal(calls[1].body.currency, "BDT");
+assert.equal(calls[1].body.merchantInvoiceNumber, expected.id); assert.equal(calls[1].body.mode, "0011");
+assert.equal(calls[1].headers.Authorization, "test-token"); assert.equal(calls[1].headers["X-APP-Key"], "test-key");
+assert.ok(calls[3].url.endsWith("/payment/status"));
+await assert.rejects(() => bkashGateway(config, async () => { throw new Error("private response"); }).query("payment-a"),
+  (error: Error) => !error.message.includes("private response") && error.message.includes("could not confirm"));
+await assert.rejects(() => bkashGateway(config, async () => Response.json({ statusCode: "9999" })).query("payment-a"), /authentication/);
+console.log("Billing tests passed: verified amounts/invoices, calendar renewals, config validation, server-only bKash requests and safe failures.");

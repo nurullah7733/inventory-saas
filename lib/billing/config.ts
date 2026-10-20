@@ -1,12 +1,14 @@
 import { ApiProblem } from "../api/response.ts";
-import type { PaidPlan, PlanLimits } from "./types.ts";
+import { MONEY_PATTERN, normalizeMoney, toCents } from "../numeric.ts";
+import type { BillingInterval, PaidPlan, PlanLimits } from "./types.ts";
 
 export interface BillingConfig {
-  secretKey: string; webhookSecret: string; appUrl: string;
-  prices: Record<PaidPlan, string>; limits: Record<PaidPlan, PlanLimits>;
+  username: string; password: string; appKey: string; appSecret: string;
+  baseUrl: string; appUrl: string; prices: Record<PaidPlan, Record<BillingInterval, string>>;
+  limits: Record<PaidPlan, PlanLimits>;
 }
-export function billingUnavailable(message = "Billing is not available yet. Please contact the app owner."): never {
-  throw new ApiProblem("BILLING_UNAVAILABLE", message, 503);
+export function billingUnavailable(): never {
+  throw new ApiProblem("BILLING_UNAVAILABLE", "bKash billing is unavailable. Please contact the app owner.", 503);
 }
 export function planLimits(): Record<PaidPlan, PlanLimits> {
   const integer = (name: string, fallback: number) => {
@@ -17,26 +19,30 @@ export function planLimits(): Record<PaidPlan, PlanLimits> {
   return { basic: { maxProducts: integer("BILLING_BASIC_MAX_PRODUCTS", 100), maxStaff: integer("BILLING_BASIC_MAX_STAFF", 5) },
     pro: { maxProducts: integer("BILLING_PRO_MAX_PRODUCTS", 1000), maxStaff: integer("BILLING_PRO_MAX_STAFF", 20) } };
 }
-export function billingConfigured() {
-  return ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "STRIPE_BASIC_PRICE_ID", "STRIPE_PRO_PRICE_ID", "APP_URL"]
-    .every((name) => !!process.env[name]?.trim());
+export function planPrices(): Record<PaidPlan, Record<BillingInterval, string | null>> {
+  const price = (name: string) => {
+    const value = process.env[name]?.trim() ?? "";
+    return MONEY_PATTERN.test(value) && toCents(value) > BigInt(0) ? normalizeMoney(value) : null;
+  };
+  return { basic: { monthly: price("BILLING_BASIC_PRICE_BDT"), yearly: price("BILLING_BASIC_YEARLY_PRICE_BDT") },
+    pro: { monthly: price("BILLING_PRO_PRICE_BDT"), yearly: price("BILLING_PRO_YEARLY_PRICE_BDT") } };
 }
-export function billingWebhookSecret() {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim();
-  if (!secret?.startsWith("whsec_")) return billingUnavailable();
-  return secret;
+export function billingConfigured(): boolean {
+  try { billingConfig(); return true; } catch { return false; }
 }
-/** Read lazily: missing billing credentials must not break auth or next build. */
 export function billingConfig(): BillingConfig {
-  if (!billingConfigured()) billingUnavailable();
-  const secretKey = process.env.STRIPE_SECRET_KEY!.trim(), webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!.trim();
-  const prices = { basic: process.env.STRIPE_BASIC_PRICE_ID!.trim(), pro: process.env.STRIPE_PRO_PRICE_ID!.trim() };
-  if (!/^(sk|rk)_(test|live)_/.test(secretKey) || !webhookSecret.startsWith("whsec_") ||
-    !Object.values(prices).every((id) => /^price_[A-Za-z0-9_]+$/.test(id)) || prices.basic === prices.pro) billingUnavailable();
+  const read = (name: string) => process.env[name]?.trim() || billingUnavailable();
+  const environment = process.env.BKASH_ENV ?? "sandbox";
+  if (!["sandbox", "live"].includes(environment)) billingUnavailable();
+  const prices = planPrices();
+  if (!prices.basic.monthly || !prices.basic.yearly || !prices.pro.monthly || !prices.pro.yearly) billingUnavailable();
   let origin: URL;
-  try { origin = new URL(process.env.APP_URL!.trim()); } catch { return billingUnavailable(); }
+  try { origin = new URL(read("APP_URL")); } catch { return billingUnavailable(); }
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname);
-  if ((origin.protocol !== "https:" && !(local && origin.protocol === "http:")) ||
+  if ((origin.protocol !== "https:" && !(environment === "sandbox" && local && origin.protocol === "http:")) ||
     origin.username || origin.password || origin.search || origin.hash || origin.pathname !== "/") billingUnavailable();
-  return { secretKey, webhookSecret, prices, appUrl: origin.origin, limits: planLimits() };
+  return { username: read("BKASH_USERNAME"), password: read("BKASH_PASSWORD"),
+    appKey: read("BKASH_APP_KEY"), appSecret: read("BKASH_APP_SECRET"),
+    baseUrl: environment === "sandbox" ? "https://tokenized.sandbox.bka.sh/v1.2.0-beta" : "https://tokenized.pay.bka.sh/v1.2.0-beta",
+    appUrl: origin.origin, prices: { basic: { monthly: prices.basic.monthly, yearly: prices.basic.yearly }, pro: { monthly: prices.pro.monthly, yearly: prices.pro.yearly } }, limits: planLimits() };
 }

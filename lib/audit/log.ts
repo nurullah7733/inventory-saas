@@ -9,7 +9,7 @@ export interface AuditEntry {
   tenantId: string | null;
   /** Verified human actor, or null with an explicitly declared system source. */
   userId: string | null;
-  source?: "stripe";
+  source?: "bkash";
   /** Dotted verb, e.g. `tenant.settings.update`, `product.delete`. */
   action: string;
   /** The table/entity the action touched, e.g. `tenant`, `product`. */
@@ -25,7 +25,7 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
   if (actor && entry.userId !== actor.id) throw new Error("Audit actor does not match the verified request user.");
   if (!mode || (mode.kind === "tenant" && entry.tenantId !== mode.tenantId))
     throw new Error("Audit scope does not match the current transaction.");
-  if (entry.userId === null && entry.source !== "stripe")
+  if (entry.userId === null && entry.source !== "bkash")
     throw new Error("Automated audit events require a declared system source.");
   const metadata = entry.metadata || entry.source
     ? auditJson({ ...entry.metadata, actorType: entry.userId ? "user" : "system", ...(entry.source ? { source: entry.source } : {}) })

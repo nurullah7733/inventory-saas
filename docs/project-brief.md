@@ -21,7 +21,7 @@ Build a **production-grade multi-tenant SaaS inventory & accounting system** for
 - **Database**: PostgreSQL (Neon) — single shared database, tenant isolation via `tenant_id` + Row-Level Security (RLS)
 - **Auth**: JWT-based (NextAuth.js or custom) — must NOT rely on browser cookies/sessions as the only auth mechanism, since mobile/iOS clients can't use those; issue a bearer token every client sends as `Authorization: Bearer <token>`
 - **ORM**: Prisma 8 (contract-based — see note below) or Drizzle
-- **Payment**: Stripe (or SSLCommerz/bKash if targeting Bangladesh) for subscription billing
+- **Payment**: bKash Tokenized Checkout for prepaid monthly/yearly subscription billing in Bangladesh
 - **Hosting target**: Minimal cost — Vercel (Hobby) + Neon (Free/Launch tier)
 
 ### API Architecture — one shared backend for web, mobile, and iOS
@@ -115,7 +115,7 @@ The screenshots of an existing app called "StockBin" were reviewed as a feature 
 ### Core Features (MVP scope)
 
 1. Self-service signup + email verification for new shop owners
-2. Subscription plans with trial period, plan limits (e.g., max products, max staff), Stripe billing webhook handling
+2. Subscription plans with trial period, plan limits (e.g., max products, max staff), bKash payment verification and prepaid renewal
 3. **Inventory module**: Categories (with image), Products (name, category, unit, color, size, weight, **expiry_date**, sale price, cost price, image), Variant Options master lists (pre-defined Colors/Sizes/Weights/Units per tenant, selected via dropdown when creating a product), **Suppliers** (name, phone, address — the wholesaler/vendor a shop buys stock from), Stock (add stock with product, supplier, purchase unit cost/quantity/date), Low Stock alerts (tenant-configurable threshold), Wastage (damaged/expired stock write-off), Returns
 4. **People module**: Customers (name, phone unique per tenant), Users (staff/manager accounts with role + store assignment)
 5. **Sales module**: Create Invoice (customer select, product cart, per-invoice discount, VAT %, grand total, Complete Sale or Save as Draft), Invoices list, Draft Invoices
@@ -373,8 +373,12 @@ subscriptions                         -- billing history/log
 ------------------------------------------------
 id                    uuid PK
 tenant_id             uuid FK -> tenants.id
-stripe_customer_id    text null
-stripe_subscription_id text null
+payment_id            text unique null
+transaction_id        text unique null
+callback_token        text null
+checkout_url          text null
+paid_at               timestamptz null
+duration_months       integer default 1 -- 1 monthly, 12 yearly
 plan                  text
 status                text
 amount                numeric(10,2)
@@ -418,8 +422,8 @@ created_at   timestamptz default now()
 9. Sales flow: Create Invoice (cart, discount, VAT calc, draft/complete), Invoices list, Draft Invoices, Returns
 10. Finance: Expense Categories + Expenses CRUD, Supplier Payments CRUD
 11. Reports: Sales, Profit & Loss (COGS, gross/net profit, wastage shown separately), Due (customer), Payable (supplier), Stock (on-hand + movement), Expense — each with date-range filter and PDF/Excel export
-12. Stripe subscription integration (checkout, webhook to update `tenants.subscription_status`)
-13. Super Admin panel (list tenants, MRR, suspend/reactivate)
+12. bKash subscription payments (checkout, verified callback, status reconciliation and expiry)
+13. Super Admin panel (list tenants, suspend/reactivate)
 14. Dashboard UI: fetch "current tenant info" via authenticated endpoint using TanStack Query (`useQuery(['currentTenant'])`), show shop name/logo in header
 15. Audit logging on create/update/delete actions
 

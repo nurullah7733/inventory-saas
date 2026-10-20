@@ -26,6 +26,51 @@ Follow the database setup commands in `.env.example`, including
 `npm run db:app-role -- --write-env` to create the runtime role. Configure the same
 required database and authentication variables in your Vercel project before deployment.
 
+## bKash billing
+
+Billing uses bKash Tokenized Checkout v1.2.0-beta in BDT. Each payment buys one
+calendar month or year; renewing the current plan extends its expiry. The selected duration is saved with the checkout, including pending payments. There is no automatic
+debit. Plan changes are available after the current plan expires.
+
+Set these server-only variables in `.env` (see `.env.example`):
+
+- `BKASH_ENV=sandbox`, `BKASH_USERNAME`, `BKASH_PASSWORD`, `BKASH_APP_KEY`, `BKASH_APP_SECRET`.
+- `BILLING_BASIC_PRICE_BDT=1000` and `BILLING_PRO_PRICE_BDT=2000`: monthly prices in taka.
+- `BILLING_BASIC_YEARLY_PRICE_BDT=10000` and `BILLING_PRO_YEARLY_PRICE_BDT=20000`: yearly prices in taka.
+- `APP_URL`: your application origin. Register/allowlist its callback URL with bKash
+  as required during onboarding: `/api/v1/billing/callback`. For sandbox testing,
+  localhost is allowed by the app; use a public HTTPS development URL if bKash
+  requires it. Confirm your issued API version matches the adapter before testing.
+
+Apply the checked-in database migrations with `npm run db:migrate` before running
+the new billing code. The bKash migration removes the old provider identifier
+columns and adds payment tracking; existing subscription history rows remain.
+Historical migration snapshots are retained so existing databases can still migrate.
+
+Checkout is restricted to verified shop owners. The server checks the payment ID,
+invoice, BDT amount and completed transaction with bKash before activating access.
+Tenant locking and unique transaction IDs prevent duplicate activation. If the
+callback is interrupted, use **Check payment status**; **Continue bKash payment**
+reopens an unfinished checkout. If the hosted page no longer opens, **Discard unpaid
+checkout** verifies the invoice and confirms wallet verification is incomplete before
+closing the local attempt. It disables the old callback and retains the payment ID
+for reconciliation. Status checks never execute a charge. Unknown or authorized
+payment outcomes stay pending until confirmed.
+Access expires at the period end without requiring a scheduled job.
+
+Run `npm run billing:test` for payment validation, expiry, renewal and mocked API
+checks. Run `npm run billing:smoke` for database activation, renewal and duplicate
+completion checks using a mocked gateway; its fixtures are rolled back. Real sandbox checkout still requires issued credentials and an approved
+callback configuration; no real sandbox transaction is included in these tests.
+
+For production, complete bKash online payment gateway onboarding and obtain live
+API credentials; a personal wallet or Merchant QR alone does not configure this
+integration. Set `BKASH_ENV=live`, use your live credentials and an HTTPS `APP_URL`.
+Start with the official [merchant application](https://www.bkash.com/en/business/merchant)
+and [online business onboarding](https://www.bkash.com/en/business/online-business).
+The merchant form asks about NID, a valid trade license and a bank account; bKash
+will confirm additional documents, charges and technical approval for your business.
+
 ## Image storage setup
 
 Uploaded image files are stored separately from PostgreSQL. The database stores
