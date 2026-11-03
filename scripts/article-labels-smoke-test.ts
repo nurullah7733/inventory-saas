@@ -8,7 +8,7 @@ import { numeric } from "../lib/numeric.ts";
 import { allocateStockArticles, listArticleLabels } from "../lib/inventory/article-labels.ts";
 import { applyStockDelta, recordStockIn } from "../lib/inventory/stock-queries.ts";
 import { catalogCodeConflict } from "../lib/inventory/catalog-codes.ts";
-import { listProducts } from "../lib/inventory/product-queries.ts";
+import { findProduct, listProducts } from "../lib/inventory/product-queries.ts";
 import { ARTICLE_NUMBER_START } from "../lib/inventory/article-numbers.ts";
 
 interface Fixture { tenantId: string; userId: string; productId: string; variantIds: string[] }
@@ -42,6 +42,14 @@ try {
   });
   fixtures.push(...created);
   const [a, b] = fixtures;
+  const originalProduct = await run(a, (scope) => findProduct(scope, a.productId));
+  assert.ok(originalProduct && originalProduct.articleNumber > 0, "product gets a permanent article number even before receiving stock");
+  assert.equal(originalProduct.variants.length, 2, "both sizes belong to the same product article");
+  const otherShopProduct = await run(b, (scope) => findProduct(scope, b.productId));
+  assert.notEqual(otherShopProduct?.articleNumber, originalProduct.articleNumber, "distinct products receive distinct article numbers");
+  assert.equal(await run(b, (scope) => findProduct(scope, a.productId)), null, "article references do not bypass tenant isolation");
+  const byArticle = await run(a, (scope) => listProducts(scope, { status: "active", search: String(originalProduct.articleNumber), categoryId: null }, { offset: 0, pageSize: 20 }));
+  assert.ok(byArticle.products.some((product) => product.id === a.productId), "product can be found by its rack article number");
   assert.equal((await run(a, (scope) => listArticleLabels(scope, a.productId, page))).total, 0, "zero stock has no physical unit numbers");
   const firstReceipt = await run(a, (scope) => receive(scope, a, a.variantIds[0], 5));
   const first = await run(a, (scope) => listArticleLabels(scope, a.productId, page));
@@ -60,6 +68,8 @@ try {
   assert.deepEqual((await run(a, (scope) => listArticleLabels(scope, a.productId, page))).labels.map((label) => label.articleNumber), Array.from({ length: 14 }, (_, i) => article(i + 1)), "concurrent receipts remain consecutive and unique");
   await assert.rejects(run(a, async (scope) => { await receive(scope, a, a.variantIds[0], 2); throw new Error("rollback fixture"); }), /rollback fixture/);
   assert.equal((await run(a, (scope) => listArticleLabels(scope, a.productId, page))).total, 14, "failed stock saves roll back article numbers too");
+  const restockedProduct = await run(a, (scope) => findProduct(scope, a.productId));
+  assert.equal(restockedProduct?.articleNumber, originalProduct.articleNumber, "restocking either size, concurrent receipts and rollback preserve the product article number");
   await run(a, async (scope) => {
     await applyStockDelta(scope, { productId: a.productId, variantId: a.variantIds[0] }, -2);
     assert.equal((await listArticleLabels(scope, a.productId, { ...page, stockOnly: true })).total, 12, "default label quantities follow stock instead of including historical numbers");

@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'7c70a2e5af82a02526b86c46422200810d5e4500661d2827d1e6e437d4b88db5'>;
+  StorageHashBase<'93e797b53394cc25595a20aa1c5050ad5c752ecd1d653565f3d4bf9a1623b962'>;
 export type ExecutionHash =
   ExecutionHashBase<'e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5'>;
 export type ProfileHash =
@@ -311,6 +311,7 @@ export type FieldOutputTypes = {
     };
     readonly Product: {
       readonly id: CodecTypes['pg/uuid@1']['output'];
+      readonly articleNumber: CodecTypes['pg/int4@1']['output'];
       readonly tenantId: CodecTypes['pg/uuid@1']['output'];
       readonly categoryId: CodecTypes['pg/uuid@1']['output'] | null;
       readonly name: CodecTypes['pg/text@1']['output'];
@@ -605,6 +606,7 @@ export type FieldInputTypes = {
     };
     readonly Product: {
       readonly id: CodecTypes['pg/uuid@1']['input'];
+      readonly articleNumber: CodecTypes['pg/int4@1']['input'];
       readonly tenantId: CodecTypes['pg/uuid@1']['input'];
       readonly categoryId: CodecTypes['pg/uuid@1']['input'] | null;
       readonly name: CodecTypes['pg/text@1']['input'];
@@ -915,6 +917,7 @@ export type StorageColumnTypes = {
       readonly weight_id: CodecTypes['pg/uuid@1']['output'] | null;
     };
     readonly products: {
+      readonly article_number: CodecTypes['pg/int4@1']['output'];
       readonly attributes: CodecTypes['pg/jsonb@1']['output'] | null;
       readonly brand_id: CodecTypes['pg/uuid@1']['output'] | null;
       readonly category_id: CodecTypes['pg/uuid@1']['output'] | null;
@@ -1209,6 +1212,7 @@ export type StorageColumnInputTypes = {
       readonly weight_id: CodecTypes['pg/uuid@1']['input'] | null;
     };
     readonly products: {
+      readonly article_number: CodecTypes['pg/int4@1']['input'];
       readonly attributes: CodecTypes['pg/jsonb@1']['input'] | null;
       readonly brand_id: CodecTypes['pg/uuid@1']['input'] | null;
       readonly category_id: CodecTypes['pg/uuid@1']['input'] | null;
@@ -2311,6 +2315,15 @@ type ContractBase = Omit<
                   readonly codecId: 'pg/uuid@1';
                   readonly nullable: false;
                 };
+                readonly article_number: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
                 readonly tenant_id: {
                   readonly nativeType: 'uuid';
                   readonly codecId: 'pg/uuid@1';
@@ -2401,7 +2414,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['tenant_id', 'sku'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['article_number'] },
+                { readonly columns: readonly ['tenant_id', 'sku'] },
+              ];
               indexes: readonly [
                 {
                   readonly name: 'products_tenant_id_id_idx_621bc114';
@@ -4984,6 +5000,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
               };
+              readonly articleNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly tenantId: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/uuid@1' };
@@ -5129,6 +5149,7 @@ type ContractBase = Omit<
               readonly namespaceId: 'public';
               readonly fields: {
                 readonly id: { readonly column: 'id' };
+                readonly articleNumber: { readonly column: 'article_number' };
                 readonly tenantId: { readonly column: 'tenant_id' };
                 readonly categoryId: { readonly column: 'category_id' };
                 readonly name: { readonly column: 'name' };

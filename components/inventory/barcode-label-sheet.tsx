@@ -53,6 +53,7 @@ function LabelForm({ product }: { product: ProductResponse }) {
     if (!variant) return [];
     return [{
       variantId: variant.id, productName: product.name, sku: variant.sku, sellPrice: variant.sellPrice,
+      productArticleNumber: product.articleNumber,
       options: [variant.size && `Size: ${variant.size.name}`, variant.color && `Color: ${variant.color.name}`, variant.weight && `Weight: ${variant.weight.name}`].filter(Boolean).join(" | "),
       copies: "1", articleNumber: String(label.articleNumber),
     }];
@@ -69,6 +70,8 @@ function LabelForm({ product }: { product: ProductResponse }) {
 
   return <div className="ui-stack">
     <p className="break-words font-medium">{product.name}</p>
+    <p className="font-semibold">Article: {product.articleNumber}</p>
+    <p className="text-sm text-muted">This article number is shared by every size and color of this product, including future stock receipts.</p>
     <p className="text-sm text-muted">Showing the latest saved numbers up to the current stock quantity per variant. To replace an existing tag, enable older saved numbers and select its exact number. Printing never creates or changes numbers.</p>
     <Field label="Paper / label size">{(props) => <select {...props} disabled={printing} value={paper} onChange={(event) => setPaper(event.target.value as LabelPaper)}>
       <option value="roll70">Thermal roll - 70 x 40 mm</option><option value="roll100">Thermal roll - 100 x 50 mm</option><option value="a4">A4 - 70 x 40 mm labels, 2 columns, 3 mm gaps</option>
@@ -120,6 +123,10 @@ function LabelPreview({ item, currency }: { item: LabelItem; currency: string })
   return <div className="flex min-w-0 flex-col gap-tight rounded-lg border border-zinc-200 bg-white p-item text-black">
     <p className="break-words text-sm font-semibold">{item.productName}</p><p className="break-words text-xs">{item.options}</p><p className="font-semibold">{currency} {item.sellPrice}</p>
     <svg role="img" aria-label={`Barcode for article ${item.articleNumber}`} viewBox={`0 0 ${geometry.width} 50`} className="h-14 w-full" preserveAspectRatio="none" shapeRendering="crispEdges">{geometry.bars.map((bar) => <rect key={bar.x} x={bar.x} width={bar.width} height={50} />)}</svg>
-    <p className="text-center font-semibold">{item.articleNumber}</p><p className="break-all text-xs">{item.sku}</p>
+    <p className="text-center font-semibold">{item.articleNumber}</p>
+    <div className="flex items-baseline justify-between gap-small">
+      <p className="min-w-0 break-all text-xs">{item.sku}</p>
+      <p className="shrink-0 whitespace-nowrap text-sm font-semibold">Article: {item.productArticleNumber}</p>
+    </div>
   </div>;
 }

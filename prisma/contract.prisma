@@ -364,6 +364,8 @@ model Supplier {
 /// tenant-wide `Tenant.lowStockThreshold` for this product when set.
 model Product {
   id         Uuid              @id @default(uuid())
+  /// Stable rack/article reference shared by every variant and stock receipt.
+  articleNumber Int @unique @default(autoincrement()) @map("article_number")
   tenantId   Uuid              @map("tenant_id")
   tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   categoryId Uuid?             @map("category_id")

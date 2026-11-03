@@ -998,6 +998,13 @@
           },
           "Product": {
             "fields": {
+              "articleNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "attributes": {
                 "nullable": true,
                 "type": {
@@ -1209,6 +1216,9 @@
             },
             "storage": {
               "fields": {
+                "articleNumber": {
+                  "column": "article_number"
+                },
                 "attributes": {
                   "column": "attributes"
                 },
@@ -5458,6 +5468,15 @@
             },
             "products": {
               "columns": {
+                "article_number": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
                 "attributes": {
                   "codecId": "pg/jsonb@1",
                   "nativeType": "jsonb",
@@ -5710,6 +5729,11 @@
                 ]
               },
               "uniques": [
+                {
+                  "columns": [
+                    "article_number"
+                  ]
+                },
                 {
                   "columns": [
                     "tenant_id",
@@ -8299,7 +8323,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7c70a2e5af82a02526b86c46422200810d5e4500661d2827d1e6e437d4b88db5"
+    "storageHash": "93e797b53394cc25595a20aa1c5050ad5c752ecd1d653565f3d4bf9a1623b962"
   },
   "execution": {
     "executionHash": "e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5",

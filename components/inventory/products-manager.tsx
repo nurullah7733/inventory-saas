@@ -210,7 +210,7 @@ export function ProductsManager() {
             setPage(1);
             clearSelection();
           }}
-          label="Scan or type SKU / barcode"
+          label="Search name, article no., SKU / barcode"
           className="sm:min-w-56 sm:flex-1"
         />
         <select
@@ -515,6 +515,7 @@ function ProductRow({
           </p>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">
             {product.sku}
+            {` · Article No: ${product.articleNumber}`}
             {product.category ? ` · ${product.category.name}` : ""}
             {product.brand ? ` · ${product.brand.name}` : ""}
           </p>

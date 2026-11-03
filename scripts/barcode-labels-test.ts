@@ -23,7 +23,7 @@ assert.equal(labelCopies("2.5"), null);
 assert.equal(labelCopies("1e2"), null);
 assert.equal(labelCopies("1001"), null);
 assert.equal(labelCopies("0"), 0);
-const item: LabelItem = { variantId: randomUUID(), productName: "Tea <special>", sku: "TEA-500G", options: "Weight: 500 g", sellPrice: "250.00", copies: "2" };
+const item: LabelItem = { variantId: randomUUID(), productName: "Tea <special>", productArticleNumber: 322, sku: "TEA-500G", options: "Weight: 500 g", sellPrice: "250.00", copies: "2" };
 assert.equal(labelTotal([item]), 2);
 assert.throws(() => labelTotal([{ ...item, copies: "999" }, { ...item, copies: "2" }]));
 assert.throws(() => labelTotal([{ ...item, copies: "bad" }]));

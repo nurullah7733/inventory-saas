@@ -1,0 +1,86 @@
+[
+  {
+    "id": "column.public.products.article_number",
+    "label": "Add column \"article_number\" to \"products\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "article_number",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"article_number\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "article_number"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"article_number\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ADD COLUMN \"article_number\" SERIAL NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"article_number\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "products",
+          "article_number"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.products.products_article_number_key",
+    "label": "Add unique constraint on \"products\" (article_number)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "products_article_number_key",
+        "table": "products"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"products_article_number_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_article_number_key",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"products_article_number_key\"",
+        "sql": "ALTER TABLE \"public\".\"products\" ADD CONSTRAINT \"products_article_number_key\" UNIQUE (\"article_number\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"products_article_number_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "products_article_number_key",
+          "public",
+          "\"public\".\"products\""
+        ]
+      }
+    ]
+  }
+]

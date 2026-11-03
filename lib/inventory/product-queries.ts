@@ -19,6 +19,7 @@ import {
 type ProductCollection = TenantScope["Product"];
 
 export const PRODUCT_COLUMNS = [
+  "articleNumber",
   "id",
   "name",
   "sku",
@@ -61,6 +62,7 @@ export function toProductResponse(
 ): ProductResponse {
   return {
     id: row.id,
+    articleNumber: row.articleNumber,
     name: row.name,
     sku: row.sku,
     brand: ref(row.brand),
@@ -182,13 +184,17 @@ export function filterProducts(
     query = query.where({ isDeleted: filter.status === "deleted" });
   }
   if (filter.categoryId) query = query.where({ categoryId: filter.categoryId });
-  if (articleVariantId) return query.where((p) => p.variants.some((v) => v.id.eq(articleVariantId)));
+  if (articleVariantId) return query.where((p) => or(
+    p.variants.some((v) => v.id.eq(articleVariantId)),
+    p.articleNumber.eq(Number(filter.search.trim())),
+  ));
   if (filter.search !== "") {
     const pattern = `%${escapeLike(filter.search)}%`;
     const labelVariantId = articleVariantId ?? variantIdFromLabel(filter.search.trim());
     query = query.where((p) => or(
       p.name.ilike(pattern),
       p.sku.ilike(pattern),
+      ...(isArticleNumber(filter.search.trim()) ? [p.articleNumber.eq(Number(filter.search.trim()))] : []),
       p.variants.some((v) => or(
         v.sku.ilike(pattern),
         v.barcode.ilike(pattern),

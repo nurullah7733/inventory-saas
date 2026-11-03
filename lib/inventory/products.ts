@@ -323,6 +323,7 @@ export interface ProductVariantResponse {
 }
 
 export interface ProductResponse {
+  articleNumber: number;
   id: string;
   name: string;
   sku: string;

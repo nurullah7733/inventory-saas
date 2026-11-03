@@ -5,6 +5,7 @@ import { isArticleNumber } from "./article-numbers.ts";
 export interface LabelItem {
   variantId: string;
   productName: string;
+  productArticleNumber: number;
   sku: string;
   options: string;
   sellPrice: string;
@@ -70,8 +71,10 @@ export async function printBarcodeLabels(items: LabelItem[], currency: string, p
       article:last-child { break-after:auto; } p { margin:0;overflow-wrap:anywhere; }
       .name { font-size:9pt;font-weight:bold;line-height:1.15;height:6mm;overflow:hidden; }
       .options { font-size:7pt;height:3mm;overflow:hidden; } .price { font-size:11pt;font-weight:bold;height:5mm; }
+      .label-footer { display:flex;justify-content:space-between;align-items:baseline;gap:2mm; }
+      .product-article { flex-shrink:0;font-size:9pt;font-weight:bold;white-space:nowrap; }
       svg { display:block;width:100%;height:13mm; } .article { font-size:9pt;font-weight:bold;height:4mm;text-align:center; }
-      .sku { font-size:7pt;line-height:1.1;overflow-wrap:anywhere; }
+      .sku { min-width:0;font-size:7pt;line-height:1.1;overflow-wrap:anywhere; }
       @media screen { article { outline:1px solid #ddd; } }`;
     doc.head.append(style);
     doc.title = "Product barcode labels";
@@ -95,7 +98,10 @@ export async function printBarcodeLabels(items: LabelItem[], currency: string, p
       }
       label.append(svg);
       const article = doc.createElement("p"); article.className = "article"; article.textContent = item.articleNumber!; label.append(article);
-      const sku = doc.createElement("p"); sku.className = "sku"; sku.textContent = item.sku; label.append(sku);
+      const footer = doc.createElement("div"); footer.className = "label-footer";
+      const sku = doc.createElement("p"); sku.className = "sku"; sku.textContent = item.sku; footer.append(sku);
+      const productArticle = doc.createElement("span"); productArticle.className = "product-article"; productArticle.textContent = `Article: ${item.productArticleNumber}`; footer.append(productArticle);
+      label.append(footer);
       for (let i = 0; i < count; i++) main.append(label.cloneNode(true));
     }
     doc.body.append(main);
