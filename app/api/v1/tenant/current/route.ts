@@ -9,6 +9,7 @@ export const GET = withTenantAuth(
         "name",
         "description",
         "logoUrl",
+        "showLogoOnInvoice",
         "email",
         "phone",
         "address",

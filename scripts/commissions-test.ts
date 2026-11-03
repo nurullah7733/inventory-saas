@@ -1,0 +1,24 @@
+import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
+import { commissionAmount, commissionBalance, currentCommissionMonth, monthBounds } from "../lib/commissions/calculations.ts";
+import { commissionPolicy, commissionPayment, commissionFilter } from "../lib/commissions/schemas.ts";
+
+assert.equal(commissionAmount("120000.00", "100000.00", "5.00"), "1000.00");
+assert.equal(commissionAmount("120000.00", "100000.00", "10.00"), "2000.00");
+assert.equal(commissionAmount("100000.00", "100000.00", "5.00"), "0.00");
+assert.equal(commissionAmount("90000.00", "100000.00", "5.00"), "0.00");
+assert.equal(commissionAmount("0.10", "0", "5"), "0.01");
+assert.equal(commissionAmount("0.09", "0", "5"), "0.00");
+assert.equal(commissionAmount("99999999.99", "0", "100"), "99999999.99");
+assert.deepEqual(commissionBalance("1000", "600"), { outstanding: "400.00", overpaid: "0.00" });
+assert.deepEqual(commissionBalance("0", "600"), { outstanding: "0.00", overpaid: "600.00" });
+assert.equal(currentCommissionMonth(new Date("2026-10-31T17:59:59Z")), "2026-10");
+assert.equal(currentCommissionMonth(new Date("2026-10-31T18:00:00Z")), "2026-11");
+assert.deepEqual(monthBounds("2026-12"), { from: "2026-11-30T18:00:00.000Z", to: "2026-12-31T18:00:00.000Z" });
+assert.deepEqual(monthBounds("2028-02"), { from: "2028-01-31T18:00:00.000Z", to: "2028-02-29T18:00:00.000Z" });
+const plan = { userId: randomUUID(), month: "2026-11", enabled: true, target: "100000", rate: "5" };
+for (const rate of ["NaN", "-1", "100.01", "1.001", "Infinity"]) assert.equal(commissionPolicy.safeParse({ ...plan, rate }).success, false);
+for (const month of ["2026-00", "2026-13", "2026-1", "1999-01"]) assert.equal(commissionFilter.safeParse({ month }).success, false);
+assert.equal(commissionPolicy.safeParse({ ...plan, tenantId: randomUUID() }).success, false);
+for (const amount of ["0", "-1", "NaN", "1.001"]) assert.equal(commissionPayment.safeParse({ requestId: randomUUID(), userId: plan.userId, month: plan.month, amount }).success, false);
+console.log("Commission calculations, rounding, month boundaries and input validation passed.");

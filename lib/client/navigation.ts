@@ -28,6 +28,7 @@ export const NAVIGATION: readonly NavigationItem[] = [
   { label: "Sales", icon: "sales", children: [
     { label: "Create invoice", icon: "sales", href: "/sales/create" },
     { label: "Invoices", icon: "sales", href: "/sales/invoices" },
+    { label: "Sales & commission", icon: "people", href: "/sales/commissions" },
     { label: "Draft invoices", icon: "sales", href: "/sales/drafts" },
     { label: "Returns", icon: "sales", href: "/inventory/returns" },
   ] },

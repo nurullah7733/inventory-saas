@@ -1,0 +1,44 @@
+[
+  {
+    "id": "column.public.tenants.show_logo_on_invoice",
+    "label": "Add column \"show_logo_on_invoice\" to \"tenants\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "show_logo_on_invoice",
+        "table": "tenants"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"show_logo_on_invoice\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tenants",
+          "show_logo_on_invoice"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"show_logo_on_invoice\"",
+        "sql": "ALTER TABLE \"public\".\"tenants\" ADD COLUMN \"show_logo_on_invoice\" bool DEFAULT true NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"show_logo_on_invoice\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "tenants",
+          "show_logo_on_invoice"
+        ]
+      }
+    ]
+  }
+]

@@ -6,6 +6,7 @@ export interface CurrentTenantResponse {
     id: string;
     name: string;
     logoUrl: string | null;
+    showLogoOnInvoice: boolean;
     description: string | null;
     email: string;
     phone: string | null;

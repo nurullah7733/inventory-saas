@@ -76,6 +76,8 @@ export function InvoiceDetail({ id }: { id: string }) {
   return <div className="space-y-section">
     <Link href={invoice.status === "draft" ? "/sales/drafts" : "/sales/invoices"} className="inline-flex min-h-11 items-center underline">Back to {invoice.status === "draft" ? "drafts" : "invoices"}</Link>
     <h1 className="break-all text-xl font-semibold">{invoice.invoiceNo}</h1>
+    <p className="text-sm text-muted">Created by: {invoice.creatorName ?? "Not recorded (legacy invoice)"}</p>
+    {invoice.sellerName && <p className="text-sm text-muted">Sold by: {invoice.sellerName}</p>}
     <p>{invoice.status === "draft" ? "Draft invoice" : "Completed sale"} · {invoice.customer?.name ?? "Walk-in customer"}</p>
     {invoice.status === "draft" && <DeleteDraftButton id={invoice.id} invoiceNo={invoice.invoiceNo} onDeleted={() => router.replace("/sales/drafts")} />}
     {invoice.status === "draft" ? <InvoiceEditor key={invoice.id} invoice={invoice} /> : <>

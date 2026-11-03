@@ -1,0 +1,1057 @@
+[
+  {
+    "id": "table.commission_payments",
+    "label": "Create table \"commission_payments\"",
+    "summary": "Creates table \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"commission_payments\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"commission_payments\"",
+        "sql": "CREATE TABLE \"public\".\"commission_payments\" (\n  \"amount\" numeric(10,2) NOT NULL,\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"created_by\" uuid NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"note\" text,\n  \"period_id\" uuid NOT NULL,\n  \"tenant_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"commission_payments\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.commission_periods",
+    "label": "Create table \"commission_periods\"",
+    "summary": "Creates table \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"commission_periods\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"commission_periods\"",
+        "sql": "CREATE TABLE \"public\".\"commission_periods\" (\n  \"created_at\" timestamptz DEFAULT (now()) NOT NULL,\n  \"enabled\" bool DEFAULT false NOT NULL,\n  \"id\" uuid NOT NULL,\n  \"month\" text NOT NULL,\n  \"rate\" numeric(5,2) NOT NULL,\n  \"target\" numeric(10,2) NOT NULL,\n  \"tenant_id\" uuid NOT NULL,\n  \"updated_at\" timestamptz NOT NULL,\n  \"user_id\" uuid NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"commission_periods\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.sales.completed_at",
+    "label": "Add column \"completed_at\" to \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "completed_at",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"completed_at\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "completed_at"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"completed_at\"",
+        "sql": "ALTER TABLE \"public\".\"sales\" ADD COLUMN \"completed_at\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"completed_at\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "completed_at"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.sales.creator_id",
+    "label": "Add column \"creator_id\" to \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "creator_id",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"creator_id\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "creator_id"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"creator_id\"",
+        "sql": "ALTER TABLE \"public\".\"sales\" ADD COLUMN \"creator_id\" uuid"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"creator_id\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "creator_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.sales.creator_name",
+    "label": "Add column \"creator_name\" to \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "creator_name",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"creator_name\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "creator_name"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"creator_name\"",
+        "sql": "ALTER TABLE \"public\".\"sales\" ADD COLUMN \"creator_name\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"creator_name\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "creator_name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.sales.seller_name",
+    "label": "Add column \"seller_name\" to \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "seller_name",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"seller_name\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "seller_name"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"seller_name\"",
+        "sql": "ALTER TABLE \"public\".\"sales\" ADD COLUMN \"seller_name\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"seller_name\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "sales",
+          "seller_name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.commission_periods.commission_periods_tenant_id_user_id_month_key",
+    "label": "Add unique constraint on \"commission_periods\" (tenant_id, user_id, month)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "commission_periods_tenant_id_user_id_month_key",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"commission_periods_tenant_id_user_id_month_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_periods_tenant_id_user_id_month_key",
+          "public",
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"commission_periods_tenant_id_user_id_month_key\"",
+        "sql": "ALTER TABLE \"public\".\"commission_periods\" ADD CONSTRAINT \"commission_periods_tenant_id_user_id_month_key\" UNIQUE (\"tenant_id\", \"user_id\", \"month\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"commission_periods_tenant_id_user_id_month_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_periods_tenant_id_user_id_month_key",
+          "public",
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_payments.commission_payments_created_by_idx_e13bb8bf",
+    "label": "Create index \"commission_payments_created_by_idx_e13bb8bf\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_payments_created_by_idx_e13bb8bf",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_payments_created_by_idx_e13bb8bf\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_created_by_idx_e13bb8bf\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_payments_created_by_idx_e13bb8bf\"",
+        "sql": "CREATE INDEX \"commission_payments_created_by_idx_e13bb8bf\" ON \"public\".\"commission_payments\" (\"created_by\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_payments_created_by_idx_e13bb8bf\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_created_by_idx_e13bb8bf\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_payments.commission_payments_period_id_idx_b79c59e2",
+    "label": "Create index \"commission_payments_period_id_idx_b79c59e2\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_payments_period_id_idx_b79c59e2",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_payments_period_id_idx_b79c59e2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_period_id_idx_b79c59e2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_payments_period_id_idx_b79c59e2\"",
+        "sql": "CREATE INDEX \"commission_payments_period_id_idx_b79c59e2\" ON \"public\".\"commission_payments\" (\"period_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_payments_period_id_idx_b79c59e2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_period_id_idx_b79c59e2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_payments.commission_payments_tenant_id_idx_41c0d441",
+    "label": "Create index \"commission_payments_tenant_id_idx_41c0d441\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_payments_tenant_id_idx_41c0d441",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_payments_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_payments_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"commission_payments_tenant_id_idx_41c0d441\" ON \"public\".\"commission_payments\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_payments_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_payments.commission_payments_tenant_id_period_id_idx_07cdee7b",
+    "label": "Create index \"commission_payments_tenant_id_period_id_idx_07cdee7b\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_payments_tenant_id_period_id_idx_07cdee7b",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_payments_tenant_id_period_id_idx_07cdee7b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_tenant_id_period_id_idx_07cdee7b\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_payments_tenant_id_period_id_idx_07cdee7b\"",
+        "sql": "CREATE INDEX \"commission_payments_tenant_id_period_id_idx_07cdee7b\" ON \"public\".\"commission_payments\" (\"tenant_id\", \"period_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_payments_tenant_id_period_id_idx_07cdee7b\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_payments_tenant_id_period_id_idx_07cdee7b\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_periods.commission_periods_tenant_id_idx_41c0d441",
+    "label": "Create index \"commission_periods_tenant_id_idx_41c0d441\" on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_periods_tenant_id_idx_41c0d441",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_periods_tenant_id_idx_41c0d441\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_periods_tenant_id_idx_41c0d441\"",
+        "sql": "CREATE INDEX \"commission_periods_tenant_id_idx_41c0d441\" ON \"public\".\"commission_periods\" (\"tenant_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_periods_tenant_id_idx_41c0d441\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods_tenant_id_idx_41c0d441\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_periods.commission_periods_tenant_id_month_idx_679f81dc",
+    "label": "Create index \"commission_periods_tenant_id_month_idx_679f81dc\" on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_periods_tenant_id_month_idx_679f81dc",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_periods_tenant_id_month_idx_679f81dc\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods_tenant_id_month_idx_679f81dc\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_periods_tenant_id_month_idx_679f81dc\"",
+        "sql": "CREATE INDEX \"commission_periods_tenant_id_month_idx_679f81dc\" ON \"public\".\"commission_periods\" (\"tenant_id\", \"month\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_periods_tenant_id_month_idx_679f81dc\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods_tenant_id_month_idx_679f81dc\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.commission_periods.commission_periods_user_id_idx_6c952402",
+    "label": "Create index \"commission_periods_user_id_idx_6c952402\" on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "commission_periods_user_id_idx_6c952402",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"commission_periods_user_id_idx_6c952402\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods_user_id_idx_6c952402\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"commission_periods_user_id_idx_6c952402\"",
+        "sql": "CREATE INDEX \"commission_periods_user_id_idx_6c952402\" ON \"public\".\"commission_periods\" (\"user_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"commission_periods_user_id_idx_6c952402\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"commission_periods_user_id_idx_6c952402\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sales.sales_creator_id_idx_c8bab67a",
+    "label": "Create index \"sales_creator_id_idx_c8bab67a\" on \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sales_creator_id_idx_c8bab67a",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sales_creator_id_idx_c8bab67a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sales_creator_id_idx_c8bab67a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sales_creator_id_idx_c8bab67a\"",
+        "sql": "CREATE INDEX \"sales_creator_id_idx_c8bab67a\" ON \"public\".\"sales\" (\"creator_id\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sales_creator_id_idx_c8bab67a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sales_creator_id_idx_c8bab67a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.sales.sales_tenant_id_sold_by_completed_at_idx_a01b5e68",
+    "label": "Create index \"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\" on \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "sales_tenant_id_sold_by_completed_at_idx_a01b5e68",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\"",
+        "sql": "CREATE INDEX \"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\" ON \"public\".\"sales\" (\"tenant_id\", \"sold_by\", \"completed_at\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"sales_tenant_id_sold_by_completed_at_idx_a01b5e68\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.commission_payments.commission_payments_tenant_id_fkey",
+    "label": "Add foreign key \"commission_payments_tenant_id_fkey\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "commission_payments_tenant_id_fkey",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"commission_payments_tenant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_payments_tenant_id_fkey",
+          "public",
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"commission_payments_tenant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"commission_payments\"\nADD CONSTRAINT \"commission_payments_tenant_id_fkey\"\nFOREIGN KEY (\"tenant_id\")\nREFERENCES \"public\".\"tenants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"commission_payments_tenant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_payments_tenant_id_fkey",
+          "public",
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.commission_payments.commission_payments_period_id_fkey",
+    "label": "Add foreign key \"commission_payments_period_id_fkey\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "commission_payments_period_id_fkey",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"commission_payments_period_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_payments_period_id_fkey",
+          "public",
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"commission_payments_period_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"commission_payments\"\nADD CONSTRAINT \"commission_payments_period_id_fkey\"\nFOREIGN KEY (\"period_id\")\nREFERENCES \"public\".\"commission_periods\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"commission_payments_period_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_payments_period_id_fkey",
+          "public",
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.commission_payments.commission_payments_created_by_fkey",
+    "label": "Add foreign key \"commission_payments_created_by_fkey\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "commission_payments_created_by_fkey",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"commission_payments_created_by_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_payments_created_by_fkey",
+          "public",
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"commission_payments_created_by_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"commission_payments\"\nADD CONSTRAINT \"commission_payments_created_by_fkey\"\nFOREIGN KEY (\"created_by\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"commission_payments_created_by_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_payments_created_by_fkey",
+          "public",
+          "\"public\".\"commission_payments\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.commission_periods.commission_periods_tenant_id_fkey",
+    "label": "Add foreign key \"commission_periods_tenant_id_fkey\" on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "commission_periods_tenant_id_fkey",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"commission_periods_tenant_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_periods_tenant_id_fkey",
+          "public",
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"commission_periods_tenant_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"commission_periods\"\nADD CONSTRAINT \"commission_periods_tenant_id_fkey\"\nFOREIGN KEY (\"tenant_id\")\nREFERENCES \"public\".\"tenants\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"commission_periods_tenant_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_periods_tenant_id_fkey",
+          "public",
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.commission_periods.commission_periods_user_id_fkey",
+    "label": "Add foreign key \"commission_periods_user_id_fkey\" on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "commission_periods_user_id_fkey",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"commission_periods_user_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_periods_user_id_fkey",
+          "public",
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"commission_periods_user_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"commission_periods\"\nADD CONSTRAINT \"commission_periods_user_id_fkey\"\nFOREIGN KEY (\"user_id\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"commission_periods_user_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "commission_periods_user_id_fkey",
+          "public",
+          "\"public\".\"commission_periods\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.sales.sales_creator_id_fkey",
+    "label": "Add foreign key \"sales_creator_id_fkey\" on \"sales\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "sales_creator_id_fkey",
+        "table": "sales"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"sales_creator_id_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sales_creator_id_fkey",
+          "public",
+          "\"public\".\"sales\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"sales_creator_id_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"sales\"\nADD CONSTRAINT \"sales_creator_id_fkey\"\nFOREIGN KEY (\"creator_id\")\nREFERENCES \"public\".\"users\" (\"id\")\nON DELETE RESTRICT"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"sales_creator_id_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "sales_creator_id_fkey",
+          "public",
+          "\"public\".\"sales\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.commission_payments",
+    "label": "Enable row-level security on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"commission_payments\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "commission_payments"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"commission_payments\"",
+        "sql": "ALTER TABLE \"public\".\"commission_payments\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"commission_payments\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "commission_payments"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rowLevelSecurity.public.commission_periods",
+    "label": "Enable row-level security on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rowLevelSecurity",
+        "name": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "check RLS is not already enabled on \"commission_periods\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND NOT (\"c\".\"relrowsecurity\"))) AS \"result\"",
+        "params": [
+          "public",
+          "commission_periods"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "enable row-level security on \"commission_periods\"",
+        "sql": "ALTER TABLE \"public\".\"commission_periods\" ENABLE ROW LEVEL SECURITY"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify row-level security is enabled on \"commission_periods\"",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_class\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"relnamespace\" WHERE (\"n\".\"nspname\" = $1 AND \"c\".\"relname\" = $2 AND \"c\".\"relrowsecurity\")) AS \"result\"",
+        "params": [
+          "public",
+          "commission_periods"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.commission_payments.tenant_isolation_commission_payments_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_commission_payments_ffe271ab\" on \"commission_payments\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_commission_payments_ffe271ab",
+        "table": "commission_payments"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_commission_payments_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "commission_payments",
+          "tenant_isolation_commission_payments_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_commission_payments_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_commission_payments_ffe271ab\" ON \"public\".\"commission_payments\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_commission_payments_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "commission_payments",
+          "tenant_isolation_commission_payments_ffe271ab"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rlsPolicy.public.commission_periods.tenant_isolation_commission_periods_ffe271ab",
+    "label": "Create RLS policy \"tenant_isolation_commission_periods_ffe271ab\" on \"commission_periods\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "rlsPolicy",
+        "name": "tenant_isolation_commission_periods_ffe271ab",
+        "table": "commission_periods"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure RLS policy \"tenant_isolation_commission_periods_ffe271ab\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "commission_periods",
+          "tenant_isolation_commission_periods_ffe271ab"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create RLS policy \"tenant_isolation_commission_periods_ffe271ab\"",
+        "sql": "CREATE POLICY \"tenant_isolation_commission_periods_ffe271ab\" ON \"public\".\"commission_periods\" AS PERMISSIVE FOR ALL TO PUBLIC USING (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid) WITH CHECK (nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify RLS policy \"tenant_isolation_commission_periods_ffe271ab\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_policies\" WHERE (\"schemaname\" = $1 AND \"tablename\" = $2 AND \"policyname\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "commission_periods",
+          "tenant_isolation_commission_periods_ffe271ab"
+        ]
+      }
+    ]
+  }
+]

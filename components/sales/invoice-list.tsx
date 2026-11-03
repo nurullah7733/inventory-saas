@@ -7,7 +7,7 @@ import { formatDateTime } from "@/lib/client/format.ts";
 import { useCurrencySymbol } from "@/lib/client/current-tenant.ts";
 import { useDebouncedValue } from "@/lib/client/use-debounced-value.ts";
 import { invoicesListOptions } from "@/lib/client/navigation-queries.ts";
-import { EmptyState, ErrorState, ListSkeleton, Pager, SearchInput } from "@/components/ui/list-controls.tsx";
+import { Badge, EmptyState, ErrorState, ListSkeleton, Pager, SearchInput } from "@/components/ui/list-controls.tsx";
 import { Field } from "@/components/ui/field.tsx";
 import { DeleteDraftButton } from "./delete-draft-button.tsx";
 
@@ -38,7 +38,7 @@ export function InvoiceList({ status }: { status: "draft" | "completed" }) {
     {query.data?.invoices.length === 0 && <EmptyState>No {status === "draft" ? "drafts" : "invoices"} found.</EmptyState>}
     {query.data?.invoices.map((invoice) => <article key={invoice.id} className="space-y-small rounded-xl border border-zinc-200 p-content dark:border-zinc-800">
       <Link href={`/sales/invoices/${invoice.id}`} className="block space-y-small rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900">
-      <div className="flex flex-col justify-between gap-small sm:flex-row"><p className="break-all font-semibold">{invoice.invoiceNo}</p><p className="shrink-0 font-semibold">{currency} {invoice.totalAmount}</p></div>
+      <div className="flex flex-col justify-between gap-small sm:flex-row"><div className="flex flex-wrap items-center gap-small"><p className="break-all font-semibold">{invoice.invoiceNo}</p>{status === "completed" && (Number(invoice.creditAmount) > 0 ? <Badge tone="danger">Return</Badge> : <Badge tone="success">Completed</Badge>)}</div><p className="shrink-0 font-semibold">{currency} {invoice.totalAmount}</p></div>
       <p>{invoice.customer?.name ?? "Walk-in customer"}</p>
       <p className="text-sm text-zinc-500">{formatDateTime(invoice.createdAt)} · {status === "draft" ? "Open to edit or complete" : `Due: ${currency} ${invoice.dueAmount} · Return credit: ${currency} ${invoice.creditAmount}`}</p>
       </Link>

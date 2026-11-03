@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { lockCommissionAccount } from "../commissions/locks.ts";
 import { ApiProblem } from "../api/response.ts";
 import { recordAudit } from "../audit/log.ts";
 import { rawSql, rlsDb } from "../db/rls.ts";
@@ -26,6 +27,7 @@ async function lockSale(scope: TenantScope, id: string) {
 }
 
 export async function saveInvoice(scope: TenantScope, userId: string, input: InvoiceInput, existingId?: string) {
+  if (input.status === "completed") await lockCommissionAccount(scope, userId);
   const id = existingId ?? input.requestId ?? randomUUID();
   if (existingId) {
     await lockSale(scope, id);
@@ -40,6 +42,8 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
     const customer = await scope.Customer.where({ id: input.customerId, isActive: true }).select("id").first();
     if (!customer) invalid("Choose an active customer from your shop.");
   }
+  const actor = await scope.User.where({ id: userId }).select("name").first();
+  if (!actor) throw new ApiProblem("FORBIDDEN", "User not found in this shop.", 403);
   const tenant = await rlsDb().orm.public.Tenant.where({ id: scope.tenantId }).select("vatPercentage").first();
   if (!tenant) throw new ApiProblem("NOT_FOUND", "Workspace not found.", 404);
   let totals;
@@ -84,12 +88,14 @@ export async function saveInvoice(scope: TenantScope, userId: string, input: Inv
     } : {}),
     totalAmount: numeric<10, 2>(totals.totalAmount), paidAmount: numeric<10, 2>(input.paidAmount),
     paymentMethod: input.paymentMethod, soldBy: userId,
+    sellerName: input.status === "completed" ? actor.name : null,
+    completedAt: input.status === "completed" ? new Date().toISOString() : null,
   };
   if (existingId) {
     await scope.Sale.where({ id }).select("id").update(values);
     await scope.SaleItem.where({ saleId: id }).delete();
   } else {
-    await scope.Sale.select("id").create(scope.own({ ...values, id, invoiceNo: `INV-${id.toUpperCase()}` }));
+    await scope.Sale.select("id").create(scope.own({ ...values, id, invoiceNo: `INV-${id.toUpperCase()}`, creatorId: userId, creatorName: actor.name }));
   }
   for (const item of lines) {
     await scope.SaleItem.create(scope.own({ saleId: id, productId: item.productId, variantId: item.variantId, quantity: numeric<12, 3>(item.quantity),
@@ -127,7 +133,9 @@ export async function createReturn(scope: TenantScope, userId: string, input: Re
   if (existing) return existing;
   const item = await scope.SaleItem.where({ id: input.saleItemId }).select("saleId").first();
   if (!item) throw new ApiProblem("NOT_FOUND", "Invoice item not found.", 404);
-  // Every return of this invoice serializes here, so quantities and credits are current.
+  const sale = await scope.Sale.where({ id: item.saleId }).select("soldBy").first();
+  if (sale) await lockCommissionAccount(scope, sale.soldBy);
+  // Serialize invoice returns.
   await lockSale(scope, item.saleId);
   const invoice = await getInvoice(scope, item.saleId);
   if (!invoice || invoice.status !== "completed") invalid("Only completed invoices accept returns.");

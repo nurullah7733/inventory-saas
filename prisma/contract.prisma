@@ -107,6 +107,7 @@ model Tenant {
   lowStockThreshold Int    @default(10) @map("low_stock_threshold")
   currencySymbol    String @default("BDT") @map("currency_symbol")
   invoiceType       String @default("standard") @map("invoice_type")
+  showLogoOnInvoice Boolean @default(true) @map("show_logo_on_invoice")
 
   // Subscription state, denormalised here so every request can gate on it
   // without a join. `subscriptions` below keeps the billing history.
@@ -585,6 +586,11 @@ model Sale {
   paymentMethod String?           @map("payment_method")
   soldBy        Uuid              @map("sold_by")
   soldByUser    User              @relation(fields: [soldBy], references: [id], onDelete: Restrict)
+  creatorId     Uuid?             @map("creator_id")
+  creator       User?             @relation(fields: [creatorId], references: [id], onDelete: Restrict)
+  creatorName   String?           @map("creator_name")
+  sellerName    String?           @map("seller_name")
+  completedAt   TimestamptzString? @map("completed_at")
   createdAt     TimestamptzString @default(now()) @map("created_at")
   updatedAt     temporal          .updatedAtString() @map("updated_at")
 
@@ -593,12 +599,49 @@ model Sale {
   @@index([tenantId, createdAt])
   @@index([tenantId, status, createdAt])
   @@index([tenantId, customerId])
+  @@index([tenantId, soldBy, completedAt])
   @@map("sales")
   @@rls
 }
 
 /// `unitCost` snapshots the product cost price at sale time so the P&L report
 /// computes COGS from history instead of from today's cost price.
+model CommissionPeriod {
+  id Uuid @id @default(uuid())
+  tenantId Uuid @map("tenant_id")
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userId Uuid @map("user_id")
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  month String
+  enabled Boolean @default(false)
+  target Numeric(10, 2)
+  rate Numeric(5, 2)
+  createdAt TimestamptzString @default(now()) @map("created_at")
+  updatedAt temporal.updatedAtString() @map("updated_at")
+
+  @@unique([tenantId, userId, month])
+  @@index([tenantId, month])
+  @@map("commission_periods")
+  @@rls
+}
+
+model CommissionPayment {
+  id Uuid @id @default(uuid())
+  tenantId Uuid @map("tenant_id")
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  periodId Uuid @map("period_id")
+  period CommissionPeriod @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  amount Numeric(10, 2)
+  createdBy Uuid @map("created_by")
+  actor User @relation(fields: [createdBy], references: [id], onDelete: Restrict)
+  note String?
+  createdAt TimestamptzString @default(now()) @map("created_at")
+
+  @@index([tenantId, periodId])
+  @@map("commission_payments")
+  @@rls
+}
+
 model SaleItem {
   id        Uuid              @id @default(uuid())
   tenantId  Uuid              @map("tenant_id")
@@ -874,6 +917,18 @@ policy_all tenant_isolation_customers {
 policy_all tenant_isolation_sales {
   target    = Sale
   using     = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_commission_periods {
+  target = CommissionPeriod
+  using = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+  withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+}
+
+policy_all tenant_isolation_commission_payments {
+  target = CommissionPayment
+  using = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
   withCheck = "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
 }
 

@@ -49,6 +49,7 @@ interface FormValues {
   name: string;
   description: string;
   logoUrl: string;
+  showLogoOnInvoice: boolean;
   email: string;
   phone: string;
   address: string;
@@ -63,6 +64,7 @@ function toFormValues(settings: BusinessSettingsResponse): FormValues {
     name: settings.name,
     description: settings.description ?? "",
     logoUrl: settings.logoUrl ?? "",
+    showLogoOnInvoice: settings.showLogoOnInvoice,
     email: settings.email,
     phone: settings.phone ?? "",
     address: settings.address ?? "",
@@ -258,6 +260,11 @@ export function BusinessSettingsForm() {
           />}
         />
         <p className="text-xs text-muted sm:col-span-2">Logo changes are saved automatically.</p>
+
+        <label className="flex items-center gap-small text-sm sm:col-span-2">
+          <input type="checkbox" disabled={!canEdit} {...form.register("showLogoOnInvoice")} />
+          Show logo on invoices
+        </label>
 
         <div className="sm:col-span-2">
           <Field label="Description" error={errors.description?.message}>

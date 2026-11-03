@@ -55,7 +55,9 @@
     "email:smoke": "node --experimental-strip-types scripts/email-verification-smoke-test.ts",
     "recovery:test": "node --experimental-strip-types scripts/password-reset-test.ts",
     "recovery:smoke": "node --experimental-strip-types scripts/password-reset-smoke-test.ts",
-    "billing:smoke": "node --experimental-strip-types scripts/billing-smoke-test.ts"
+    "billing:smoke": "node --experimental-strip-types scripts/billing-smoke-test.ts",
+    "commissions:test": "node --experimental-strip-types scripts/commissions-test.ts",
+    "commissions:smoke": "node --experimental-strip-types scripts/commissions-smoke-test.ts"
   },
   "dependencies": {
     "@prisma/orm-postgres": "^8.0.0-rc.8",

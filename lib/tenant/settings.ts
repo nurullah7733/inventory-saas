@@ -65,6 +65,7 @@ export const businessSettingsSchema = z.strictObject({
   name: businessName,
   description: optionalText(500, "Description"),
   logoUrl,
+  showLogoOnInvoice: z.boolean(),
   email: businessEmail,
   phone: optionalText(32, "Phone"),
   address: optionalText(500, "Address"),
@@ -95,6 +96,7 @@ export const BUSINESS_SETTINGS_FIELDS = [
   "name",
   "description",
   "logoUrl",
+  "showLogoOnInvoice",
   "email",
   "phone",
   "address",
@@ -108,6 +110,7 @@ export interface BusinessSettingsResponse {
   name: string;
   description: string | null;
   logoUrl: string | null;
+  showLogoOnInvoice: boolean;
   email: string;
   phone: string | null;
   address: string | null;

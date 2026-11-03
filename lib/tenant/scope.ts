@@ -30,6 +30,8 @@ export interface TenantScope {
   readonly Sale: ReturnType<typeof saleFor>;
   readonly SaleItem: ReturnType<typeof saleItemFor>;
   readonly SaleReturn: ReturnType<typeof saleReturnFor>;
+  readonly CommissionPeriod: ReturnType<typeof commissionPeriodFor>;
+  readonly CommissionPayment: ReturnType<typeof commissionPaymentFor>;
 
   // --- Finance ---
   readonly ExpenseCategory: ReturnType<typeof expenseCategoryFor>;
@@ -101,6 +103,10 @@ const saleItemFor = (tenantId: string) =>
   ormFor(tenantId).SaleItem.where({ tenantId });
 const saleReturnFor = (tenantId: string) =>
   ormFor(tenantId).SaleReturn.where({ tenantId });
+const commissionPeriodFor = (tenantId: string) =>
+  ormFor(tenantId).CommissionPeriod.where({ tenantId });
+const commissionPaymentFor = (tenantId: string) =>
+  ormFor(tenantId).CommissionPayment.where({ tenantId });
 const expenseCategoryFor = (tenantId: string) =>
   ormFor(tenantId).ExpenseCategory.where({ tenantId });
 const expenseFor = (tenantId: string) =>
@@ -174,6 +180,12 @@ export function tenantScope(tenantId: string): TenantScope {
     },
     get SaleReturn() {
       return saleReturnFor(tenantId);
+    },
+    get CommissionPeriod() {
+      return commissionPeriodFor(tenantId);
+    },
+    get CommissionPayment() {
+      return commissionPaymentFor(tenantId);
     },
     get ExpenseCategory() {
       return expenseCategoryFor(tenantId);

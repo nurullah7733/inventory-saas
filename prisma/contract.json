@@ -20,6 +20,14 @@
       "model": "Category",
       "namespace": "public"
     },
+    "commission_payments": {
+      "model": "CommissionPayment",
+      "namespace": "public"
+    },
+    "commission_periods": {
+      "model": "CommissionPeriod",
+      "namespace": "public"
+    },
     "customers": {
       "model": "Customer",
       "namespace": "public"
@@ -618,6 +626,277 @@
               },
               "namespaceId": "public",
               "table": "categories"
+            }
+          },
+          "CommissionPayment": {
+            "fields": {
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdBy": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "note": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "periodId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "actor": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "createdBy"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "period": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "periodId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "CommissionPeriod",
+                  "namespace": "public"
+                }
+              },
+              "tenant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "createdBy": {
+                  "column": "created_by"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "note": {
+                  "column": "note"
+                },
+                "periodId": {
+                  "column": "period_id"
+                },
+                "tenantId": {
+                  "column": "tenant_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "commission_payments"
+            }
+          },
+          "CommissionPeriod": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "enabled": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "month": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                }
+              },
+              "target": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/numeric@1",
+                  "kind": "scalar",
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                }
+              },
+              "tenantId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "tenant": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "tenantId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Tenant",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "created_at"
+                },
+                "enabled": {
+                  "column": "enabled"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "month": {
+                  "column": "month"
+                },
+                "rate": {
+                  "column": "rate"
+                },
+                "target": {
+                  "column": "target"
+                },
+                "tenantId": {
+                  "column": "tenant_id"
+                },
+                "updatedAt": {
+                  "column": "updated_at"
+                },
+                "userId": {
+                  "column": "user_id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "commission_periods"
             }
           },
           "Customer": {
@@ -1678,10 +1957,31 @@
           },
           "Sale": {
             "fields": {
+              "completedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "creatorId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/uuid@1",
+                  "kind": "scalar"
+                }
+              },
+              "creatorName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -1740,6 +2040,13 @@
                 }
               },
               "paymentMethod": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "sellerName": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -1815,6 +2122,21 @@
               }
             },
             "relations": {
+              "creator": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "creatorId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
               "customer": {
                 "cardinality": "N:1",
                 "on": {
@@ -1863,8 +2185,17 @@
             },
             "storage": {
               "fields": {
+                "completedAt": {
+                  "column": "completed_at"
+                },
                 "createdAt": {
                   "column": "created_at"
+                },
+                "creatorId": {
+                  "column": "creator_id"
+                },
+                "creatorName": {
+                  "column": "creator_name"
                 },
                 "customerId": {
                   "column": "customer_id"
@@ -1886,6 +2217,9 @@
                 },
                 "paymentMethod": {
                   "column": "payment_method"
+                },
+                "sellerName": {
+                  "column": "seller_name"
                 },
                 "soldBy": {
                   "column": "sold_by"
@@ -3013,6 +3347,13 @@
                   "kind": "scalar"
                 }
               },
+              "showLogoOnInvoice": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
               "subscriptionEndsAt": {
                 "nullable": true,
                 "type": {
@@ -3116,6 +3457,9 @@
                 },
                 "phone": {
                   "column": "phone"
+                },
+                "showLogoOnInvoice": {
+                  "column": "show_logo_on_invoice"
                 },
                 "subscriptionEndsAt": {
                   "column": "subscription_ends_at"
@@ -3930,6 +4274,30 @@
               "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
               "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
             },
+            "tenant_isolation_commission_payments": {
+              "kind": "policy",
+              "name": "tenant_isolation_commission_payments_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_commission_payments",
+              "roles": [],
+              "tableName": "commission_payments",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
+            "tenant_isolation_commission_periods": {
+              "kind": "policy",
+              "name": "tenant_isolation_commission_periods_ffe271ab",
+              "namespaceId": "public",
+              "operation": "all",
+              "permissive": true,
+              "prefix": "tenant_isolation_commission_periods",
+              "roles": [],
+              "tableName": "commission_periods",
+              "using": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid",
+              "withCheck": "nullif(current_setting('app.bypass_rls', true), '') = 'on' OR tenant_id = nullif(current_setting('app.tenant_id', true), '')::uuid"
+            },
             "tenant_isolation_customers": {
               "kind": "policy",
               "name": "tenant_isolation_customers_ffe271ab",
@@ -4191,6 +4559,16 @@
               "kind": "rls",
               "namespaceId": "public",
               "tableName": "categories"
+            },
+            "commission_payments": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "commission_payments"
+            },
+            "commission_periods": {
+              "kind": "rls",
+              "namespaceId": "public",
+              "tableName": "commission_periods"
             },
             "customers": {
               "kind": "rls",
@@ -4763,6 +5141,289 @@
                   "columns": [
                     "tenant_id",
                     "name"
+                  ]
+                }
+              ]
+            },
+            "commission_payments": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "created_by": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "note": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "period_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "tenant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "tenant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "commission_payments"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenants"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "period_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "commission_payments"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "commission_periods"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "created_by"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "commission_payments"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "created_by"
+                  ],
+                  "name": "commission_payments_created_by_idx_e13bb8bf",
+                  "prefix": "commission_payments_created_by_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "period_id"
+                  ],
+                  "name": "commission_payments_period_id_idx_b79c59e2",
+                  "prefix": "commission_payments_period_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "commission_payments_tenant_id_idx_41c0d441",
+                  "prefix": "commission_payments_tenant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "period_id"
+                  ],
+                  "name": "commission_payments_tenant_id_period_id_idx_07cdee7b",
+                  "prefix": "commission_payments_tenant_id_period_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "commission_periods": {
+              "columns": {
+                "created_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "enabled": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "month": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "rate": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 5,
+                    "scale": 2
+                  }
+                },
+                "target": {
+                  "codecId": "pg/numeric@1",
+                  "nativeType": "numeric",
+                  "nullable": false,
+                  "typeParams": {
+                    "precision": 10,
+                    "scale": 2
+                  }
+                },
+                "tenant_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                },
+                "updated_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "user_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "tenant_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "commission_periods"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "tenants"
+                  }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "user_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "commission_periods"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "tenant_id"
+                  ],
+                  "name": "commission_periods_tenant_id_idx_41c0d441",
+                  "prefix": "commission_periods_tenant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "month"
+                  ],
+                  "name": "commission_periods_tenant_id_month_idx_679f81dc",
+                  "prefix": "commission_periods_tenant_id_month_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "user_id"
+                  ],
+                  "name": "commission_periods_user_id_idx_6c952402",
+                  "prefix": "commission_periods_user_id_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "tenant_id",
+                    "user_id",
+                    "month"
                   ]
                 }
               ]
@@ -6295,6 +6956,11 @@
                 }
               ],
               "columns": {
+                "completed_at": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "created_at": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -6303,6 +6969,16 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "creator_id": {
+                  "codecId": "pg/uuid@1",
+                  "nativeType": "uuid",
+                  "nullable": true
+                },
+                "creator_name": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "customer_id": {
                   "codecId": "pg/uuid@1",
@@ -6347,6 +7023,11 @@
                   }
                 },
                 "payment_method": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "seller_name": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
@@ -6460,9 +7141,34 @@
                     "namespaceId": "public",
                     "tableName": "users"
                   }
+                },
+                {
+                  "onDelete": "restrict",
+                  "source": {
+                    "columns": [
+                      "creator_id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "sales"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "users"
+                  }
                 }
               ],
               "indexes": [
+                {
+                  "columns": [
+                    "creator_id"
+                  ],
+                  "name": "sales_creator_id_idx_c8bab67a",
+                  "prefix": "sales_creator_id_idx",
+                  "unique": false
+                },
                 {
                   "columns": [
                     "customer_id"
@@ -6512,6 +7218,16 @@
                   ],
                   "name": "sales_tenant_id_idx_41c0d441",
                   "prefix": "sales_tenant_id_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "tenant_id",
+                    "sold_by",
+                    "completed_at"
+                  ],
+                  "name": "sales_tenant_id_sold_by_completed_at_idx_a01b5e68",
+                  "prefix": "sales_tenant_id_sold_by_completed_at_idx",
                   "unique": false
                 },
                 {
@@ -7403,6 +8119,15 @@
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
+                },
+                "show_logo_on_invoice": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
                 },
                 "subscription_ends_at": {
                   "codecId": "pg/timestamptz-string@1",
@@ -8323,10 +9048,10 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "93e797b53394cc25595a20aa1c5050ad5c752ecd1d653565f3d4bf9a1623b962"
+    "storageHash": "b9c766917292153280ec111fffc0dbdea76fc2948da775e7b443f72d8f9af778"
   },
   "execution": {
-    "executionHash": "e714b4114e3984a2ce0ab1105784016b6bd85cb7a6b2435a88024872392940c5",
+    "executionHash": "d74f2061e0db599bb9e5dc9b73f3d573da3a6b6c999bc37ad4c21be78e67152f",
     "mutations": {
       "defaults": [
         {
@@ -8401,6 +9126,43 @@
             "column": "updated_at",
             "namespace": "public",
             "table": "categories"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "commission_payments"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "id",
+            "namespace": "public",
+            "table": "commission_periods"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "column": "updated_at",
+            "namespace": "public",
+            "table": "commission_periods"
           }
         },
         {

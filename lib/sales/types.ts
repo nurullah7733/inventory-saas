@@ -1,4 +1,6 @@
 export interface InvoiceSummary {
+  creatorName?: string | null;
+  sellerName?: string | null;
   id: string;
   invoiceNo: string;
   status: "draft" | "completed";

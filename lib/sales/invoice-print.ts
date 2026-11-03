@@ -7,6 +7,8 @@ export interface InvoiceBusiness {
   address: string | null;
   email: string;
   currencySymbol: string;
+  logoUrl?: string | null;
+  showLogoOnInvoice?: boolean;
 }
 const escape = (value: string | number) => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
 
@@ -16,6 +18,7 @@ export function invoicePrintDocument(invoice: InvoiceDetail, business: InvoiceBu
   const thermal = paper === "thermal";
   const money = (value: string) => escape(`${business.currencySymbol} ${value}`);
   const hasReturns = invoice.items.some((item) => item.returnedQuantity > 0);
+  const showLogo = business.showLogoOnInvoice !== false && !!business.logoUrl;
   const date = new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(new Date(invoice.createdAt));
   const rows = invoice.items.map((item, index) => `<tr><td><strong>${index + 1}. ${escape(item.name)}</strong>${item.variantLabel !== "Default" ? `<span>${escape(item.variantLabel)}</span>` : ""}<span>SKU: ${escape(item.sku)}</span>${item.returnedQuantity > 0 ? `<span>Returned: ${escape(item.returnedQuantity)}</span>` : ""}</td><td class="number">${escape(item.quantity)}</td><td class="number">${money(item.unitPrice)}</td><td class="number">${money(item.subtotal)}</td></tr>`).join("");
   const totals = [
@@ -26,8 +29,8 @@ export function invoicePrintDocument(invoice: InvoiceDetail, business: InvoiceBu
     @page { size:${thermal ? "auto" : paper === "a4" ? "A4" : "A5"}; margin:${thermal ? "3mm" : "10mm"}; }
     * { box-sizing:border-box; } body { margin:0; color:#111; background:#fff; font: ${thermal ? "9" : "10"}pt Arial, sans-serif; line-height:1.4; }
     main { ${thermal ? "width:74mm;" : "width:100%;"} } h1,h2,p { margin:0; } h1 { font-size:18pt; } h2 { font-size:12pt; }
-    header { text-align:center; border-bottom:1px solid #444; padding-bottom:3mm; } header p { white-space:pre-line; }
-    .meta { margin:4mm 0; } .meta p { margin:1mm 0; } table { width:100%; border-collapse:collapse; table-layout:fixed; }
+    header { text-align:center; border-bottom:1px solid #444; padding-bottom:3mm; } header p { white-space:pre-line; } .logo { display:block; max-height:${thermal ? "14" : "22"}mm; max-width:${thermal ? "40" : "64"}mm; margin:0 auto 3mm; object-fit:contain; }
+    .meta { margin:4mm 0; } .meta p { margin:1mm 0; } .meta-head { display:flex; justify-content:space-between; align-items:baseline; gap:3mm; } .meta-head span { text-align:right; } table { width:100%; border-collapse:collapse; table-layout:fixed; }
     th,td { padding:2mm 1mm; border-bottom:1px solid #ddd; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
     th:first-child { width:${thermal ? "40" : "46"}%; } .number { text-align:right; font-variant-numeric:tabular-nums; }
     td span { display:block; font-size:0.85em; } thead { display:table-header-group; } tr { break-inside:avoid; }
@@ -35,8 +38,8 @@ export function invoicePrintDocument(invoice: InvoiceDetail, business: InvoiceBu
     dt,dd { margin:0; } dd { text-align:right; } .emphasis { font-weight:bold; border-top:1px solid #444; }
     footer { margin-top:5mm; border-top:1px solid #ddd; padding-top:3mm; text-align:center; font-size:0.85em; }
     p,strong { overflow-wrap:anywhere; } @media screen { body { padding:5mm; } }
-  </style></head><body><main><header><h1>${escape(business.name)}</h1>${business.address ? `<p>${escape(business.address)}</p>` : ""}${business.phone ? `<p>Phone: ${escape(business.phone)}</p>` : ""}</header>
-  <section class="meta"><h2>Sales invoice</h2><p>Invoice: <strong>${escape(invoice.invoiceNo)}</strong></p><p>Date: ${escape(date)}</p><p>Customer: ${escape(invoice.customer?.name ?? "Walk-in customer")}</p>${invoice.customer?.phone ? `<p>Phone: ${escape(invoice.customer.phone)}</p>` : ""}${invoice.paymentMethod ? `<p>Payment method: ${escape(invoice.paymentMethod)}</p>` : ""}</section>
+  </style></head><body><main><header>${showLogo ? `<img src="${escape(business.logoUrl!)}" alt="${escape(business.name)} logo" class="logo">` : ""}<h1>${escape(business.name)}</h1>${business.address ? `<p>${escape(business.address)}</p>` : ""}${business.phone ? `<p>Phone: ${escape(business.phone)}</p>` : ""}</header>
+  <section class="meta"><div class="meta-head"><h2>Sales invoice</h2>${invoice.sellerName ? `<span>Sold by: ${escape(invoice.sellerName)}</span>` : ""}</div><p>Invoice: <strong>${escape(invoice.invoiceNo)}</strong></p><p>Date: ${escape(date)}</p><p>Customer: ${escape(invoice.customer?.name ?? "Walk-in customer")}</p>${invoice.customer?.phone ? `<p>Phone: ${escape(invoice.customer.phone)}</p>` : ""}${invoice.paymentMethod ? `<p>Payment method: ${escape(invoice.paymentMethod)}</p>` : ""}</section>
   <table><thead><tr><th scope="col">Item</th><th scope="col" class="number">Qty</th><th scope="col" class="number">Price</th><th scope="col" class="number">Amount</th></tr></thead><tbody>${rows}</tbody></table><dl>${totals}</dl>
   <footer><p>Thank you for shopping with us.</p>${hasReturns ? "<p>Includes returns recorded against this invoice.</p>" : ""}</footer></main></body></html>`;
 }

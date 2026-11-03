@@ -6,7 +6,7 @@ import type { InvoiceDetail, InvoiceSummary, ReturnEntry } from "./types.ts";
 import { supportsDiscountPercentage } from "./schema-compatibility.ts";
 
 function selectInvoices(query: TenantScope["Sale"], withPercentage: boolean) {
-  const columns = ["id", "invoiceNo", "status", "subtotal", "discount", "vatAmount", "totalAmount", "paidAmount", "paymentMethod", "createdAt", "updatedAt"] as const;
+  const columns = ["id", "invoiceNo", "status", "subtotal", "discount", "vatAmount", "totalAmount", "paidAmount", "paymentMethod", "createdAt", "updatedAt", "creatorName", "sellerName"] as const;
   const selected = withPercentage ? query.select(...columns, "discountPercentage") : query.select(...columns);
   return selected
     .include("customer", (c) => c.select("id", "name", "phone"));
