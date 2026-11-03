@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { PlatformLogo } from "@/components/ui/platform-logo.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -326,10 +325,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     />
   );
   const workspaceLoading = !tenant && !currentTenant.isError;
-  const logo = workspaceLoading ? <Skeleton className="h-10 w-10 shrink-0 rounded-xl" /> : <TenantLogo name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} />;
+  const logo = workspaceLoading ? <Skeleton className="h-10 w-10 shrink-0 rounded-xl" /> : <TenantLogo key={tenant?.logoUrl} name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} />;
+  const dashboardLabel = tenant?.name ? `${tenant.name} dashboard` : "STOCK dashboard";
   const brand = (
-    <Link href="/dashboard" aria-label="STOCK dashboard" className="min-w-0">
-      <PlatformLogo />
+    <Link href="/dashboard" aria-label={dashboardLabel} className="min-w-0">
+      <TenantLogo key={tenant?.logoUrl} name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} branding />
     </Link>
   );
 
@@ -350,8 +350,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className={`flex min-h-20 shrink-0 items-center border-b border-border ${sidebarCollapsed ? "justify-center" : "px-section"}`}
             >
               {sidebarCollapsed ? (
-                <Link href="/dashboard" aria-label="STOCK dashboard">
-                  <PlatformLogo compact />
+                <Link href="/dashboard" aria-label={dashboardLabel}>
+                  <TenantLogo key={tenant?.logoUrl} name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} branding compact />
                 </Link>
               ) : (
                 brand
