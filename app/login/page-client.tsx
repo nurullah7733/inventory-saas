@@ -126,7 +126,7 @@ function LoginForm() {
         New here?{" "}
         <Link
           href="/signup"
-          className="inline-flex min-h-11 items-center font-medium text-emerald-700 underline dark:text-emerald-400"
+          className="inline-flex min-h-11 items-center font-medium text-primary underline"
         >
           Create your shop account
         </Link>

@@ -199,7 +199,7 @@ export default function SignupPage() {
           Already have an account?{" "}
           <Link
             href="/login"
-            className="inline-flex min-h-11 items-center font-medium text-emerald-700 underline dark:text-emerald-400"
+            className="inline-flex min-h-11 items-center font-medium text-primary underline"
           >
             Sign in
           </Link>
