@@ -451,7 +451,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {logo}
               </div>
               <div className="min-w-0 flex-1">
-                <h1 className="truncate text-sm font-medium tracking-tight sm:text-lg">
+                <h1 className="hidden truncate text-sm font-medium tracking-tight sm:block sm:text-lg">
                   {pathname === "/dashboard" ? (
                     <>
                       <span className="lg:hidden">Dashboard</span>
