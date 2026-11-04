@@ -17,6 +17,7 @@ import { SidebarNavigation } from "./sidebar-navigation.tsx";
 import { SidebarPlanCard } from "./sidebar-plan-card.tsx";
 import { ThemeSwitch } from "./theme-switch.tsx";
 import { NotificationMenu } from "./notification-menu.tsx";
+import { ShopCalculator } from "./shop-calculator.tsx";
 import { navigationLinks, isActiveRoute } from "@/lib/client/navigation.ts";
 import { canNavigate, canViewFinance } from "@/lib/dashboard/permissions.ts";
 import type { UserRole } from "@/lib/auth/roles.ts";
@@ -180,9 +181,13 @@ function ProfileMenu({
             <ThemeSwitch />
           </li>
           <li role="none">
-            <Link href="/settings/profile" role="menuitem" tabIndex={-1}
+            <Link
+              href="/settings/profile"
+              role="menuitem"
+              tabIndex={-1}
               className="flex min-h-11 w-full items-center gap-item rounded-lg px-item text-xs text-foreground transition hover:bg-surface-muted"
-              onClick={() => setOpen(false)}>
+              onClick={() => setOpen(false)}
+            >
               <AppIcon name="people" className="shrink-0" />
               Profile
             </Link>
@@ -216,13 +221,23 @@ function ProfileMenu({
               </Link>
             </li>
           )}
-          {onLock && <li role="none">
-            <button type="button" role="menuitem" tabIndex={-1}
-              className="flex min-h-11 w-full items-center gap-item rounded-lg px-item text-xs text-foreground transition hover:bg-surface-muted"
-              onClick={() => { setOpen(false); onLock(); }}>
-              <AppIcon name="lock" />Lock screen
-            </button>
-          </li>}
+          {onLock && (
+            <li role="none">
+              <button
+                type="button"
+                role="menuitem"
+                tabIndex={-1}
+                className="flex min-h-11 w-full items-center gap-item rounded-lg px-item text-xs text-foreground transition hover:bg-surface-muted"
+                onClick={() => {
+                  setOpen(false);
+                  onLock();
+                }}
+              >
+                <AppIcon name="lock" />
+                Lock screen
+              </button>
+            </li>
+          )}
           <li role="none" className="mt-tight border-t border-border pt-tight">
             <button
               ref={signOutItem}
@@ -267,7 +282,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [navigationOpen]);
 
   const viewerRole: UserRole | undefined = session?.user.role;
-  const showNewSale = !!viewerRole && viewerRole !== "super_admin" && pathname !== "/sales/create";
+  const showNewSale =
+    !!viewerRole &&
+    viewerRole !== "super_admin" &&
+    pathname !== "/sales/create";
+  const calculatorKey = `${session?.user.id ?? "none"}:${session?.user.tenantId ?? currentTenant.data?.tenant.id ?? "none"}`;
 
   if (status !== "authenticated" && status !== "loading") return null;
 
@@ -325,11 +344,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     />
   );
   const workspaceLoading = !tenant && !currentTenant.isError;
-  const logo = workspaceLoading ? <Skeleton className="h-10 w-10 shrink-0 rounded-xl" /> : <TenantLogo key={tenant?.logoUrl} name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} />;
-  const dashboardLabel = tenant?.name ? `${tenant.name} dashboard` : "STOCK dashboard";
+  const logo = workspaceLoading ? (
+    <Skeleton className="h-10 w-10 shrink-0 rounded-xl" />
+  ) : (
+    <TenantLogo
+      key={tenant?.logoUrl}
+      name={tenant?.name ?? ""}
+      logoUrl={tenant?.logoUrl ?? null}
+    />
+  );
+  const dashboardLabel = tenant?.name
+    ? `${tenant.name} dashboard`
+    : "STOCK dashboard";
   const brand = (
     <Link href="/dashboard" aria-label={dashboardLabel} className="min-w-0">
-      <TenantLogo key={tenant?.logoUrl} name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} branding />
+      <TenantLogo
+        key={tenant?.logoUrl}
+        name={tenant?.name ?? ""}
+        logoUrl={tenant?.logoUrl ?? null}
+        branding
+      />
     </Link>
   );
 
@@ -351,7 +385,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             >
               {sidebarCollapsed ? (
                 <Link href="/dashboard" aria-label={dashboardLabel}>
-                  <TenantLogo key={tenant?.logoUrl} name={tenant?.name ?? ""} logoUrl={tenant?.logoUrl ?? null} branding compact />
+                  <TenantLogo
+                    key={tenant?.logoUrl}
+                    name={tenant?.name ?? ""}
+                    logoUrl={tenant?.logoUrl ?? null}
+                    branding
+                    compact
+                  />
                 </Link>
               ) : (
                 brand
@@ -401,7 +441,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <AppIcon name="menu" />
               </button>
-              <div className={showNewSale ? "hidden shrink-0 sm:block lg:hidden" : "shrink-0 lg:hidden"}>
+              <div
+                className={
+                  showNewSale
+                    ? "hidden shrink-0 sm:block lg:hidden"
+                    : "shrink-0 lg:hidden"
+                }
+              >
                 {logo}
               </div>
               <div className="min-w-0 flex-1">
@@ -420,16 +466,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 </h1>
                 <p className="mt-micro hidden truncate text-xs text-muted sm:block">
-                  {pathname === "/dashboard"
-                    ? `Welcome, ${currentTenant.data?.viewer.name ?? session?.user.name ?? ""}. Your business, at a glance.`
-                    : workspaceLoading ? <Skeleton className="h-3 w-32" /> : workspaceName}
+                  {pathname === "/dashboard" ? (
+                    `Welcome, ${currentTenant.data?.viewer.name ?? session?.user.name ?? ""}. Your business, at a glance.`
+                  ) : workspaceLoading ? (
+                    <Skeleton className="h-3 w-32" />
+                  ) : (
+                    workspaceName
+                  )}
                 </p>
               </div>
               <div className="flex shrink-0 items-center justify-end gap-micro lg:gap-small">
-                {showNewSale && <Link href="/sales/create" aria-label="New sale" className="inline-flex min-h-10 shrink-0 items-center justify-center gap-tight rounded-lg bg-primary px-small text-xs font-medium text-surface sm:min-h-9 sm:px-item"><span aria-hidden="true">+</span>New sale</Link>}
+                {showNewSale && (
+                  <Link
+                    href="/sales/create"
+                    aria-label="New sale"
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center gap-tight rounded-lg bg-primary px-small text-xs font-medium text-surface sm:min-h-9 sm:px-item"
+                  >
+                    <span aria-hidden="true">+</span>New sale
+                  </Link>
+                )}
+
+                <ShopCalculator key={calculatorKey} />
+
                 <div className="hidden shrink-0 min-[400px]:block">
                   <ThemeSwitch />
                 </div>
+
                 <NotificationMenu />
                 <ProfileMenu
                   key={pathname}
@@ -440,13 +502,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     currentTenant.data?.viewer.role ?? session?.user.role ?? ""
                   }
                   showBilling={canViewFinance(viewerRole)}
-                  photoUrl={currentTenant.data ? currentTenant.data.viewer.photoUrl : session?.user.photoUrl ?? null}
+                  photoUrl={
+                    currentTenant.data
+                      ? currentTenant.data.viewer.photoUrl
+                      : (session?.user.photoUrl ?? null)
+                  }
                   showUsers={canNavigate(viewerRole, "users.manage")}
                   onSignOut={() => void signOut()}
-                  onLock={session?.user.pinEnabled ? () => {
-                    void cache.cancelQueries();
-                    lockSession();
-                  } : undefined}
+                  onLock={
+                    session?.user.pinEnabled
+                      ? () => {
+                          void cache.cancelQueries();
+                          lockSession();
+                        }
+                      : undefined
+                  }
                 />
               </div>
             </div>
@@ -486,11 +556,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             aria-describedby={undefined}
             className="fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(20rem,calc(100%-2rem))] max-w-none flex-col border-0 bg-surface text-foreground shadow-app outline-none motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:slide-in-from-left-4 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:slide-out-to-left-4 duration-200"
           >
-            <Dialog.Title className="sr-only">Workspace navigation</Dialog.Title>
+            <Dialog.Title className="sr-only">
+              Workspace navigation
+            </Dialog.Title>
             <div className="flex shrink-0 items-center justify-between gap-item border-b border-border p-content">
               <div className="min-w-0">{brand}</div>
               <Dialog.Close asChild>
-                <Button variant="ghost" className="shrink-0 px-item" aria-label="Close navigation">
+                <Button
+                  variant="ghost"
+                  className="shrink-0 px-item"
+                  aria-label="Close navigation"
+                >
                   <AppIcon name="close" />
                 </Button>
               </Dialog.Close>

@@ -10,8 +10,8 @@ const overlayClasses =
 const contentClasses =
   "fixed inset-0 z-40 flex items-end justify-center sm:items-center sm:p-content";
 
-const panelClasses = (size: "md" | "lg") =>
-  `relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-surface p-dialog pb-[max(var(--space-dialog),env(safe-area-inset-bottom))] shadow-xl outline-none ${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-4 sm:motion-safe:data-[state=open]:slide-in-from-bottom-0 sm:motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-4 sm:motion-safe:data-[state=closed]:slide-out-to-bottom-0 sm:motion-safe:data-[state=closed]:zoom-out-95 duration-200`;
+const panelClasses = (size: "md" | "lg", hideScrollbar?: boolean) =>
+  `relative max-h-[90dvh] w-full overflow-y-auto rounded-t-2xl bg-surface p-dialog pb-[max(var(--space-dialog),env(safe-area-inset-bottom))] shadow-xl outline-none ${hideScrollbar ? "scrollbar-hide " : ""}${size === "lg" ? "sm:max-w-2xl" : "sm:max-w-md"} sm:rounded-2xl motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=open]:slide-in-from-bottom-4 sm:motion-safe:data-[state=open]:slide-in-from-bottom-0 sm:motion-safe:data-[state=open]:zoom-in-95 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0 motion-safe:data-[state=closed]:slide-out-to-bottom-4 sm:motion-safe:data-[state=closed]:slide-out-to-bottom-0 sm:motion-safe:data-[state=closed]:zoom-out-95 duration-200`;
 
 export function Sheet({
   open,
@@ -19,6 +19,8 @@ export function Sheet({
   title,
   description,
   size = "md",
+  onOpenAutoFocus,
+  hideScrollbar,
   children,
 }: {
   open: boolean;
@@ -27,6 +29,8 @@ export function Sheet({
   description?: string;
   /** `lg` for long multi-section forms (Add product) on a wider screen. */
   size?: "md" | "lg";
+  onOpenAutoFocus?: (event: Event) => void;
+  hideScrollbar?: boolean;
   children: React.ReactNode;
 }) {
   return (
@@ -36,11 +40,12 @@ export function Sheet({
         <Dialog.Content
           aria-describedby={undefined}
           className={contentClasses}
+          onOpenAutoFocus={onOpenAutoFocus}
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) onOpenChange(false);
           }}
         >
-          <div className={panelClasses(size)}>
+          <div className={panelClasses(size, hideScrollbar)}>
             {/* Grab handle — a visual cue that this is a sheet on touch screens. */}
             <div
               aria-hidden="true"

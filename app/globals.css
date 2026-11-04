@@ -146,3 +146,11 @@
   .ui-field-grid { display: grid; gap: var(--space-content); }
   .ui-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--panel-radius); background: var(--surface); padding: var(--space-panel); box-shadow: var(--panel-shadow); }
 }
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
